@@ -149,7 +149,7 @@ Vacío corresponde a ready con datos vacíos válidos. No inventar éxito ante e
 }
 ```
 
-Button, TextField, EmptyState y Skeleton ya tienen componentes React tipados. Sus estilos siguen en globals.css; `.text-link`, `.product-grid` y `.container` conservan alcance de estilos/layout y los CTA de navegación siguen usando Link. Modal/Toast/O-010 completos permanecen pendientes. La grilla y el resto de medidas locales requieren revisión frente a DS-001 y V-006-OPEN-04.
+Button, TextField, EmptyState y Skeleton ya tienen componentes React tipados. Sus estilos siguen en globals.css; `.text-link`, `.product-grid` y `.container` conservan alcance de estilos/layout y los CTA de navegación siguen usando Link. O-010 completo no está implementado en este corte. La grilla y el resto de medidas locales requieren revisión frente a DS-001 y V-006-OPEN-04.
 
 ## 8. Pruebas, cambios y pendientes
 
@@ -157,7 +157,7 @@ Verificación ejecutada: 10 casos de componentes en [`shared-ui.test.tsx`](../te
 
 Para un cambio de elemento común: identificar consumidores, acordar ownership, documentar props/eventos/estados, verificar el comportamiento afectado y actualizar esta guía y el changelog de SPECS. Revisar con Sebastian; diseño con Fernando/Giuliano, contrato con Leonidas y aceptación con Jim según corresponda.
 
-Pendientes de biblioteca: resto de tokens, campos especializados/selecciones, variantes de carga por vista, shell configurable, O-010, modal/drawer O-001, tarjeta comercial/favorito e InternalPath. UI kit, Figma y publicación/aprobación permanecen abiertos. La guía normativa e historial se encuentran en `G1-Marketplace-SPECS/SPECS/ui/sistema-diseno/`.
+Limitaciones del corte de semana 8: tokens parciales, campos y cargas limitados a inicio/búsqueda, shell fijo, feedback de catálogo y tarjeta comercial mínima. El retorno seguro debe validarse antes de integrar su receptor. UI kit, Figma y publicación/aprobación permanecen abiertos. La guía normativa e historial se encuentran en `G1-Marketplace-SPECS/SPECS/ui/sistema-diseno/`.
 
 ## 9. Contratos de los componentes base (0.2.0)
 

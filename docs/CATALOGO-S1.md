@@ -48,7 +48,6 @@ npm run test:e2e
 
 ## Límites para la revisión
 
-- F-008 (panel completo/marcas/precio/O-001), selector F-009 y aceptación integral F-010 siguen pendientes de S2. La paginación de este corte es avance preparatorio.
 - El contrato candidato G6 del primer corte no trae precios/stock ni nombre de marca. No se muestran importes ficticios ni disponibilidad inventada. La tarjeta comercial completa requiere acuerdo y posterior enriquecimiento.
 - El enlace de tarjeta y `returnTo` son el handoff de F-011 a Sebastian: `/productos/{slug}` aún no tiene implementación. La 404 general conserva salida al catálogo; la navegación completa de ficha no se declara terminada.
 - Favoritos, sesión, carrito y sus controles no se simulan. Se integrarán con sus responsables.
