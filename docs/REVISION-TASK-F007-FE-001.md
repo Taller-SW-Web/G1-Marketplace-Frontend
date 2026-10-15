@@ -51,7 +51,7 @@ Los E2E **requieren el BFF Marketplace en `127.0.0.1:10000`** (proxy `/api/catal
 
 - `npm run typecheck` ✅ 0 errores
 - `npm run lint` ✅ 0 errores / 0 warnings
-- `npm run test:components` ✅ 32/32 (incluye `tests/components/shared-ui.test.tsx`, de los primitivos que usa `SearchBox`: `TextField` con `aria-invalid`/`role="alert"`, `Button` con `loading`, `EmptyState` con región y acción de recuperación)
+- `npm run test:components` ✅ 47/47 (incluye `tests/components/shared-ui.test.tsx`, de los primitivos que usa `SearchBox`: `TextField` con `aria-invalid`/`role="alert"`, `Button` con `loading`, `EmptyState` con región y acción de recuperación; el resto son los tests de F-011 añadidos en H3)
 - `npm run test:e2e` ⚠️ no ejecutable (ver H3)
 
 ## Retest pendiente

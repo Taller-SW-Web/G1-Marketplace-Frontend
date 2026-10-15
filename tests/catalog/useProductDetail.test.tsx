@@ -95,6 +95,7 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
 
     const link = screen.getByRole("link", { name: /catálogo/i });
     expect(link.getAttribute("href")).toBe("/catalogo");
+    expect(link.textContent).toBe("Volver al catálogo");
   });
 
   it("migas, un único h1 y región comercial sin precio ni stock", async () => {
@@ -140,6 +141,9 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
 
     expect(await screen.findByRole("button", { name: "Reintentar" })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toMatch(/problema/i);
+    expect(
+      screen.getByRole("heading", { level: 1 }),
+    ).toHaveProperty("textContent", "No pudimos cargar este producto");
 
     const section = document.querySelector("[data-error-code]");
     expect(section?.getAttribute("data-error-code")).toBe(
@@ -156,5 +160,22 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
           ?.getAttribute("data-error-code"),
       ).toBe("PRODUCT_CATALOG_UNAVAILABLE"),
     );
+  });
+
+  it("cierra el visor al cambiar de slug (reset del estado local)", async () => {
+    const { rerender } = render(
+      <ProductDetailContainer slug="zapatillas-running-aero-x" />,
+    );
+    await screen.findByRole("heading", { level: 1 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ampliar imagen" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    rerender(<ProductDetailContainer slug="producto-sin-specs-mock" />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // La nueva ficha termina en READY y el visor sigue cerrado.
+    await screen.findByRole("heading", { level: 1, name: /\[MOCK\]/u });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

@@ -20,8 +20,17 @@ const MOCK_MODE = process.env.NEXT_PUBLIC_BFF_MODE === "mock";
  */
 export function ProductDetailContainer({ slug }: Props) {
   const { state, retry } = useProductDetail(slug);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState(0);
+  // El visor se resetea al cambiar de slug (spec de componentes §5) sin
+  // recurrir a efectos: el estado guardado sólo vale para su slug.
+  const [viewerState, setViewerState] = useState<{
+    slug: string;
+    open: boolean;
+    index: number;
+  }>({ slug, open: false, index: 0 });
+  const viewer =
+    viewerState.slug === slug
+      ? viewerState
+      : { slug, open: false, index: 0 };
 
   if (state.kind === "loading") {
     return (
@@ -46,7 +55,7 @@ export function ProductDetailContainer({ slug }: Props) {
           <h1>Producto no disponible</h1>
           <p>Vuelve al catálogo para seguir explorando.</p>
           <Link className="button" href="/catalogo">
-            Ver catálogo
+            Volver al catálogo
           </Link>
         </div>
       </div>
@@ -57,7 +66,7 @@ export function ProductDetailContainer({ slug }: Props) {
     return (
       <div className="container product-page">
         <div className="detail-message" data-error-code={state.code}>
-          <h1>No pudimos cargar el producto</h1>
+          <h1>No pudimos cargar este producto</h1>
           <p role="alert">
             Ocurrió un problema al consultar la ficha. Inténtalo nuevamente.
           </p>
@@ -93,10 +102,7 @@ export function ProductDetailContainer({ slug }: Props) {
       <div className="detail-layout">
         <ProductGallery
           media={product.media}
-          onOpenViewer={(index) => {
-            setViewerIndex(index);
-            setViewerOpen(true);
-          }}
+          onOpenViewer={(index) => setViewerState({ slug, open: true, index })}
         />
         <div className="detail-summary">
           <p className="detail-brand">Marca: {product.brand.name}</p>
@@ -109,12 +115,12 @@ export function ProductDetailContainer({ slug }: Props) {
       </div>
 
       <GalleryViewer
-        opened={viewerOpen}
+        opened={viewer.open}
         media={product.media}
-        index={viewerIndex}
+        index={viewer.index}
         label={product.name}
-        onClose={() => setViewerOpen(false)}
-        onIndexChange={setViewerIndex}
+        onClose={() => setViewerState({ slug, open: false, index: 0 })}
+        onIndexChange={(index) => setViewerState({ slug, open: true, index })}
       />
     </div>
   );

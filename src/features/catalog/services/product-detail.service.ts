@@ -1,6 +1,7 @@
 import type {
   ProductDetailErrorCode,
   ProductDetailResponseDTO,
+  ProductMediaDTO,
 } from "../types/product-detail.types";
 
 /**
@@ -46,6 +47,26 @@ function errorForStatus(status: number): ProductDetailError {
   return new ProductDetailError("PRODUCT_CATALOG_UNAVAILABLE", status);
 }
 
+const HTTPS_URL = /^https:\/\/\S+$/u;
+
+/**
+ * Regla de medio (API-CA-F011-04 / funcional §7): sólo `IMAGE` con URL
+ * HTTPS, `alt` no vacío y `displayOrder` entero no negativo. Lo inválido se
+ * descarta; si no queda ningún medio, la respuesta se trata como inválida.
+ */
+export function isValidMedia(
+  media: ProductMediaDTO | undefined,
+): media is ProductMediaDTO {
+  return Boolean(
+    media &&
+      media.type === "IMAGE" &&
+      HTTPS_URL.test(media.url) &&
+      media.alt?.trim() &&
+      Number.isInteger(media.displayOrder) &&
+      media.displayOrder >= 0,
+  );
+}
+
 export async function fetchProductDetail(
   slug: string,
   signal?: AbortSignal,
@@ -68,14 +89,12 @@ export async function fetchProductDetail(
     throw new ProductDetailError("PRODUCT_CATALOG_INVALID_RESPONSE", 502);
   }
 
-  // Validación mínima: no mostrar ficha parcial.
-  if (
-    !json.data?.productId ||
-    !json.data?.name ||
-    !json.data?.media?.length
-  ) {
+  // Validación mínima: no mostrar ficha parcial engañosa. Los medios
+  // inválidos se descartan y, si no queda ninguno, la respuesta es inválida.
+  const media = json.data?.media?.filter(isValidMedia) ?? [];
+  if (!json.data?.productId || !json.data?.name || !media.length) {
     throw new ProductDetailError("PRODUCT_CATALOG_INVALID_RESPONSE", 502);
   }
 
-  return json;
+  return { ...json, data: { ...json.data, media } };
 }

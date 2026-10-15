@@ -53,4 +53,37 @@ describe("TechnicalSpecifications (F-011)", () => {
     expect(container.querySelector("p")?.textContent).toContain("[MOCK]");
     expect(container.querySelector("dl")).toBeNull();
   });
+
+  it("omite filas con nombre o valor vacíos tras sanitizar", () => {
+    render(
+      <TechnicalSpecifications
+        specs={[
+          { name: "", value: "Huérfano", displayOrder: 1 },
+          { name: "   ", value: "<b></b>", displayOrder: 2 },
+          {
+            name: "Peso",
+            value: "280",
+            unit: "g",
+            displayOrder: 3,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText("Huérfano")).toBeNull();
+    expect(screen.getByText("280 g")).toBeTruthy();
+    // Sin `group` no hay encabezado de grupo: sólo el par válido queda.
+    expect(screen.queryByText("Material")).toBeNull();
+    expect(screen.getAllByRole("term")).toHaveLength(1);
+  });
+
+  it("si ninguna fila es válida y no hay descripción, no renderiza nada", () => {
+    const { container } = render(
+      <TechnicalSpecifications
+        specs={[{ name: "<b></b>", value: " ", displayOrder: 1 }]}
+      />,
+    );
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole("heading")).toBeNull();
+  });
 });

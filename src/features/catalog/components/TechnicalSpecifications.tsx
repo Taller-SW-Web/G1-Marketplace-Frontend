@@ -24,12 +24,21 @@ export function sanitizeText(value: string): string {
 export function TechnicalSpecifications({ specs, description }: Props) {
   const headingId = useId();
   const text = description ? sanitizeText(description) : "";
-  const ordered = [...specs].sort((a, b) => a.displayOrder - b.displayOrder);
+  // Regla de validación (funcional §7): nombre y valor no vacíos después de
+  // sanitizar; la fila inválida se omite y no se muestra como error.
+  const ordered = specs
+    .map((spec) => ({
+      ...spec,
+      name: sanitizeText(spec.name),
+      value: sanitizeText(spec.value),
+      unit: spec.unit ? sanitizeText(spec.unit) : spec.unit,
+    }))
+    .filter((spec) => spec.name !== "" && spec.value !== "")
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   if (!ordered.length && !text) return null;
 
-  const groups: Array<{ group: string; items: TechnicalSpecificationDTO[] }> =
-    [];
+  const groups: Array<{ group: string; items: typeof ordered }> = [];
   for (const spec of ordered) {
     const group = spec.group?.trim() ?? "";
     const existing = groups.find((entry) => entry.group === group);
