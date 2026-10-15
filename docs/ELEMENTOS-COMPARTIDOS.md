@@ -1,6 +1,6 @@
 # Guía de uso de elementos compartidos — Frontend
 
-Versión documental 0.2.0 · 14/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
+Versión documental 0.2.1 · 15/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
 
 ## 1. Ubicación y reglas de consumo
 
@@ -26,7 +26,7 @@ Por instrucción de Giuliano, esta sesión permite crear commits y subir la rama
 
 ## 2. Shell
 
-`Header` y `Footer` se montan una vez desde [`layout.tsx`](../src/app/layout.tsx). No reciben props; sus enlaces y contenido son fijos para el corte de catálogo. El Header incluye logo, salto al contenido, acceso a catálogo y SearchBox bajo Suspense. El main receptor tiene `id="contenido"`.
+`Header` y `Footer` se montan una vez desde [`layout.tsx`](../src/app/layout.tsx). No reciben props; sus enlaces y contenido son fijos para el corte de catálogo. El Header sigue los frames de Figma: logo, salto al contenido, navegación por categorías y SearchBox bajo Suspense. Cuenta/favoritos/carrito y enlaces informativos del pie quedan deshabilitados hasta su integración; no son enlaces a rutas ficticias. El main receptor tiene `id="contenido"`.
 
 No insertar el layout completo dentro de otra página. La futura cabecera de checkout necesita su variante propia; no añadir cuenta/carrito o enlaces legales ficticios al componente actual. La aceptación G-SHELL y los frames siguen pendientes.
 
@@ -41,7 +41,7 @@ import { SearchBox } from "@/features/catalog/SearchBox";
 </Suspense>;
 ```
 
-`SearchBox` es Client Component acoplado a la URL y al router de catálogo. Props: ninguna. Texto en edición y error son locales; al enviar normaliza espacios y valida 2–120 caracteres, conserva criterios compatibles y elimina page. Vacío elimina q; texto inválido no navega ni consulta. Enter envía una vez.
+`SearchBox` es Client Component acoplado a la URL y al router de catálogo. Props: ninguna. Etiqueta visible y botón con nombre accesible; texto en edición y error son locales; al enviar normaliza espacios y valida 2–120 caracteres, conserva criterios compatibles y elimina page. Vacío elimina q; texto inválido no navega ni consulta. Enter envía una vez.
 
 El buscador compone ahora TextField y Button. TextField genera IDs estables y únicos con useId, por lo que ya no depende de buscar-productos/search-error fijos. Sigue acoplado al catálogo; para otros formularios consumir TextField directamente. La navegación usa una transición y el botón bloquea envíos repetidos mientras abre resultados.
 
@@ -114,9 +114,9 @@ export function CatalogRegion() {
 
 | Elemento           | Props                                        | Estado / restricción                                                                                                    |
 | ------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `ErrorState`       | `message: string`, `onRetry: () => void`     | Error persistente, `role=alert`; callback desde árbol cliente. Título y enlace de recuperación están fijados a catálogo |
+| `ErrorState`       | `message: string`, `onRetry: () => void`, `home?: boolean`     | Error persistente, `role=alert`; callback desde árbol cliente. Título y enlace de recuperación están fijados a catálogo |
 | `MockNotice`       | Ninguna                                      | Render sólo para fuente MOCK; es una nota, no un estado de negocio                                                      |
-| `ProductSkeletons` | Ninguna                                      | Ocho tarjetas decorativas, un único estado de carga anunciado                                                           |
+| `ProductSkeletons` | Ninguna                                      | Seis tarjetas decorativas, un único estado de carga anunciado                                                           |
 | `CategoryChip`     | `categoryId: string`, `onRemove: () => void` | Resuelve nombre usando home; fallback “seleccionada”; el callback controla URL/reinicio de página                       |
 
 `ErrorState` no es la implementación de O-010: faltan severidades, placements, cola, deduplicación, dismiss y política de tiempo. Su uso fuera de catálogo exige desacoplar título/acciones y documentar una nueva API. Los vacíos de home/listado consumen EmptyState; categorías y productos reutilizan LoadingState/Skeleton. Los contenedores conservan textos, condiciones y acciones de negocio.
@@ -157,7 +157,7 @@ Verificación ejecutada: 10 casos de componentes en [`shared-ui.test.tsx`](../te
 
 Para un cambio de elemento común: identificar consumidores, acordar ownership, documentar props/eventos/estados, verificar el comportamiento afectado y actualizar esta guía y el changelog de SPECS. Revisar con Sebastian; diseño con Fernando/Giuliano, contrato con Leonidas y aceptación con Jim según corresponda.
 
-Limitaciones del corte de semana 8: tokens parciales, campos y cargas limitados a inicio/búsqueda, shell fijo, feedback de catálogo y tarjeta comercial mínima. El retorno seguro debe validarse antes de integrar su receptor. UI kit, Figma y publicación/aprobación permanecen abiertos. La guía normativa e historial se encuentran en `G1-Marketplace-SPECS/SPECS/ui/sistema-diseno/`.
+Limitaciones del corte de semana 8: tokens parciales, campos y cargas limitados a inicio/búsqueda, shell fijo, feedback de catálogo y tarjeta comercial mínima. El retorno seguro debe validarse antes de integrar su receptor. UI kit y publicación/aprobación permanecen abiertos. Los frames Figma de Inicio/Catálogo ya están verificados y adaptados al alcance H3; la aceptación visual humana sigue pendiente. La guía normativa e historial se encuentran en `G1-Marketplace-SPECS/SPECS/ui/sistema-diseno/`.
 
 ## 9. Contratos de los componentes base (0.2.0)
 
@@ -189,7 +189,7 @@ import { TextField } from "@/shared/ui/TextField";
 />;
 ```
 
-Props nativas de input y ref más `label` obligatorio, `hint`, `error`, `labelHidden`, `startAdornment`, `endAdornment`, `wrapperClassName` y `controlClassName`. Label visible por defecto; labelHidden sólo para composiciones con contexto accesible explícito, como búsqueda global. Placeholder no reemplaza label. ClassName nativo se aplica al input.
+Props nativas de input y ref más `label` obligatorio, `hint`, `error`, `labelHidden`, `startAdornment`, `endAdornment`, `wrapperClassName` y `controlClassName`. Label visible por defecto; labelHidden sólo para composiciones con contexto accesible explícito; el buscador global mantiene la etiqueta visible del mockup. Placeholder no reemplaza label. ClassName nativo se aplica al input.
 
 Genera id estable si no se proporciona; asocia label, hint y error. Conserva aria-describedby externo y añade referencias propias; error activa aria-invalid/aria-errormessage y un mensaje anunciado. StartAdornment es decorativo; endAdornment puede recibir una acción con nombre propio. El contenedor debe coordinar disabled/loading de campo y acciones. No valida contraseñas, precios ni reglas de negocio por su cuenta.
 
@@ -218,7 +218,7 @@ import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 </LoadingState>;
 ```
 
-Skeleton acepta variant block/line/circle, className y style de layout; cada forma es aria-hidden. LoadingState recibe label, children decorativos y className para la composición interior; anuncia un solo estado. No introducir controles interactivos entre esos children ocultos. La animación respeta prefers-reduced-motion. ProductSkeletons conserva su export previo como composición de ocho tarjetas sobre estos elementos.
+Skeleton acepta variant block/line/circle, className y style de layout; cada forma es aria-hidden. LoadingState recibe label, children decorativos y className para la composición interior; anuncia un solo estado. No introducir controles interactivos entre esos children ocultos. La animación respeta prefers-reduced-motion. ProductSkeletons conserva su export previo como composición de seis tarjetas sobre estos elementos.
 
 ### Ejecutar las pruebas
 
@@ -229,3 +229,15 @@ npm test
 ```
 
 Vitest usa Happy DOM y sólo recoge tests/components. Playwright recoge archivos .spec.ts y mantiene el recorrido real web→Next→BFF con fuente MOCK. npm test ejecuta ambas suites; test:e2e incluye el build. No es una integración real con G6.
+
+## 10. Adaptación Figma H3 (0.2.1)
+
+Referencias, recursos y diferencias de alcance: [FIGMA-H3.md](FIGMA-H3.md). La grilla del listado utiliza tres columnas por encima de 1100 px, dos entre 768 y 1100 y una en móvil. Inicio mantiene cuatro posiciones de categorías en escritorio y dos por fila en móvil, mostrando sólo las categorías recibidas.
+
+| Componente | Contrato | Uso |
+|---|---|---|
+| `CategoryNavigation`, `src/features/catalog/CategoryNavigation.tsx` | `sidebar?: boolean`, `activeId?: string \| null` | Navegación H3 por enlaces a una categoría existente; consulta home. No es el panel de filtros múltiples. |
+| `CategoryArtwork`, `src/features/catalog/CategoryArtwork.tsx` | `category: Category` | Ilustración de Figma según significado del nombre; exports desktop/mobile con proporciones originales. Categoría desconocida: sin ilustración. |
+| `ErrorState`, `src/shared/ui/Feedback.tsx` | Se añade `home?: boolean`, por defecto false | Variante de error de inicio con fondo semántico e icono; mantiene compatibles los consumidores existentes. |
+
+Los componentes base conservan sus props. ProductCard mantiene el DTO mínimo y las imágenes dinámicas: no obtiene precio/stock ni simula favoritos. `public/figma/manifest.json` registra la procedencia y hashes de los recursos locales, sin URLs temporales de ejecución. Se mantienen los 10 tests de componentes y se amplía la verificación de navegador con geometría, recursos visibles y estados de H3.

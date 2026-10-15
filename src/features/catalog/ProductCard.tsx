@@ -18,8 +18,8 @@ export function ProductCard({
             src={product.image.url}
             alt={product.image.alt}
             loading="lazy"
-            width="400"
-            height="400"
+            width="280"
+            height="187"
           />
         </div>
         <div className="product-info">

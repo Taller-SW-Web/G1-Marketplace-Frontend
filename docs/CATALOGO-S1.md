@@ -1,6 +1,6 @@
 # Catálogo S1 — F-006 / F-007 — Giuliano
 
-Corte local parcial de inicio y búsqueda según las specs G1. No es un diseño aprobado en Figma ni una integración REAL con Productos. El código se encuentra en la rama local `feat/s1-f006-f007-catalogo`, creada desde main porque el checkout no publicaba develop. No se creó develop por cuenta del autor. Por instrucción actualizada de Giuliano, se crean commits y se sube esta rama de trabajo al remoto, sin publicar a main ni abrir PR; Giuliano preparará el PR manualmente al terminar.
+Corte local parcial de inicio y búsqueda según las specs G1, con [adaptación visual a los frames de Figma](FIGMA-H3.md). No es un diseño aprobado en Figma ni una integración REAL con Productos. El código se encuentra en la rama local `feat/s1-f006-f007-catalogo`, creada desde main porque el checkout no publicaba develop. No se creó develop por cuenta del autor. Por instrucción actualizada de Giuliano, se crean commits y se sube esta rama de trabajo al remoto, sin publicar a main ni abrir PR; Giuliano preparará el PR manualmente al terminar.
 
 ## Ejecutar localmente
 
@@ -43,21 +43,21 @@ npm run test:e2e
 - Proxy server-only `/api/catalog/home|products` hacia las rutas BFF de Marketplace; no es una ruta del proveedor G6.
 - Componentes base Button/TextField/EmptyState/Skeleton/LoadingState integrados en búsqueda, recuperación, vacíos y carga.
 - Inter/Oswald servidas localmente; tokens DS-001 v0.2.0, diseño responsive y navegación con teclado.
-- Logo Ink local provisto por SPECS. SVG de productos expresamente sintéticos, usados sólo en el catálogo MOCK.
+- Logo y recursos editoriales locales exportados de Figma; procedencia y hashes en `public/figma/manifest.json`. SVG de productos expresamente sintéticos, usados sólo en el catálogo MOCK.
 - Banner visible cuando la respuesta declara `MOCK`. Datos de prueba nunca se presentan como integración real.
 
 ## Límites para la revisión
 
 - El contrato candidato G6 del primer corte no trae precios/stock ni nombre de marca. No se muestran importes ficticios ni disponibilidad inventada. La tarjeta comercial completa requiere acuerdo y posterior enriquecimiento.
 - El enlace de tarjeta y `returnTo` son el handoff de F-011 a Sebastian: `/productos/{slug}` aún no tiene implementación. La 404 general conserva salida al catálogo; la navegación completa de ficha no se declara terminada.
-- Favoritos, sesión, carrito y sus controles no se simulan. Se integrarán con sus responsables.
-- Header, footer y texto editorial son propuesta local para revisar G-SHELL; no se declara un frame Figma verificado ni pixel fidelity.
+- Cuenta, favoritos, carrito y enlaces informativos del pie mantienen controles deshabilitados con nombre accesible; su integración corresponde a sus responsables.
+- Header, footer, hero y composición de Inicio/Catálogo siguen los frames verificados de Figma. Se conserva el alcance H3 y su fuente de datos; revisión humana de G-SHELL y aceptación visual pendientes. Véase `docs/FIGMA-H3.md` para diferencias por datos y controles fuera de alcance.
 - UI kit pendiente: se utilizan HTML semántico y CSS con tokens, sin instalar una segunda biblioteca ni fijar Mantine/shadcn como decisión del equipo.
 - El código se publica únicamente en la rama de trabajo. No se desplegó ni se cerraron INT/H3; el PR queda a cargo de Giuliano al terminar.
 
 ## Organización y handoff
 
-`src/features/catalog` contiene DTO, validador HTTP, hook y componentes. `src/shared/ui` conserva shell/feedback. `src/theme/tokens.css` traduce DS-001; `globals.css` define esta propuesta visual. El contenedor consulta y los componentes de tarjeta presentan datos; no contienen reglas de precio, stock ni autorización.
+`src/features/catalog` contiene DTO, validador HTTP, hook y componentes. `src/shared/ui` conserva shell/feedback. `src/theme/tokens.css` traduce DS-001; `globals.css` implementa la adaptación visual H3 a Figma. El contenedor consulta y los componentes de tarjeta presentan datos; no contienen reglas de precio, stock ni autorización.
 
 Sebastian revisa implementación y recibe ProductCard/DTO/returnTo; Fernando revisa la propuesta visual de V-005/V-006; Leonidas revisa contrato backend; Andres integra despliegue; Diego verifica y Jim acepta. La nota de evidencia individual está en SPECS y enlaza los commits publicados en la rama; revisión humana y PR manual posterior a cargo del equipo/Giuliano.
 

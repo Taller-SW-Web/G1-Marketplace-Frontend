@@ -10,7 +10,7 @@ export function SearchBox() {
   return <SearchForm key={applied} applied={applied} />;
 }
 
-function SearchForm({ applied }: { applied: string }) {
+function SearchForm({ applied }: { applied: string; }) {
   const params = useSearchParams();
   const router = useRouter();
   const [value, setValue] = useState(applied);
@@ -18,9 +18,9 @@ function SearchForm({ applied }: { applied: string }) {
   const [isPending, startTransition] = useTransition();
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isPending) return;
+    if(isPending) return;
     const normalized = value.trim().replace(/\s+/gu, " ");
-    if (
+    if(
       normalized &&
       (Array.from(normalized).length < 2 || Array.from(normalized).length > 120)
     ) {
@@ -28,7 +28,7 @@ function SearchForm({ applied }: { applied: string }) {
       return;
     }
     const next = new URLSearchParams(params.toString());
-    if (normalized) next.set("q", normalized);
+    if(normalized) next.set("q", normalized);
     else next.delete("q");
     next.delete("page");
     setError("");
@@ -46,7 +46,6 @@ function SearchForm({ applied }: { applied: string }) {
     >
       <TextField
         label="Buscar productos"
-        labelHidden
         name="q"
         type="search"
         autoComplete="off"
@@ -55,19 +54,20 @@ function SearchForm({ applied }: { applied: string }) {
           setValue(event.target.value);
           setError("");
         }}
-        placeholder="¿Qué te mueve hoy?"
+        placeholder="¿Qué necesitas para tu próxima meta?"
         error={error}
         controlClassName="search-control"
-        startAdornment={<span className="search-icon">⌕</span>}
         endAdornment={
           <Button
             type="submit"
             size="sm"
             loading={isPending}
             loadingLabel="Abriendo resultados…"
-            endIcon="↗"
+            className="search-submit"
+            aria-label="Buscar"
           >
-            Buscar
+            <img src="/figma/search-20.svg" alt="" width="20" height="20" />
+            <span className="sr-only">Buscar</span>
           </Button>
         }
       />

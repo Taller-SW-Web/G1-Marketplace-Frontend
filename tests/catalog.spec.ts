@@ -5,12 +5,12 @@ test("home loads mock categories through Next → BFF and keeps featured omitted
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Tu siguiente",
+    "EL MOVIMIENTO",
   );
-  await expect(page.getByRole("link", { name: /Running/ })).toBeVisible();
+  await expect(page.locator(".category-card").filter({ hasText: "Running" })).toBeVisible();
   await expect(page.getByRole("note")).toContainText("demostración");
   await expect(
-    page.getByRole("heading", { name: "Destacados", exact: true }),
+    page.getByRole("heading", { name: "Destacados para ti", exact: true }),
   ).toHaveCount(0);
   await page.screenshot({
     path: "test-results/inicio-desktop.png",
@@ -35,6 +35,7 @@ test("search normalizes query, preserves URL and has working clear", async ({
   await expect(
     page.getByRole("heading", { name: /No encontramos productos/ }),
   ).toBeVisible();
+  await page.screenshot({ path: "test-results/figma-catalogo-vacio-1280.png", fullPage: true });
   await page
     .getByRole("button", { name: "Limpiar búsqueda", exact: true })
     .click();
@@ -117,6 +118,7 @@ test("recoverable provider error stays an error, preserves q and retries", async
     page.getByRole("heading", { name: /No encontramos productos/ }),
   ).toHaveCount(0);
   await expect(page.getByRole("searchbox")).toHaveValue("polo");
+  await page.screenshot({ path: "test-results/figma-catalogo-error-1280.png", fullPage: true });
   fail = false;
   await page.getByRole("button", { name: "Reintentar" }).click();
   await expect(page.locator(".product-card")).toHaveCount(8);
@@ -216,15 +218,17 @@ test("empty home omits category/featured headings and preserves navigation", asy
   );
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Encuentra tu próxima elección" }),
+    page.getByRole("heading", { name: "Encuentra tu próximo favorito" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Explora por categoría" }),
+    page.getByRole("heading", { name: "Encuentra lo tuyo" }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Destacados", exact: true }),
+    page.getByRole("heading", { name: "Destacados para ti", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByRole("searchbox")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "test-results/figma-inicio-vacio-390.png", fullPage: true });
 });
 
 test("invalid public payload is a recoverable error, never an empty catalog", async ({

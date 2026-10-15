@@ -1,0 +1,138 @@
+{
+  "fileKey": "k6JZRdgbO7YtZXeFqygE8p",
+  "assets": [
+    {
+      "file": "hero-shoe.png",
+      "node": "274:111",
+      "sha256": "318e7877f5a1299863807919e4aadda3e1c514aa778f405632d196c7b1711c33",
+      "width": 1500,
+      "height": 1500
+    },
+    {
+      "file": "logo.png",
+      "node": "274:111",
+      "sha256": "f27eec3f9427b60f34580b24d3d302e57182240c8396082a375b3fc4e8449fec",
+      "width": 1448,
+      "height": 1086
+    },
+    {
+      "file": "category-shirt.svg",
+      "node": "274:111",
+      "sha256": "5538510c0930956c9e43a9d07f6dc856a3e867835b57e695b5440c40348cf681",
+      "width": "280",
+      "height": "186.67"
+    },
+    {
+      "file": "category-shoe.svg",
+      "node": "274:111",
+      "sha256": "6b1216e0f308df7ea92a3169cde1146f303823e4293b5af45aea46e65e55d340",
+      "width": "280",
+      "height": "186.67"
+    },
+    {
+      "file": "category-bag.svg",
+      "node": "274:111",
+      "sha256": "91e7991d60b57cf27ef549af188c685d52792a98ce77d824f171c375e104c61f",
+      "width": "280",
+      "height": "186.67"
+    },
+    {
+      "file": "category-bottle.svg",
+      "node": "274:111",
+      "sha256": "7bc72cda3d45f650cb06107bd62d948b645d2ef3c85b0e3d7e851d0c5121b41d",
+      "width": "280",
+      "height": "186.67"
+    },
+    {
+      "file": "category-shirt-mobile.svg",
+      "node": "274:293",
+      "sha256": "805f92447384f412522737677209b202d809eff20f6ac7c8ca08ccdbab253a74",
+      "width": "139",
+      "height": "92.6683"
+    },
+    {
+      "file": "category-shoe-mobile.svg",
+      "node": "274:293",
+      "sha256": "50ea21446ec6c03a08b27492700b3d3272d65e8ec31f14b9511efcb163b742d8",
+      "width": "139",
+      "height": "92.6683"
+    },
+    {
+      "file": "category-bag-mobile.svg",
+      "node": "274:293",
+      "sha256": "d4c9a0771983b268831f2a05cc4840fe09a6648af3c9459d498acfeb48d2e83c",
+      "width": "139",
+      "height": "92.6683"
+    },
+    {
+      "file": "category-bottle-mobile.svg",
+      "node": "274:293",
+      "sha256": "c492c79298c57a8b4b54cc7c875fc612db2d456fb50720edbc891baaf8c16847",
+      "width": "139",
+      "height": "92.6683"
+    },
+    {
+      "file": "user-24.svg",
+      "node": "274:293",
+      "sha256": "592db7831a65882f25d160abb4ec69fea6d4ed3a04059ba84c39bf32590a0821",
+      "width": "24",
+      "height": "24"
+    },
+    {
+      "file": "heart-24.svg",
+      "node": "274:293",
+      "sha256": "1708026bee43cb28f9c561382ddd1db7b9bf0aac2e3438c414c6ab4ade1c03f0",
+      "width": "24",
+      "height": "24"
+    },
+    {
+      "file": "bag-24.svg",
+      "node": "274:293",
+      "sha256": "c8653515521674f65d0a1a93cce8bd01138ca0e022bcaa306ed920f3cb8a22a2",
+      "width": "24",
+      "height": "24"
+    },
+    {
+      "file": "search-20.svg",
+      "node": "274:293",
+      "sha256": "4a32382c3a31ba51f57b4191afc692b5ab65b9e0802904edf167f648534f49fd",
+      "width": "20",
+      "height": "20"
+    },
+    {
+      "file": "heart-20.svg",
+      "node": "274:111",
+      "sha256": "1f90c4c18dddded147146288037ca5a34e48163f671398075bce2fd0c18a782c",
+      "width": "20",
+      "height": "20"
+    },
+    {
+      "file": "bag-20.svg",
+      "node": "274:111",
+      "sha256": "b8e3b1a547c989bbbb893ad64dc9cd71b59d5392eb231a924b13823e7dc2981b",
+      "width": "20",
+      "height": "20"
+    },
+    {
+      "file": "search-32.svg",
+      "node": "351:1338",
+      "sha256": "736923f6e7fa2f938c2758dea8c3bcd896e491c5714372fd110777e6adde77da",
+      "width": "32",
+      "height": "32"
+    },
+    {
+      "file": "refresh-32.svg",
+      "node": "351:1565",
+      "sha256": "9a25e09e0d2520d5a6360b21a30c2e4458b431cb04772a6c2cf014191cb39d60",
+      "width": "32",
+      "height": "32"
+    },
+    {
+      "file": "error-24.svg",
+      "node": "294:911",
+      "sha256": "3b680d2b9bf13e4cc0a1a6325fe853805ad2fac9d19f592212dccd08d532f7a1",
+      "width": "24",
+      "height": "24"
+    }
+  ]
+}
