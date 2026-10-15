@@ -1,0 +1,27 @@
+/* DS-001 v0.2.0. Kit-neutral tokens; no UI library selected by this slice. */
+:root {
+  --action-primary: #f76707;
+  --action-hover: #c2410c;
+  --action-soft: #fce3d0;
+  --accent-volt: #c3e504;
+  --accent-signal: #4361ee;
+  --surface-ink: #1b1812;
+  --surface-cloud: #f7f5f0;
+  --surface-subtle: #edeae2;
+  --text-primary: #1b1812;
+  --text-inverse: #f7f5f0;
+  --text-secondary: #495057;
+  --border: #dee2e6;
+  --border-inverse: #3a362c;
+  --error: #e03131;
+  --error-background: #fff5f5;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
