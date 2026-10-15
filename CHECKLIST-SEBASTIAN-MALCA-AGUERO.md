@@ -75,7 +75,7 @@ tests/catalog/
     └── useProductDetail.test.ts
 ```
 
-- [ ] Rama `feat/h3-f011-ficha-parcial` creada desde `develop` — **desviación acordada:** se trabaja en `main` local; crear rama, push o PR requiere consultar antes (PASO 13 pendiente).
+- [x] Rama creada y subida como **`feat/h3-f011-f015-detalle-de-producto`** — **desviaciones acordadas:** (1) nombre con hito + rango del bloque F-011–F-015 + módulo ("detalle de producto"; con guiones porque git no admite espacios), en lugar de `feat/h3-f011-ficha-parcial`; (2) creada desde `main` porque no existe `develop` en el repo; (3) PR (PASO 13) pendiente de consultar.
 - [x] `.env.local` con `NEXT_PUBLIC_BFF_MODE=mock` (en `.gitignore`, nunca subir) — verificado con `git check-ignore -v .env.local` → `.gitignore:4:.env*`
 - [x] Estructura de carpetas creada
 

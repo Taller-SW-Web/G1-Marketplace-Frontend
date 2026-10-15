@@ -1,12 +1,12 @@
 # Evidencia H3 — Sebastian Malca — TASK-F011-FE-001 (MOCK)
 
 **Fecha:** 2026-10-15
-**Repositorio / rama / commit:** `G1-Marketplace-Frontend` / `main` (local) / *commit pendiente*
+**Repositorio / rama / commit:** `G1-Marketplace-Frontend` / `feat/h3-f011-f015-detalle-de-producto` / `64f68e8`
 **Specs leídas:** F-011 v0.1.0 · V-007 v0.1.0 · O-002 v0.1.0
 **Frame Figma:** (enlace confirmado por PO — pendiente)
 **Etiqueta:** **MOCK** (I-01 sin cerrar; el corte NO integra datos REAL)
 
-> **Desviación de rama:** el checklist define `feat/h3-f011-ficha-parcial` desde `develop`. Se acordó con el usuario trabajar en `main` local; crear rama, push o PR se consulta antes de ejecutarlo (PASO 13 pendiente).
+> **Desviación de rama:** el checklist prescribía `feat/h3-f011-ficha-parcial` desde `develop`. Rama real creada y subida: **`feat/h3-f011-f015-detalle-de-producto`** (hito + rango del bloque F-011–F-015 + módulo), **desde `main`** porque el repo no tiene `develop`. El PR (PASO 13) sigue pendiente de consulta.
 
 ---
 
