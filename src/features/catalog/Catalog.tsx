@@ -7,6 +7,8 @@ import { useCatalog } from "./useCatalog";
 import { ProductCard } from "./ProductCard";
 import { CategoryChip } from "./CategoryChip";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
+import { Button } from "@/shared/ui/Button";
+import { EmptyState } from "@/shared/ui/EmptyState";
 
 export function Catalog() {
   const params = useSearchParams();
@@ -137,32 +139,28 @@ function CatalogResults({
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              <span className="empty-symbol" aria-hidden="true">
-                ↗
-              </span>
-              <h2>
-                {state.data.page.number >= state.data.page.totalPages &&
+            <EmptyState
+              icon="↗"
+              title={
+                state.data.page.number >= state.data.page.totalPages &&
                 state.data.page.number > 0
                   ? "Esta página ya no tiene productos"
-                  : "No encontramos productos con estos criterios"}
-              </h2>
-              <p>
-                {q
+                  : "No encontramos productos con estos criterios"
+              }
+              description={
+                q
                   ? "Prueba con otras palabras o elimina un criterio para seguir explorando."
-                  : "Vuelve al catálogo para explorar otras opciones."}
-              </p>
-              <div className="actions">
-                {q && (
-                  <button className="button" onClick={clearSearch}>
-                    Limpiar búsqueda
-                  </button>
-                )}
-                <Link className="text-link" href="/catalogo">
-                  Ver catálogo completo
-                </Link>
-              </div>
-            </div>
+                  : "Vuelve al catálogo para explorar otras opciones."
+              }
+              actions={
+                <>
+                  {q && <Button onClick={clearSearch}>Limpiar búsqueda</Button>}
+                  <Link className="text-link" href="/catalogo">
+                    Ver catálogo completo
+                  </Link>
+                </>
+              }
+            />
           )}
           {state.data.page.totalPages > 1 && (
             <nav className="pagination" aria-label="Paginación de productos">

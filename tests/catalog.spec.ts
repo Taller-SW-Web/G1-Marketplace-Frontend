@@ -51,7 +51,7 @@ test("query 1/121 characters never requests products", async ({ page }) => {
   for (const q of ["x", "x".repeat(121)]) {
     await page.getByRole("searchbox").fill(q);
     await page.getByRole("button", { name: "Buscar" }).click();
-    await expect(page.locator("#search-error")).toHaveText(
+    await expect(page.locator(".field-error")).toHaveText(
       "Escribe entre 2 y 120 caracteres.",
     );
   }

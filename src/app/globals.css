@@ -179,19 +179,6 @@ input {
   color: var(--text-secondary);
   opacity: 1;
 }
-.search-control button {
-  border: 0;
-  background: var(--surface-ink);
-  color: var(--text-inverse);
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-weight: 600;
-  white-space: nowrap;
-  min-height: 40px;
-}
-.search-control button span {
-  margin-left: 8px;
-}
 .search-control.has-error {
   border-color: var(--error);
 }
@@ -759,7 +746,7 @@ input {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .search-control button span {
+  .search-control .button-icon {
     display: none;
   }
   .home-intro {
@@ -906,4 +893,140 @@ input {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Kit-neutral shared components, DS-001 v0.2.0. */
+.button--primary {
+  background: var(--action-primary);
+  color: var(--text-primary);
+}
+.button--secondary {
+  background: transparent;
+  border: 1px solid var(--action-hover);
+  color: var(--action-hover);
+}
+.button--tertiary {
+  background: transparent;
+  color: var(--action-hover);
+}
+.button--secondary:hover:not(:disabled),
+.button--tertiary:hover:not(:disabled) {
+  background: var(--action-soft);
+  color: var(--action-hover);
+}
+.button:disabled:hover {
+  background: var(--action-primary);
+  color: var(--text-primary);
+}
+.button--secondary:disabled:hover,
+.button--tertiary:disabled:hover {
+  background: transparent;
+  color: var(--action-hover);
+}
+.button--sm {
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+.button--md {
+  min-height: 48px;
+  padding: 12px var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+.button--lg {
+  min-height: 56px;
+  padding: var(--spacing-md) var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+.button--full {
+  width: 100%;
+}
+.button-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.button-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-full);
+  animation: button-spin 0.8s linear infinite;
+}
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.field {
+  min-width: 0;
+}
+.field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+.field-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 48px;
+  padding: 4px var(--spacing-sm);
+  background: var(--surface-cloud);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.field-control input {
+  width: 100%;
+  min-width: 0;
+  padding: var(--spacing-sm);
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+}
+.field-control input:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.field-control input:focus-visible {
+  outline: none;
+}
+.field-control:focus-within {
+  outline: 3px solid var(--accent-signal);
+  outline-offset: 2px;
+}
+.field-control.has-error {
+  border-color: var(--error);
+}
+.field-adornment,
+.field-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+.field-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.search-control .button {
+  white-space: nowrap;
+}
+.search-control .search-icon {
+  margin-right: 0;
+}
+.empty-state p {
+  margin-bottom: 0;
+}
+.skeleton--block {
+  min-height: 16px;
+}
+.skeleton--line {
+  height: 16px;
+}
+.skeleton--circle {
+  width: 40px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-full);
 }

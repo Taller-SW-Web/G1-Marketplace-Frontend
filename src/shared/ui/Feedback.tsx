@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Button } from "./Button";
+import { LoadingState, Skeleton } from "./Skeleton";
 
 export function ErrorState({
   message,
@@ -16,9 +18,7 @@ export function ErrorState({
         <h2>No pudimos mostrar esta selección</h2>
         <p role="alert">{message}</p>
         <div className="actions">
-          <button className="button" onClick={onRetry}>
-            Reintentar
-          </button>
+          <Button onClick={onRetry}>Reintentar</Button>
           <Link className="text-link" href="/catalogo">
             Volver al catálogo
           </Link>
@@ -36,17 +36,14 @@ export function MockNotice() {
 }
 export function ProductSkeletons() {
   return (
-    <div aria-label="Cargando productos" role="status">
-      <span className="sr-only">Cargando productos…</span>
-      <div className="product-grid" aria-hidden="true">
-        {Array.from({ length: 8 }, (_, i) => (
-          <div className="skeleton-card" key={i}>
-            <div className="skeleton skeleton-image" />
-            <div className="skeleton skeleton-line" />
-            <div className="skeleton skeleton-line short" />
-          </div>
-        ))}
-      </div>
-    </div>
+    <LoadingState label="Cargando productos" className="product-grid">
+      {Array.from({ length: 8 }, (_, i) => (
+        <div className="skeleton-card" key={i}>
+          <Skeleton className="skeleton-image" />
+          <Skeleton variant="line" className="skeleton-line" />
+          <Skeleton variant="line" className="skeleton-line short" />
+        </div>
+      ))}
+    </LoadingState>
   );
 }

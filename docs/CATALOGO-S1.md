@@ -26,6 +26,7 @@ Abrir http://127.0.0.1:3000. La URL local del BFF predeterminada es http://127.0
 ```powershell
 npm run lint
 npm run typecheck
+npm run test:components
 npm run build
 npm run test:e2e
 ```
@@ -40,6 +41,7 @@ npm run test:e2e
 - Paginación básica con `page=0`, 24 elementos, límites, reinicio al buscar y foco al actualizar página.
 - Requests anteriores abortados; errores y datos validados en el límite HTTP.
 - Proxy server-only `/api/catalog/home|products` hacia las rutas BFF de Marketplace; no es una ruta del proveedor G6.
+- Componentes base Button/TextField/EmptyState/Skeleton/LoadingState integrados en búsqueda, recuperación, vacíos y carga.
 - Inter/Oswald servidas localmente; tokens DS-001 v0.2.0, diseño responsive y navegación con teclado.
 - Logo Ink local provisto por SPECS. SVG de productos expresamente sintéticos, usados sólo en el catálogo MOCK.
 - Banner visible cuando la respuesta declara `MOCK`. Datos de prueba nunca se presentan como integración real.

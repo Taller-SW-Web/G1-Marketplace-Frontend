@@ -4,6 +4,8 @@ import { isHome } from "./api";
 import { useCatalog } from "./useCatalog";
 import { ProductCard } from "./ProductCard";
 import { ErrorState, MockNotice } from "@/shared/ui/Feedback";
+import { EmptyState } from "@/shared/ui/EmptyState";
+import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 
 export function Home() {
   const { state, retry } = useCatalog("home", isHome);
@@ -59,19 +61,11 @@ export function Home() {
           </div>
         )}
         {state.status === "loading" && (
-          <div
-            className="category-grid"
-            role="status"
-            aria-label="Cargando categorías"
-          >
+          <LoadingState label="Cargando categorías" className="category-grid">
             {[0, 1, 2].map((i) => (
-              <div
-                className="skeleton category-skeleton"
-                key={i}
-                aria-hidden="true"
-              />
+              <Skeleton className="category-skeleton" key={i} />
             ))}
-          </div>
+          </LoadingState>
         )}
         {state.status === "error" && (
           <ErrorState message={state.message} onRetry={retry} />
@@ -96,15 +90,15 @@ export function Home() {
                 ))}
               </div>
             ) : state.data.featuredProducts.length === 0 ? (
-              <div className="empty-state">
-                <h2>Encuentra tu próxima elección</h2>
-                <p>
-                  Explora el catálogo o busca el producto que tienes en mente.
-                </p>
-                <Link className="button" href="/catalogo">
-                  Explorar catálogo
-                </Link>
-              </div>
+              <EmptyState
+                title="Encuentra tu próxima elección"
+                description="Explora el catálogo o busca el producto que tienes en mente."
+                actions={
+                  <Link className="button" href="/catalogo">
+                    Explorar catálogo
+                  </Link>
+                }
+              />
             ) : null}
             {state.data.featuredProducts.length > 0 && (
               <section

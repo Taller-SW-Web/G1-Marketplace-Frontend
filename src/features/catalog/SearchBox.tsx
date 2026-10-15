@@ -1,6 +1,8 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/shared/ui/Button";
+import { TextField } from "@/shared/ui/TextField";
 
 export function SearchBox() {
   const params = useSearchParams();
@@ -13,8 +15,10 @@ function SearchForm({ applied }: { applied: string }) {
   const router = useRouter();
   const [value, setValue] = useState(applied);
   const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isPending) return;
     const normalized = value.trim().replace(/\s+/gu, " ");
     if (
       normalized &&
@@ -29,7 +33,9 @@ function SearchForm({ applied }: { applied: string }) {
     next.delete("page");
     setError("");
     setValue(normalized);
-    router.push(`/catalogo${next.size ? `?${next}` : ""}`);
+    startTransition(() =>
+      router.push(`/catalogo${next.size ? `?${next}` : ""}`),
+    );
   }
   return (
     <form
@@ -38,36 +44,33 @@ function SearchForm({ applied }: { applied: string }) {
       aria-label="Búsqueda de productos"
       onSubmit={submit}
     >
-      <label className="sr-only" htmlFor="buscar-productos">
-        Buscar productos
-      </label>
-      <div className={`search-control ${error ? "has-error" : ""}`}>
-        <span aria-hidden="true" className="search-icon">
-          ⌕
-        </span>
-        <input
-          id="buscar-productos"
-          name="q"
-          type="search"
-          autoComplete="off"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setError("");
-          }}
-          placeholder="¿Qué te mueve hoy?"
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? "search-error" : undefined}
-        />
-        <button type="submit">
-          Buscar <span aria-hidden="true">↗</span>
-        </button>
-      </div>
-      {error && (
-        <p id="search-error" className="field-error" role="alert">
-          {error}
-        </p>
-      )}
+      <TextField
+        label="Buscar productos"
+        labelHidden
+        name="q"
+        type="search"
+        autoComplete="off"
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+          setError("");
+        }}
+        placeholder="¿Qué te mueve hoy?"
+        error={error}
+        controlClassName="search-control"
+        startAdornment={<span className="search-icon">⌕</span>}
+        endAdornment={
+          <Button
+            type="submit"
+            size="sm"
+            loading={isPending}
+            loadingLabel="Abriendo resultados…"
+            endIcon="↗"
+          >
+            Buscar
+          </Button>
+        }
+      />
     </form>
   );
 }
