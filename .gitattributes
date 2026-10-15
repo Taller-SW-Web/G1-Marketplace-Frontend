@@ -1,0 +1,2 @@
+# Preserve Figma SVG exports byte-for-byte for the SHA-256 resource manifest.
+public/figma/*.svg -text
