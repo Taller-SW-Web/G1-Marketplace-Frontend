@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
 import {
@@ -319,8 +320,13 @@ export function CheckoutFlow() {
           <div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(verifiedOrder?.orderTotal ?? quote?.total ?? 0)}</dd></div>
           {verifiedOrder?.orderCreatedAt && <div><dt>Fecha del pedido</dt><dd>{new Date(verifiedOrder.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}
         </dl>
+        <h3>Resumen de productos</h3>
+        <ul className="checkout-lines" aria-label="Productos del pedido">
+          {quote?.lines.map((line) => <li key={line.sku}>{line.sku} × {line.quantity}</li>)}
+        </ul>
         <div className="checkout-actions">
           <Button variant="secondary" onClick={copyOrderCode} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
+          <Link className="button button--secondary button--md" href={`/mis-pedidos/${encodeURIComponent(orderId)}`}>Ver mi pedido</Link>
           <Button onClick={() => window.location.assign("/")}>Seguir comprando</Button>
         </div>
         {copyMessage && <p role="status" aria-live="polite">{copyMessage}</p>}
