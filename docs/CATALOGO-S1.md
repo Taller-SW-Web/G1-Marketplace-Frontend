@@ -75,3 +75,7 @@ Consultar la [guía de elementos compartidos](ELEMENTOS-COMPARTIDOS.md) para con
 ## Compatibilidad con el baseline Backend
 
 El 15/10/2026 se adaptó `playwright.config.ts` al baseline NestJS `ed9582e` de Backend/develop. Las rutas públicas, DTO y estados de la web se conservan; el Frontend sigue basado en main `0f47537`. No se incorporan ramas de ficha, checkout ni historial. La configuración y contratos de catálogo se consultan en `G1-Marketplace-Backend/docs/CATALOGO-S1.md`.
+
+## Ajuste de imagen opcional — 16/10/2026
+
+`ProductCardDTO.image` admite `{url, alt}` o `null`. ProductCard utiliza `/images/product-placeholder.svg` para null en Inicio y Catálogo, sin retirar tarjetas, cambiar totales ni perder slug/returnTo. El resto del DTO y sus imágenes presentes siguen validados. El nuevo caso de navegador comprueba la carga real del SVG local y las tarjetas con y sin imagen; las pruebas de componentes cubren placeholder/alt, imagen original, enlace y validación runtime. No habilita Productos REAL ni cierra H3.

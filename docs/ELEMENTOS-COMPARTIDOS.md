@@ -1,6 +1,6 @@
 # Guía de uso de elementos compartidos — Frontend
 
-Versión documental 0.2.1 · 15/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
+Versión documental 0.2.2 · 16/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
 
 ## 1. Ubicación y reglas de consumo
 
@@ -80,11 +80,11 @@ type ProductCardDTO = {
   name: string;
   categoryId: string;
   brandId: string;
-  image: { url: string; alt: string };
+  image: { url: string; alt: string } | null;
 };
 ```
 
-La tarjeta muestra imagen, nombre y enlace. Los IDs opacos no se muestran como nombre de marca/categoría. No calcula importes ni presenta precio/stock/favoritos no suministrados. No anidar un botón de favorito dentro del enlace cuando se integre el bloque de Diego.
+La tarjeta muestra nombre y enlace, y una imagen o el placeholder local `/images/product-placeholder.svg` cuando `image === null`. El placeholder lleva el texto «Sin imagen» y alt «Imagen no disponible para {nombre}»; no representa una imagen suministrada por G6. Los consumidores directos del DTO deben contemplar null. El validador acepta null explícito y sigue rechazando objetos de imagen mal formados. Los IDs opacos no se muestran como nombre de marca/categoría. No calcula importes ni presenta precio/stock/favoritos no suministrados. No anidar un botón de favorito dentro del enlace cuando se integre el bloque de Diego.
 
 El destino `/productos/{slug}?returnTo=...` es el handoff a Sebastian; la ficha todavía no está implementada. El receptor debe validar `returnTo` como ruta interna permitida antes de usarlo: `encodeURIComponent` codifica, no autoriza destinos ni reemplaza el validador InternalPath pendiente.
 
