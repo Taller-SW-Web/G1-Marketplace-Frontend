@@ -100,6 +100,7 @@ export async function addCartItemApi(
     const res = await fetch('/api/v1/carts/current/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
 
@@ -114,17 +115,18 @@ export async function addCartItemApi(
       };
     }
 
-    const items = json.data?.items ?? [];
+    const cartData = json.data as CartSnapshot | undefined;
+    const items = cartData?.items ?? [];
     return {
       success: true,
       status: (res.status === 201 ? 201 : 200),
       code: res.status === 201 ? 'ITEM_CREATED' : 'ITEM_INCREMENTED',
-      message: 'Operación confirmada.',
+      message: 'Operación confirmada por el servidor.',
       item: items.find((i) => i.sku === payload.sku),
-      cart: json.data as CartSnapshot | undefined,
+      cart: cartData,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor.';
+    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor backend.';
     return {
       success: false,
       status: 503,
@@ -141,9 +143,30 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
   if (useMock) {
     return { ...mockCart };
   }
-  const res = await fetch('/api/v1/carts/current');
+  const res = await fetch('/api/v1/carts/current', {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: no se pudo obtener el carrito del backend`);
+  }
   const json = await res.json();
-  return json.data;
+  const data = json.data;
+  return {
+    cartId: data?.cartId ?? null,
+    version: data?.version ?? 0,
+    items: (data?.items ?? []).map((it: any) => ({
+      sku: it.sku,
+      name: it.sku.replace('INKA-', '').replace(/-/g, ' '),
+      quantity: it.quantity,
+      unitPrice: it.unitPrice
+        ? {
+            amount: Number(it.unitPrice.amount),
+            currency: it.unitPrice.currency || 'PEN',
+            version: it.unitPrice.version || 1,
+          }
+        : undefined,
+    })),
+  };
 }
 
 /**

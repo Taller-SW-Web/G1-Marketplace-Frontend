@@ -7,7 +7,6 @@ import { AddToCartAction } from '@/features/cart/AddToCartAction';
 import { AddedToCartFeedback } from '@/features/cart/AddedToCartFeedback';
 import { useAddCartItem } from '@/features/cart/useAddCartItem';
 import type { AvailabilityState } from '@/features/cart/types';
-import { Button } from '@/shared/ui/Button';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -17,17 +16,17 @@ export default function ProductDetailPage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
 
-  // Estados interactivos para pruebas visuales y de aceptación
+  // Selección de talla interactiva
   const [selectedSize, setSelectedSize] = useState<string>('M');
-  const [availability, setAvailability] = useState<AvailabilityState>('AVAILABLE');
-  const [priceReady, setPriceReady] = useState(true);
 
-  // Hook de orquestación de adición al carrito
+  // Conexión directa al backend real de NestJS
   const { isBusy, lastResult, feedbackOpen, addItem, closeFeedback } = useAddCartItem({
-    useMock: true,
+    useMock: false,
   });
 
   const sku = selectedSize ? `INKA-${slug.toUpperCase()}-${selectedSize}` : undefined;
+  const availability: AvailabilityState = selectedSize ? 'AVAILABLE' : 'UNSELECTED';
+  const priceReady = true;
 
   const handleAdd = (payload: { sku: string; quantity: 1 }) => {
     addItem(payload);
@@ -94,25 +93,6 @@ export default function ProductDetailPage({ params }: PageProps) {
                   {size}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Panel de control de estados para testing QA interactivo */}
-          <div style={{ padding: '12px', background: 'var(--surface-subtle)', borderRadius: 'var(--radius-sm)', fontSize: '12px' }}>
-            <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>🛠️ Probar estados QA (F-016):</p>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <Button size="sm" variant={availability === 'AVAILABLE' ? 'primary' : 'secondary'} onClick={() => setAvailability('AVAILABLE')}>
-                Disponible
-              </Button>
-              <Button size="sm" variant={availability === 'UNAVAILABLE' ? 'primary' : 'secondary'} onClick={() => setAvailability('UNAVAILABLE')}>
-                Agotado
-              </Button>
-              <Button size="sm" variant={availability === 'UNSELECTED' ? 'primary' : 'secondary'} onClick={() => setAvailability('UNSELECTED')}>
-                Sin Selección
-              </Button>
-              <Button size="sm" variant={priceReady ? 'primary' : 'secondary'} onClick={() => setPriceReady(!priceReady)}>
-                {priceReady ? 'Precio Listo ✓' : 'Precio Pendiente ⏳'}
-              </Button>
             </div>
           </div>
 
