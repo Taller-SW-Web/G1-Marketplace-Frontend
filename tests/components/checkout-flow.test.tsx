@@ -28,8 +28,18 @@ describe("CheckoutFlow local fixtures", () => {
     expect(screen.getByRole("option", { name: "CE" })).toBeDefined();
     expect(screen.getByRole("option", { name: "Pasaporte" })).toBeDefined();
 
+    const documentInput = screen.getByLabelText("Número de documento") as HTMLInputElement;
+    expect(screen.getByText("Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento.")).toBeDefined();
+    expect(documentInput.required).toBe(true);
+    expect(documentInput.minLength).toBe(5);
+    expect(documentInput.maxLength).toBe(24);
+    fireEvent.change(documentInput, { target: { value: "1234" } });
+    expect(documentInput.checkValidity()).toBe(false);
+    fireEvent.change(documentInput, { target: { value: "12345" } });
+    expect(documentInput.checkValidity()).toBe(true);
+
     fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Ana Prueba" } });
-    fireEvent.change(screen.getByLabelText("Número de documento"), { target: { value: "12345678" } });
+    fireEvent.change(documentInput, { target: { value: "12345678" } });
     fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
     fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "ana@example.test" } });
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
