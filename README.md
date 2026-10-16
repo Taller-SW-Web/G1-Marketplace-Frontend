@@ -1,4 +1,6 @@
 <!-- CATALOGO-S1 -->
+
+> **Entorno actual solicitado: Docker local.** Render queda como referencia futura. Consultar [Docker H3](docs/DOCKER-H3.md) para levantar los tres servicios. No se ha desplegado en Render.
 # Inicio y búsqueda — corte local de Giuliano
 
 Consultar [ejecución, pruebas, contrato y pendientes del catálogo](docs/CATALOGO-S1.md).

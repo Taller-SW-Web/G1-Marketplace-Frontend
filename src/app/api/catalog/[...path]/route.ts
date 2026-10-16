@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 export const dynamic = "force-dynamic";
 
 export async function GET(
@@ -9,21 +10,7 @@ export async function GET(
   if (path.length !== 1 || !["home", "products"].includes(path[0]))
     return Response.json({ code: "NOT_FOUND" }, { status: 404 });
   try {
-    const base = new URL(
-      process.env.MARKETPLACE_API_URL || "http://127.0.0.1:10000",
-    );
-    if (
-      base.username ||
-      base.password ||
-      base.search ||
-      base.hash ||
-      (base.protocol !== "https:" &&
-        !(
-          base.protocol === "http:" &&
-          ["localhost", "127.0.0.1"].includes(base.hostname)
-        ))
-    )
-      throw new Error("Invalid BFF origin");
+    const base = marketplaceApiUrl();
     const url = new URL(`/api/v1/catalog/${path[0]}`, base);
     url.search = request.nextUrl.search;
     const response = await fetch(url, {

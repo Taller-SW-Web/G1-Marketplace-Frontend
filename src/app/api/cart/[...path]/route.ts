@@ -1,24 +1,9 @@
 import { NextRequest } from "next/server";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
-
-function localHttpAllowed(url: URL) {
-  return (
-    url.protocol === "http:" &&
-    ["127.0.0.1", "localhost"].includes(url.hostname)
-  );
-}
-
-function configuredUrl(value: string | undefined, fallback: string) {
-  const url = new URL(value || fallback);
-  if (url.username || url.password || url.search || url.hash)
-    throw new Error("Invalid service URL");
-  if (url.protocol !== "https:" && !localHttpAllowed(url))
-    throw new Error("Insecure service URL");
-  return url;
-}
 
 async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
@@ -30,10 +15,7 @@ async function forward(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const api = configuredUrl(
-      process.env.MARKETPLACE_API_URL,
-      "http://127.0.0.1:10000",
-    );
+    const api = marketplaceApiUrl();
     const backendEndpoint =
       joinedPath === "items" ? "current/items" : joinedPath;
     const url = new URL(`/api/v1/carts/${backendEndpoint}`, api);
