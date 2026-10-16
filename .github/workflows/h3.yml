@@ -1,0 +1,64 @@
+name: H3 Frontend
+on:
+  push:
+    branches: [feat/s1-f006-f007-catalogo]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h3-frontend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: G1-Marketplace-Frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: G1-Marketplace-Frontend
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Public Backend at fixed H3 revision (no token required)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Taller-SW-Web/G1-Marketplace-Backend
+          ref: 63071c833b7bd72f2ffbfca2f47d0695c9d9992b
+          path: G1-Marketplace-Backend
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.18.0
+          cache: npm
+          cache-dependency-path: |
+            G1-Marketplace-Frontend/package-lock.json
+            G1-Marketplace-Backend/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: npm --prefix ../G1-Marketplace-Backend ci
+      - run: npm run lint
+      - run: npm run test:components
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run typecheck
+      - run: python -m pip install -r .security/requirements.txt
+      - run: python scripts/install-gitleaks.py
+      - run: python scripts/security-check.py --base 0f47537ee12c25194817f7682be84500a62dde1c --artifact .next/static
+      - name: Sanitized security evidence and synthetic browser report (7 days)
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: h3-frontend-evidence
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: warn
+          path: |
+            G1-Marketplace-Frontend/.local-security/summary.json
+            G1-Marketplace-Frontend/.local-security/licenses.json
+            G1-Marketplace-Frontend/playwright-report/
