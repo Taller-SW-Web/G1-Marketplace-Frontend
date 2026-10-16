@@ -36,7 +36,7 @@ describe("CheckoutFlow local fixtures", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeDefined());
     expect(screen.getByRole("heading", { name: "Resumen de productos" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Ver mi pedido" }).getAttribute("href")).toMatch(/^\/mis-pedidos\/PED-MOCK-/);
+    expect(screen.queryByRole("link", { name: "Ver mi pedido" })).toBe(null);
     const clipboardWrite = vi.fn().mockResolvedValue(undefined);
     const testNavigator = Object.create(navigator) as Navigator;
     Object.defineProperty(testNavigator, "clipboard", { configurable: true, value: { writeText: clipboardWrite } });

@@ -4,6 +4,34 @@ import { checkoutApi, CheckoutApiError, checkoutErrorMessage, isVerifiedPaidOper
 afterEach(() => vi.unstubAllGlobals());
 
 describe("checkout Backend MOCK adapter", () => {
+  it("loads the active cart snapshot from the Cart BFF without relying on a configured version", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
+      cartId: "cart-1", version: 7, items: [{ sku: "SKU-1", quantity: 2 }],
+    } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkoutApi.getCurrentCart()).resolves.toEqual({
+      cartId: "cart-1", version: 7, items: [{ sku: "SKU-1", quantity: 2 }],
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/cart/current");
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ cache: "no-store" });
+  });
+
+  it("accepts the backend's empty-cart snapshot and rejects malformed versions", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { cartId: null, version: 0, items: [] } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { cartId: "cart-1", version: "7", items: [] } }), { status: 200 })));
+
+    await expect(checkoutApi.getCurrentCart()).resolves.toEqual({ cartId: null, version: 0, items: [] });
+    await expect(checkoutApi.getCurrentCart()).rejects.toMatchObject({ status: 502, code: "INVALID_BACKEND_RESPONSE" });
+  });
+
+  it("does not treat a Cart BFF error as an empty cart or a fixture snapshot", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "CART_AUTH_UNAVAILABLE" } }), { status: 503 })));
+
+    await expect(checkoutApi.getCurrentCart()).rejects.toMatchObject({ status: 503, code: "CART_AUTH_UNAVAILABLE" });
+  });
+
   it("normalizes server-owned quote amounts and expiry without recalculating", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       quoteId: "quote-1", expiresAt: "2026-10-15T10:05:00.000Z",
@@ -89,6 +117,25 @@ describe("checkout Backend MOCK adapter", () => {
     vi.stubGlobal("fetch", fetchMock);
     await checkoutApi.createOrder("op-1", { fullName: "Test Person", documentType: "DNI", documentNumber: "12345678", phone: "999999999", email: "test@example.test" }, "stable-key");
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ "Idempotency-Key": "stable-key" });
+  });
+
+  it("normalizes the flat F-026 result and retains Ventas-authoritative fields", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
+      checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-2026-00012", orderState: "PAGADO",
+      total: { amount: 355, currency: "PEN" }, createdAt: "2026-10-16T10:00:00.000Z",
+    } }), { status: 200 })));
+
+    const operation = await checkoutApi.createOrder(
+      "op-1",
+      { fullName: "Test Person", documentType: "DNI", documentNumber: "12345678", phone: "999999999", email: "test@example.test" },
+      "stable-key",
+    );
+
+    expect(operation).toMatchObject({
+      state: "SUCCEEDED", orderId: "PED-2026-00012", orderState: "PAGADO",
+      orderTotal: 355, orderCreatedAt: "2026-10-16T10:00:00.000Z",
+    });
+    expect(isVerifiedPaidOperation(operation)).toBe(true);
   });
 
   it("normalizes the published nested F-027 order and keeps Ventas total and creation date", async () => {
