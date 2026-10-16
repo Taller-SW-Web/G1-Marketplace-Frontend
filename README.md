@@ -92,3 +92,7 @@ flowchart LR
 1. **Spec-First:** Antes de implementar cualquier cambio funcional en el código, la modificación debe reflejarse y validarse en su correspondiente documento `SPEC`.
 2. **Branching:** Cada integrante trabaja sobre ramas asociadas a su módulo (e.g. `feat/SPEC-0X-nombre-historia`).
 3. **Definition of Done:** Cada entrega debe cumplir con los criterios de aceptación BDD, tipado estricto, manejo de errores HTTP y cobertura de pruebas estipulada en su SPEC.
+
+## Adaptación a develop y preparación de despliegue — 16/10/2026
+
+Se incorpora el carrito del develop actual sin sustituir el catálogo. Se restaura el arranque Render y se elimina la identidad de prueba automática del proxy de carrito. Consultar [preparación y límites del despliegue](docs/DESPLIEGUE-H3.md). Los PR existentes siguen en draft hacia develop; no se publica ni se modifica main/develop.

@@ -79,3 +79,7 @@ El 15/10/2026 se adaptó `playwright.config.ts` al baseline NestJS `ed9582e` de 
 ## Ajuste de imagen opcional — 16/10/2026
 
 `ProductCardDTO.image` admite `{url, alt}` o `null`. ProductCard utiliza `/images/product-placeholder.svg` para null en Inicio y Catálogo, sin retirar tarjetas, cambiar totales ni perder slug/returnTo. El resto del DTO y sus imágenes presentes siguen validados. El nuevo caso de navegador comprueba la carga real del SVG local y las tarjetas con y sin imagen; las pruebas de componentes cubren placeholder/alt, imagen original, enlace y validación runtime. No habilita Productos REAL ni cierra H3.
+
+## Actualización de baseline — 16/10/2026
+
+Se incorpora develop 843dfde con carrito, estilos, lockfile y configuración Vitest del equipo. Se mantiene búsqueda, URL/returnTo e imagen opcional. El proxy cart deja de solicitar automáticamente un token de prueba, conserva cookies de sesión anónima y reenvía Authorization explícita sin reemplazarla. Nuevas regresiones de Route Handler cubren esos casos y POST/rutas permitidas. [Configuración de despliegue](DESPLIEGUE-H3.md); no equivale a implementar la sesión real del bloque de acceso ni integración G6.
