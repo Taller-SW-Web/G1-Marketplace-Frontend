@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CheckoutFlow } from "../../src/features/checkout/CheckoutFlow";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("CheckoutFlow local fixtures", () => {
   it("runs address, quote, preparation and order to a clearly labeled fixture result", async () => {
@@ -21,6 +23,10 @@ describe("CheckoutFlow local fixtures", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
     await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+    expect(screen.getByRole("option", { name: "DNI" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "RUC" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "CE" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "Pasaporte" })).toBeDefined();
 
     fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Ana Prueba" } });
     fireEvent.change(screen.getByLabelText("Número de documento"), { target: { value: "12345678" } });
@@ -29,6 +35,13 @@ describe("CheckoutFlow local fixtures", () => {
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeDefined());
+    const clipboardWrite = vi.fn().mockResolvedValue(undefined);
+    const testNavigator = Object.create(navigator) as Navigator;
+    Object.defineProperty(testNavigator, "clipboard", { configurable: true, value: { writeText: clipboardWrite } });
+    vi.stubGlobal("navigator", testNavigator);
+    fireEvent.click(screen.getByRole("button", { name: /^Copiar código de pedido PED-MOCK-/ }));
+    expect((await screen.findByRole("status")).textContent).toContain("Código de pedido copiado.");
+    expect(clipboardWrite).toHaveBeenCalledWith(expect.stringMatching(/^PED-MOCK-/));
     expect(screen.getByText(/Resultado de fixture/)).toBeDefined();
     expect(screen.getByText("PAGADO (fixture)")).toBeDefined();
     expect(screen.getByRole("region", { name: "¡Pedido confirmado!" }).textContent).toContain("No se llamó al Backend");

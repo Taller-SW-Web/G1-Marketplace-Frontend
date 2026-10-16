@@ -6,12 +6,14 @@ export type CheckoutOperation = {
   state: "PREPARED" | "SUBMITTED" | "SUCCEEDED" | "FAILED";
   orderId?: string;
   orderState?: "CREADO" | "PAGADO" | "ANULADO";
+  orderTotal?: number;
+  orderCreatedAt?: string;
   recoveryRequired?: boolean;
   failureCode?: string;
 };
 export type Contact = {
   fullName: string;
-  documentType: "DNI" | "CE" | "PASSPORT";
+  documentType: "DNI" | "RUC" | "CE" | "PASAPORTE";
   documentNumber: string;
   phone: string;
   email: string;
@@ -41,16 +43,49 @@ function parseAddress(value: unknown): CheckoutAddress {
   };
 }
 
-function parseOperation(value: unknown): CheckoutOperation {
-  if (!isRecord(value) || typeof value.checkoutOperationId !== "string" ||
-      !["PREPARED", "SUBMITTED", "SUCCEEDED", "FAILED"].includes(String(value.state)) ||
-      (value.orderId !== undefined && typeof value.orderId !== "string") ||
-      (value.orderState !== undefined && !["CREADO", "PAGADO", "ANULADO"].includes(String(value.orderState))) ||
-      (value.recoveryRequired !== undefined && typeof value.recoveryRequired !== "boolean") ||
+function parseOperation(value: unknown, operationId?: string): CheckoutOperation {
+  if (!isRecord(value) ||
+      (typeof value.checkoutOperationId !== "string" && !operationId) ||
+      !["PREPARED", "SUBMITTED", "SUCCEEDED", "FAILED"].includes(String(value.state))) {
+    throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  }
+
+  const operation: CheckoutOperation = {
+    checkoutOperationId: typeof value.checkoutOperationId === "string" ? value.checkoutOperationId : operationId!,
+    state: value.state as CheckoutOperation["state"],
+    ...(typeof value.recoveryRequired === "boolean" ? { recoveryRequired: value.recoveryRequired } : {}),
+    ...(typeof value.failureCode === "string" ? { failureCode: value.failureCode } : {}),
+  };
+
+  if (value.order !== undefined) {
+    if (!isRecord(value.order) || typeof value.order.orderId !== "string" ||
+        !["CREADO", "PAGADO", "ANULADO"].includes(String(value.order.state)) ||
+        !isRecord(value.order.total) || typeof value.order.total.amount !== "number" || !Number.isFinite(value.order.total.amount) ||
+        value.order.total.currency !== "PEN" || typeof value.order.createdAt !== "string" ||
+        !Number.isFinite(Date.parse(value.order.createdAt))) {
+      throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+    }
+    operation.orderId = value.order.orderId;
+    operation.orderState = value.order.state as NonNullable<CheckoutOperation["orderState"]>;
+    operation.orderTotal = value.order.total.amount;
+    operation.orderCreatedAt = value.order.createdAt;
+  } else {
+    if ((value.orderId !== undefined && typeof value.orderId !== "string") ||
+        (value.orderState !== undefined && !["CREADO", "PAGADO", "ANULADO"].includes(String(value.orderState))) ||
+        (value.orderTotal !== undefined && (typeof value.orderTotal !== "number" || !Number.isFinite(value.orderTotal))) ||
+        (value.orderCreatedAt !== undefined && (typeof value.orderCreatedAt !== "string" || !Number.isFinite(Date.parse(value.orderCreatedAt))))) {
+      throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+    }
+    if (typeof value.orderId === "string") operation.orderId = value.orderId;
+    if (typeof value.orderState === "string") operation.orderState = value.orderState as NonNullable<CheckoutOperation["orderState"]>;
+    if (typeof value.orderTotal === "number") operation.orderTotal = value.orderTotal;
+    if (typeof value.orderCreatedAt === "string") operation.orderCreatedAt = value.orderCreatedAt;
+  }
+  if ((value.recoveryRequired !== undefined && typeof value.recoveryRequired !== "boolean") ||
       (value.failureCode !== undefined && typeof value.failureCode !== "string")) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   }
-  return value as CheckoutOperation;
+  return operation;
 }
 
 export class CheckoutApiError extends Error {
@@ -59,8 +94,40 @@ export class CheckoutApiError extends Error {
   }
 }
 
-export function isVerifiedPaidOperation(operation: CheckoutOperation): operation is CheckoutOperation & { orderId: string } {
-  return operation.state === "SUCCEEDED" && operation.orderState === "PAGADO" && typeof operation.orderId === "string" && operation.orderId.length > 0;
+const publicErrorMessages: Record<string, string> = {
+  ADDRESS_NOT_FOUND: "No encontramos esa dirección. Selecciona otra o agrega una nueva.",
+  ADDRESS_SERVICE_UNAVAILABLE: "No pudimos cargar las direcciones. Inténtalo más tarde.",
+  BENEFITS_UNAVAILABLE: "No pudimos validar el beneficio. Puedes conservar el resumen actual.",
+  CART_CHANGED: "Tu carrito cambió. Vuelve al carrito y actualiza el resumen.",
+  CART_EMPTY: "Agrega un producto al carrito para continuar.",
+  CART_NOT_FOUND: "No encontramos un carrito activo. Vuelve al carrito para continuar.",
+  CHECKOUT_BACKEND_UNAVAILABLE: "No pudimos comunicarnos con Checkout. Inténtalo más tarde.",
+  CONTACT_VALIDATION_ERROR: "Revisa los datos de contacto e inténtalo de nuevo.",
+  COUPON_NOT_APPLICABLE: "Ese cupón no se puede aplicar a esta compra.",
+  INVALID_COUPON_FORMAT: "Revisa el código promocional e inténtalo de nuevo.",
+  INVALID_BACKEND_RESPONSE: "Recibimos una respuesta inesperada. Inténtalo más tarde.",
+  LINE_NOT_AVAILABLE: "Uno o más productos del carrito ya no están disponibles.",
+  NO_SHIPPING_COVERAGE: "No hay cobertura de envío para esta dirección.",
+  OPERATION_NOT_PREPARED: "No pudimos continuar con esta operación. Revisa el resumen.",
+  ORDER_CREATION_PENDING: "Tu pedido sigue en proceso de verificación.",
+  QUOTE_EXPIRED: "La cotización venció. Actualiza el resumen para continuar.",
+  QUOTE_UNAVAILABLE: "No pudimos calcular el envío. Inténtalo más tarde.",
+  REVALIDATION_UNAVAILABLE: "No pudimos verificar la disponibilidad. Inténtalo más tarde.",
+  SALES_UNAVAILABLE: "No pudimos registrar el pedido. Conservamos la operación para verificarla.",
+  SIMULATION_NOT_CONFIRMED: "Confirma que entiendes que esta compra es una simulación.",
+  STOCK_NOT_AVAILABLE: "La disponibilidad cambió. Vuelve al carrito y revisa los productos.",
+};
+
+export function checkoutErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof CheckoutApiError) return publicErrorMessages[error.code] ?? fallback;
+  return fallback;
+}
+
+export function isVerifiedPaidOperation(operation: CheckoutOperation): operation is CheckoutOperation & { orderId: string; orderTotal: number; orderCreatedAt: string } {
+  return operation.state === "SUCCEEDED" && operation.orderState === "PAGADO" &&
+    typeof operation.orderId === "string" && operation.orderId.length > 0 &&
+    typeof operation.orderTotal === "number" && Number.isFinite(operation.orderTotal) &&
+    typeof operation.orderCreatedAt === "string" && Number.isFinite(Date.parse(operation.orderCreatedAt));
 }
 
 async function request<T>(path: string, method: "GET" | "POST", body?: unknown, idempotencyKey?: string): Promise<T> {
@@ -88,36 +155,75 @@ type BackendQuote = {
   expiresAt: string;
   subtotal: { amount: number };
   discount: { amount: number };
-  shipping: { amount: number };
+  shipping: { amount: number; estimatedDays: number };
   total: { amount: number };
   addressId: string;
   cartVersion: number;
-  selectedBenefit?: { id: string };
+  lines: Array<{ sku: string; quantity: number }>;
+  selectedBenefit?: { type: string; id: string; discount: { amount: number } };
 };
+
+function parseExpiry(value: unknown) {
+  if (typeof value !== "string") throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  const expiry = Date.parse(value);
+  if (!Number.isFinite(expiry)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  return expiry;
+}
 
 function normalizeQuote(payload: unknown): CheckoutQuote {
   if (!isRecord(payload)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   const quote = payload as unknown as BackendQuote;
   const validMoney = (money: unknown): money is { amount: number } => isRecord(money) && typeof money.amount === "number" && Number.isFinite(money.amount);
+  const validLines = Array.isArray(quote.lines) && quote.lines.every((line) => isRecord(line) && typeof line.sku === "string" && typeof line.quantity === "number" && Number.isInteger(line.quantity) && line.quantity > 0);
   if (typeof quote.quoteId !== "string" || typeof quote.expiresAt !== "string" ||
       !validMoney(quote.subtotal) || !validMoney(quote.discount) || !validMoney(quote.shipping) ||
-      !validMoney(quote.total) || typeof quote.addressId !== "string" ||
+      typeof quote.shipping.estimatedDays !== "number" || !Number.isFinite(quote.shipping.estimatedDays) ||
+      !validMoney(quote.total) || typeof quote.addressId !== "string" || !validLines ||
       typeof quote.cartVersion !== "number" || !Number.isInteger(quote.cartVersion) ||
-      (quote.selectedBenefit !== undefined && (!isRecord(quote.selectedBenefit) || typeof quote.selectedBenefit.id !== "string"))) {
+      (quote.selectedBenefit !== undefined && (!isRecord(quote.selectedBenefit) || typeof quote.selectedBenefit.type !== "string" || typeof quote.selectedBenefit.id !== "string" || !validMoney(quote.selectedBenefit.discount)))) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   }
-  const expiresAt = Date.parse(quote.expiresAt);
-  if (!Number.isFinite(expiresAt) || !quote.quoteId || !Number.isFinite(quote.total?.amount)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  const expiresAt = parseExpiry(quote.expiresAt);
+  if (!quote.quoteId) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   return {
     quoteId: quote.quoteId,
     expiresAt,
     subtotal: quote.subtotal.amount,
     discount: quote.discount.amount,
     shipping: quote.shipping.amount,
+    estimatedDays: quote.shipping.estimatedDays,
     total: quote.total.amount,
     addressId: quote.addressId,
     cartVersion: quote.cartVersion,
-    ...(quote.selectedBenefit ? { coupon: quote.selectedBenefit.id } : {}),
+    lines: quote.lines,
+    ...(quote.selectedBenefit ? { selectedBenefit: { type: quote.selectedBenefit.type, id: quote.selectedBenefit.id, discount: quote.selectedBenefit.discount.amount } } : {}),
+  };
+}
+
+function normalizeBenefit(payload: unknown, currentQuote: CheckoutQuote): CheckoutQuote {
+  if (!isRecord(payload) || typeof payload.quoteId !== "string" || !payload.quoteId ||
+      !isRecord(payload.total) || typeof payload.total.amount !== "number" || !Number.isFinite(payload.total.amount) ||
+      !isRecord(payload.selectedBenefit) || typeof payload.selectedBenefit.type !== "string" ||
+      typeof payload.selectedBenefit.id !== "string" || !isRecord(payload.selectedBenefit.discount) ||
+      typeof payload.selectedBenefit.discount.amount !== "number" || !Number.isFinite(payload.selectedBenefit.discount.amount)) {
+    throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  }
+  const expiresAt = parseExpiry(payload.expiresAt);
+
+  // F-024 returns a partial quote. Preserve the already-authoritative base quote
+  // fields, while replacing all benefit-owned fields from this response.
+  const selectedBenefit = {
+    type: payload.selectedBenefit.type as string,
+    id: payload.selectedBenefit.id as string,
+    discount: (payload.selectedBenefit.discount as { amount: number }).amount,
+  };
+  return {
+    ...currentQuote,
+    quoteId: payload.quoteId,
+    expiresAt,
+    total: payload.total.amount,
+    discount: selectedBenefit?.discount ?? 0,
+    selectedBenefit,
   };
 }
 
@@ -133,8 +239,15 @@ export const checkoutApi = {
   async createQuote(addressId: string, cartVersion: number) {
     return normalizeQuote(await request("quotes", "POST", { addressId, cartVersion }));
   },
-  async applyBenefit(quoteId: string, couponCode?: string) {
-    return normalizeQuote(await request("benefits", "POST", { quoteId, couponCode }));
+  async applyBenefit(currentQuote: CheckoutQuote, couponCode: string) {
+    const payload = await request("benefits", "POST", { quoteId: currentQuote.quoteId, couponCode });
+    return normalizeBenefit(payload, currentQuote);
+  },
+  async removeBenefit(currentQuote: CheckoutQuote) {
+    return normalizeQuote(await request("quotes", "POST", {
+      addressId: currentQuote.addressId,
+      cartVersion: currentQuote.cartVersion,
+    }));
   },
   async prepare(quoteId: string, cartVersion: number, idempotencyKey: string) {
     return parseOperation(await request("preparations", "POST", { quoteId, cartVersion, simulationConfirmed: true }, idempotencyKey));
@@ -143,7 +256,7 @@ export const checkoutApi = {
     return parseOperation(await request("orders", "POST", { checkoutOperationId: operationId, contact }, idempotencyKey));
   },
   async getOperation(operationId: string) {
-    return parseOperation(await request(`operations/${encodeURIComponent(operationId)}`, "GET"));
+    return parseOperation(await request(`operations/${encodeURIComponent(operationId)}`, "GET"), operationId);
   },
 };
 

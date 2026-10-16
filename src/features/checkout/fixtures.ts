@@ -15,10 +15,12 @@ export type CheckoutQuote = {
   subtotal: number;
   discount: number;
   shipping: number;
+  estimatedDays: number;
   total: number;
   addressId: string;
   cartVersion: number;
-  coupon?: string;
+  lines: Array<{ sku: string; quantity: number }>;
+  selectedBenefit?: { type: string; id: string; discount: number };
 };
 
 export const checkoutFixtureAddresses: CheckoutAddress[] = [
@@ -39,9 +41,11 @@ export function createFixtureQuote(addressId: string, now = Date.now()): Checkou
     subtotal,
     discount: 0,
     shipping: 15,
+    estimatedDays: 2,
     total: subtotal + 15,
     addressId,
     cartVersion: checkoutFixtureCart.version,
+    lines: checkoutFixtureCart.lines,
   };
 }
 
@@ -52,7 +56,7 @@ export function applyFixtureCoupon(quote: CheckoutQuote, input: string, now = Da
   return {
     ...quote,
     quoteId: `Q-MOCK-${crypto.randomUUID()}`,
-    coupon,
+    selectedBenefit: { type: "COUPON", id: coupon, discount },
     discount,
     total: quote.subtotal - discount + quote.shipping,
     expiresAt: now + 5 * 60_000,
@@ -63,7 +67,7 @@ export function removeFixtureCoupon(quote: CheckoutQuote, now = Date.now()): Che
   return {
     ...quote,
     quoteId: `Q-MOCK-${crypto.randomUUID()}`,
-    coupon: undefined,
+    selectedBenefit: undefined,
     discount: 0,
     total: quote.subtotal + quote.shipping,
     expiresAt: now + 5 * 60_000,
