@@ -3,11 +3,18 @@ import { ProductDetailContainer } from "@/features/catalog/components/ProductDet
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function ProductPage({ params }: Props) {
+export default async function ProductPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  return <ProductDetailContainer slug={slug} />;
+  const { returnTo } = await searchParams;
+  return (
+    <ProductDetailContainer
+      slug={slug}
+      returnTo={typeof returnTo === "string" ? returnTo : undefined}
+    />
+  );
 }
 
 export function generateMetadata(): Metadata {

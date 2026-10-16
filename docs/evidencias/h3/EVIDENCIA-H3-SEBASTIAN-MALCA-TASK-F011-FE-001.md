@@ -1,7 +1,7 @@
 # Evidencia H3 — Sebastian Malca — TASK-F011-FE-001 (MOCK)
 
-**Fecha:** 2026-10-15
-**Repositorio / rama / commit:** `G1-Marketplace-Frontend` / `feat/h3-f011-f015-detalle-de-producto` / `64f68e8`
+**Fecha:** 2026-10-15 · **Consumo de `returnTo` (handoff):** 2026-10-16
+**Repositorio / rama / commit:** `G1-Marketplace-Frontend` / `feat/h3-f011-f015-detalle-de-producto` / (hash final a confirmar tras push)
 **Specs leídas:** F-011 v0.1.0 · V-007 v0.1.0 · O-002 v0.1.0
 **Frame Figma:** (enlace confirmado por PO — pendiente)
 **Etiqueta:** **MOCK** (I-01 sin cerrar; el corte NO integra datos REAL)
@@ -16,6 +16,7 @@
 - Implementación de la feature `src/features/catalog/` (types, fixtures, services, hooks, components) y ruta `src/app/productos/[slug]/page.tsx`.
 - Extensión del proxy compartido `src/app/api/catalog/[...path]/route.ts` para `products/{slug}` con validación de slug.
 - Bloque CSS F-011 añadido al final de `src/app/globals.css` (galería, visor, estados, responsive).
+- **Consumo del handoff `returnTo`** (ELEMENTOS-COMPARTIDOS §4, "validador InternalPath"): nuevo `src/features/catalog/returnTo.ts` (`sanitizeReturnTo` sólo acepta rutas internas — prefijo `/` único, sin `//`/`\` ni chars de control, ≤512 — resto cae a `/catalogo`); `page.tsx` lee `searchParams` y lo pasa al contenedor, que lo usa en los enlaces "Volver al catálogo" (rutas internas válidas) y en la migra "Catálogo" (sólo criterios `/catalogo?…`, ver V-007 "Migas → Catálogo: criterios previos cuando existan; si no, catálogo general").
 - Revisión visual de los 5 estados en navegador (desktop 1280×900 y mobile 390×844) y del ciclo de foco del visor.
 
 ## Verificación contra specs (G1-Marketplace-SPECS)
@@ -49,7 +50,7 @@ Leídos y contrastados: `funcional/F-011` · `ui/F-011` · `contrato-api/F-011` 
 |---|---|
 | `npm run typecheck` | ✅ 0 errores |
 | `npm run lint` | ✅ 0 errores / 0 warnings |
-| `npm run test:components` | ✅ **47/47** |
+| `npm run test:components` | ✅ **59/59** |
 | `npm run build` | ✅ `ƒ /productos/[slug]` |
 | `npm run test` (components + e2e) | ⚠️ e2e requiere BFF Marketplace en `127.0.0.1:10000` (no disponible en este entorno) |
 
@@ -58,6 +59,7 @@ Leídos y contrastados: `funcional/F-011` · `ui/F-011` · `contrato-api/F-011` 
 - RC-F-011-03: PASS (`not_available` neutral, sin "inactivo"/"privado", enlace a `/catalogo`)
 - RC-F-011-04: PASS (Escape cierra y restaura el foco — verificado también en navegador)
 - RC-F-011-05: PASS (descripción con `<script>` no se inyecta ni se ejecuta)
+- Handoff `returnTo`: PASS — validador InternalPath (`tests/catalog/returnTo.test.tsx`, 12 tests): conserva `/catalogo?q=…`, rechaza externos (`https:`, `//`, `javascript:`), backslashes y chars de control; consumido en los enlaces "Volver al catálogo" y en la migra "Catálogo"
 - Etiqueta: **MOCK**
 
 ### Verificación en navegador (Playwright, chromium)

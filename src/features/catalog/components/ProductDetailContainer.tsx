@@ -4,12 +4,16 @@ import { useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 import { useProductDetail } from "../hooks/useProductDetail";
+import { sanitizeCatalogReturnTo, sanitizeReturnTo } from "../returnTo";
 import { GalleryViewer } from "./GalleryViewer";
 import { ProductGallery } from "./ProductGallery";
 import { TechnicalSpecifications } from "./TechnicalSpecifications";
 
 interface Props {
   slug: string;
+  /** Ruta de contexto del handoff ProductCard (`?returnTo=...`); se valida
+   * como InternalPath antes de usarse (ELEMENTOS-COMPARTIDOS §4). */
+  returnTo?: string;
 }
 
 const MOCK_MODE = process.env.NEXT_PUBLIC_BFF_MODE === "mock";
@@ -18,7 +22,11 @@ const MOCK_MODE = process.env.NEXT_PUBLIC_BFF_MODE === "mock";
  * Ficha de producto F-011 (corte H3 MOCK). Región descriptiva únicamente:
  * sin precio, stock, variantes ni carrito.
  */
-export function ProductDetailContainer({ slug }: Props) {
+export function ProductDetailContainer({ slug, returnTo }: Props) {
+  // Retorno validado: ruta interna o /catalogo por defecto (F-011 UI §97).
+  const backHref = sanitizeReturnTo(returnTo);
+  // Migra "Catálogo": criterios previos si existen, si no general (V-007).
+  const catalogCrumbHref = sanitizeCatalogReturnTo(returnTo);
   const { state, retry } = useProductDetail(slug);
   // El visor se resetea al cambiar de slug (spec de componentes §5) sin
   // recurrir a efectos: el estado guardado sólo vale para su slug.
@@ -54,7 +62,7 @@ export function ProductDetailContainer({ slug }: Props) {
         <div className="detail-message">
           <h1>Producto no disponible</h1>
           <p>Vuelve al catálogo para seguir explorando.</p>
-          <Link className="button" href="/catalogo">
+          <Link className="button" href={backHref}>
             Volver al catálogo
           </Link>
         </div>
@@ -72,7 +80,7 @@ export function ProductDetailContainer({ slug }: Props) {
           </p>
           <div className="actions">
             <Button onClick={retry}>Reintentar</Button>
-            <Link className="text-link" href="/catalogo">
+            <Link className="text-link" href={backHref}>
               Volver al catálogo
             </Link>
           </div>
@@ -88,7 +96,7 @@ export function ProductDetailContainer({ slug }: Props) {
       <nav aria-label="Migas de navegación" className="breadcrumbs">
         <Link href="/">Inicio</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/catalogo">Catálogo</Link>
+        <Link href={catalogCrumbHref}>Catálogo</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
