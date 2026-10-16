@@ -24,6 +24,13 @@ async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joinedPath = path.join("/");
 
+  if (process.env.NODE_ENV === "production") {
+    return Response.json(
+      { error: { code: "CART_BACKEND_MODE_DISABLED" } },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   // Endpoints válidos: "current", "current/items", o "items"
   if (!["current", "current/items", "items"].includes(joinedPath)) {
     return Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
@@ -38,6 +45,9 @@ async function forward(request: NextRequest, context: RouteContext) {
       process.env.MOCK_AUTH_URL,
       "http://127.0.0.1:4010",
     );
+    if (!localHttpAllowed(api) || !localHttpAllowed(auth)) {
+      throw new Error("Cart mock proxy is local-development only");
+    }
 
     let accessToken: string | undefined;
     try {
@@ -59,6 +69,12 @@ async function forward(request: NextRequest, context: RouteContext) {
       }
     } catch {
       // Si el mock auth server no está disponible, continuar sin Bearer para sesión anónima
+    }
+    if (!accessToken && process.env.CHECKOUT_MODE === "backend-mock") {
+      return Response.json(
+        { error: { code: "CART_AUTH_UNAVAILABLE" } },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const backendEndpoint =

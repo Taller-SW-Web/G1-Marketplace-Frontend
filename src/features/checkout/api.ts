@@ -18,6 +18,11 @@ export type Contact = {
   phone: string;
   email: string;
 };
+export type CheckoutCartSnapshot = {
+  cartId: string | null;
+  version: number;
+  items: Array<{ sku: string; quantity: number }>;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -70,16 +75,30 @@ function parseOperation(value: unknown, operationId?: string): CheckoutOperation
     operation.orderTotal = value.order.total.amount;
     operation.orderCreatedAt = value.order.createdAt;
   } else {
+    const flatTotal = isRecord(value.total) ? value.total : undefined;
+    const flatTotalAmount = typeof value.orderTotal === "number"
+      ? value.orderTotal
+      : flatTotal && typeof flatTotal.amount === "number" && Number.isFinite(flatTotal.amount) && flatTotal.currency === "PEN"
+        ? flatTotal.amount
+        : undefined;
+    const flatCreatedAt = typeof value.orderCreatedAt === "string"
+      ? value.orderCreatedAt
+      : typeof value.createdAt === "string"
+        ? value.createdAt
+        : undefined;
     if ((value.orderId !== undefined && typeof value.orderId !== "string") ||
         (value.orderState !== undefined && !["CREADO", "PAGADO", "ANULADO"].includes(String(value.orderState))) ||
         (value.orderTotal !== undefined && (typeof value.orderTotal !== "number" || !Number.isFinite(value.orderTotal))) ||
-        (value.orderCreatedAt !== undefined && (typeof value.orderCreatedAt !== "string" || !Number.isFinite(Date.parse(value.orderCreatedAt))))) {
+        (value.total !== undefined && !isRecord(value.total)) ||
+        (flatTotal !== undefined && (typeof flatTotal.amount !== "number" || !Number.isFinite(flatTotal.amount) || flatTotal.currency !== "PEN")) ||
+        (value.orderCreatedAt !== undefined && (typeof value.orderCreatedAt !== "string" || !Number.isFinite(Date.parse(value.orderCreatedAt)))) ||
+        (value.createdAt !== undefined && (typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt))))) {
       throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
     }
     if (typeof value.orderId === "string") operation.orderId = value.orderId;
     if (typeof value.orderState === "string") operation.orderState = value.orderState as NonNullable<CheckoutOperation["orderState"]>;
-    if (typeof value.orderTotal === "number") operation.orderTotal = value.orderTotal;
-    if (typeof value.orderCreatedAt === "string") operation.orderCreatedAt = value.orderCreatedAt;
+    if (flatTotalAmount !== undefined) operation.orderTotal = flatTotalAmount;
+    if (flatCreatedAt !== undefined) operation.orderCreatedAt = flatCreatedAt;
   }
   if ((value.recoveryRequired !== undefined && typeof value.recoveryRequired !== "boolean") ||
       (value.failureCode !== undefined && typeof value.failureCode !== "string")) {
@@ -99,6 +118,9 @@ const publicErrorMessages: Record<string, string> = {
   ADDRESS_SERVICE_UNAVAILABLE: "No pudimos cargar las direcciones. Inténtalo más tarde.",
   BENEFITS_UNAVAILABLE: "No pudimos validar el beneficio. Puedes conservar el resumen actual.",
   CART_CHANGED: "Tu carrito cambió. Vuelve al carrito y actualiza el resumen.",
+  CART_AUTH_UNAVAILABLE: "No pudimos validar tu sesión para consultar el carrito. Inténtalo de nuevo.",
+  CART_BACKEND_UNAVAILABLE: "No pudimos consultar tu carrito. Inténtalo de nuevo.",
+  CART_BACKEND_MODE_DISABLED: "La consulta del carrito no está disponible en este entorno.",
   CART_EMPTY: "Agrega un producto al carrito para continuar.",
   CART_NOT_FOUND: "No encontramos un carrito activo. Vuelve al carrito para continuar.",
   CHECKOUT_BACKEND_UNAVAILABLE: "No pudimos comunicarnos con Checkout. Inténtalo más tarde.",
@@ -148,6 +170,36 @@ async function request<T>(path: string, method: "GET" | "POST", body?: unknown, 
   }
   if (typeof payload !== "object" || payload === null || !("data" in payload)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   return (payload as Envelope<T>).data;
+}
+
+async function requestCurrentCart(): Promise<CheckoutCartSnapshot> {
+  const response = await fetch("/api/cart/current", { cache: "no-store" });
+  let payload: unknown;
+  try { payload = await response.json(); } catch {
+    throw new CheckoutApiError(response.status, "INVALID_BACKEND_RESPONSE");
+  }
+  if (!response.ok) {
+    const code = isRecord(payload) && isRecord(payload.error) && typeof payload.error.code === "string"
+      ? payload.error.code
+      : "CART_BACKEND_UNAVAILABLE";
+    throw new CheckoutApiError(response.status, code);
+  }
+  if (!isRecord(payload) || !isRecord(payload.data)) {
+    throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  }
+  const data = payload.data;
+  if ((data.cartId !== null && typeof data.cartId !== "string") ||
+      typeof data.version !== "number" || !Number.isInteger(data.version) || data.version < 0 ||
+      !Array.isArray(data.items) ||
+      !data.items.every((item) => isRecord(item) && typeof item.sku === "string" && item.sku.length > 0 &&
+        typeof item.quantity === "number" && Number.isInteger(item.quantity) && item.quantity > 0)) {
+    throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
+  }
+  return {
+    cartId: data.cartId as string | null,
+    version: data.version,
+    items: data.items.map((item) => ({ sku: item.sku as string, quantity: item.quantity as number })),
+  };
 }
 
 type BackendQuote = {
@@ -228,6 +280,7 @@ function normalizeBenefit(payload: unknown, currentQuote: CheckoutQuote): Checko
 }
 
 export const checkoutApi = {
+  getCurrentCart: requestCurrentCart,
   async listAddresses() {
     const addresses: unknown = await request("delivery-addresses", "GET");
     if (!Array.isArray(addresses)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");

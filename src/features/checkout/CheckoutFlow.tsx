@@ -14,7 +14,7 @@ import {
   type CheckoutAddress,
   type CheckoutQuote,
 } from "./fixtures";
-import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutOperation, type Contact } from "./api";
+import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
 import "./checkout.css";
 
 type Step = "address" | "summary" | "prepare" | "order" | "confirmed";
@@ -25,6 +25,14 @@ export function CheckoutFlow() {
   const [addresses, setAddresses] = useState<CheckoutAddress[]>(backendMockEnabled ? [] : checkoutFixtureAddresses);
   const [selectedId, setSelectedId] = useState(backendMockEnabled ? "" : checkoutFixtureAddresses[0]?.addressId ?? "");
   const [addressLoading, setAddressLoading] = useState(backendMockEnabled);
+  const [cartSnapshot, setCartSnapshot] = useState<CheckoutCartSnapshot | null>(backendMockEnabled ? null : {
+    cartId: null,
+    version: checkoutFixtureCart.version,
+    items: checkoutFixtureCart.lines,
+  });
+  const [cartStatus, setCartStatus] = useState<"loading" | "ready" | "empty" | "error">(backendMockEnabled ? "loading" : "ready");
+  const [cartError, setCartError] = useState("");
+  const [cartReloadKey, setCartReloadKey] = useState(0);
   const [addingAddress, setAddingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
@@ -45,7 +53,6 @@ export function CheckoutFlow() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [now, setNow] = useState(0);
-  const cartVersion = Number(process.env.NEXT_PUBLIC_CHECKOUT_CART_VERSION ?? checkoutFixtureCart.version);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -62,35 +69,69 @@ export function CheckoutFlow() {
     }).finally(() => { if (active) setAddressLoading(false); });
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    if (!backendMockEnabled) return;
+    let active = true;
+    checkoutApi.getCurrentCart().then((snapshot) => {
+      if (!active) return;
+      setCartSnapshot(snapshot);
+      setCartStatus(snapshot.items.length > 0 ? "ready" : "empty");
+    }).catch((error: unknown) => {
+      if (!active) return;
+      setCartStatus("error");
+      setCartError(checkoutErrorMessage(error, "No pudimos consultar el carrito."));
+    });
+    return () => { active = false; };
+  }, [cartReloadKey]);
   const selectedAddress = addresses.find((address) => address.addressId === selectedId);
   const expired = quote !== null && now > 0 && quote.expiresAt <= now;
 
-  function continueToSummary() {
-    if (!selectedAddress) return;
+  function retryCartLoad() {
+    setCartStatus("loading");
+    setCartError("");
+    setCartReloadKey((key) => key + 1);
+  }
+
+  async function quoteCurrentCart(addressId: string): Promise<CheckoutQuote> {
+    if (!backendMockEnabled) return createFixtureQuote(addressId);
+    const snapshot = await checkoutApi.getCurrentCart();
+    setCartSnapshot(snapshot);
+    if (snapshot.items.length === 0) {
+      setCartStatus("empty");
+      throw new CheckoutApiError(409, "CART_EMPTY");
+    }
+    setCartStatus("ready");
+    return checkoutApi.createQuote(addressId, snapshot.version);
+  }
+
+  async function continueToSummary() {
+    if (!selectedAddress || busy || (backendMockEnabled && cartStatus !== "ready")) return;
     setBusy(true);
     setNotice("");
-    const loadQuote = backendMockEnabled
-      ? checkoutApi.createQuote(selectedAddress.addressId, cartVersion)
-      : new Promise((resolve) => window.setTimeout(() => resolve(createFixtureQuote(selectedAddress.addressId)), 180));
-    loadQuote.then((nextQuote) => {
+    try {
+      const nextQuote = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(nextQuote as CheckoutQuote);
       setCouponMessage("");
       setStep("summary");
-    }).catch((error: unknown) => {
+    } catch (error: unknown) {
       setNotice(checkoutErrorMessage(error, "No se pudo calcular el envío."));
-    }).finally(() => setBusy(false));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function refreshQuote() {
+  async function refreshQuote() {
     if (!selectedAddress || busy) return;
     setBusy(true);
-    const refresh = backendMockEnabled
-      ? checkoutApi.createQuote(selectedAddress.addressId, cartVersion)
-      : new Promise<CheckoutQuote>((resolve) => window.setTimeout(() => resolve(createFixtureQuote(selectedAddress.addressId)), 180));
-    refresh.then((next) => {
+    try {
+      const next = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(next);
       setCouponMessage("La cotización se actualizó.");
-    }).catch((error: unknown) => setCouponMessage(checkoutErrorMessage(error, "No se pudo actualizar la cotización."))).finally(() => setBusy(false));
+    } catch (error: unknown) {
+      setCouponMessage(checkoutErrorMessage(error, "No se pudo actualizar la cotización."));
+    } finally {
+      setBusy(false);
+    }
   }
 
   function saveAddress(event: FormEvent<HTMLFormElement>) {
@@ -157,7 +198,7 @@ export function CheckoutFlow() {
     preparationKey.current = key;
     setHasPreparationAttempt(true);
     const preparation = backendMockEnabled
-      ? checkoutApi.prepare(quote.quoteId, cartVersion, key)
+      ? checkoutApi.prepare(quote.quoteId, quote.cartVersion, key)
       : new Promise<CheckoutOperation>((resolve) => window.setTimeout(() => resolve({ checkoutOperationId: crypto.randomUUID(), state: "PREPARED" }), 200));
     preparation.then((operation) => {
       if (operation.state !== "PREPARED") throw new Error("PREPARATION_NOT_CONFIRMED");
@@ -275,11 +316,15 @@ export function CheckoutFlow() {
       </nav>
       {step === "address" && <section className="checkout-card" aria-labelledby="address-title">
         <h2 id="address-title">Dirección de envío</h2>
+        {backendMockEnabled && cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
+        {backendMockEnabled && cartStatus === "ready" && <p className="checkout-muted">Se encontraron {cartSnapshot?.items.reduce((total, item) => total + item.quantity, 0) ?? 0} productos para esta compra.</p>}
+        {backendMockEnabled && cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. <Link href="/carrito">Volver al carrito</Link></p>}
+        {backendMockEnabled && cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={retryCartLoad}>Reintentar consulta del carrito</Button></div>}
         {!addingAddress ? <>
           {addressLoading ? <p role="status">Cargando tus direcciones…</p> : addresses.length === 0 ? <p>Aún no tienes direcciones guardadas.</p> : <fieldset className="checkout-addresses"><legend>Elige dónde recibir tu pedido</legend>{addresses.map((address) => <label className="checkout-address" key={address.addressId}><input type="radio" name="address" checked={selectedId === address.addressId} disabled={busy} onChange={() => { setSelectedId(address.addressId); setQuote(null); setOperationId(""); }} /><span><strong>{address.label}</strong><br />{address.street}, {address.district}, {address.province}<br /><small>Teléfono terminado en {address.phone.slice(-3)}</small></span></label>)}</fieldset>}
-          <div className="checkout-actions"><Button variant="secondary" disabled={busy || addressLoading} onClick={() => { setAddingAddress(true); setAddressError(""); }}>Agregar dirección</Button><Button onClick={continueToSummary} loading={busy} disabled={!selectedAddress || busy || addressLoading}>Continuar</Button></div>
+          <div className="checkout-actions"><Button variant="secondary" disabled={busy || addressLoading} onClick={() => { setAddingAddress(true); setAddressError(""); }}>Agregar dirección</Button><Button onClick={continueToSummary} loading={busy} disabled={!selectedAddress || busy || addressLoading || (backendMockEnabled && cartStatus !== "ready")}>Continuar</Button></div>
         </> : <form className="checkout-form" onSubmit={saveAddress}><h3>Nueva dirección</h3><TextField label="Etiqueta" name="label" required maxLength={80} /><TextField label="Dirección" name="street" required maxLength={180} /><TextField label="Departamento" name="department" required maxLength={100} /><TextField label="Provincia" name="province" required maxLength={100} /><TextField label="Distrito" name="district" required maxLength={100} /><TextField label="Referencia (opcional)" name="reference" maxLength={180} /><TextField label="Teléfono" name="phone" type="tel" required maxLength={40} />{addressError && <p role="alert" className="checkout-error">{addressError}</p>}<div className="checkout-actions"><Button variant="tertiary" onClick={() => setAddingAddress(false)}>Cancelar</Button><Button type="submit">Guardar dirección</Button></div></form>}
-      </section>}
+       </section>}
       {step === "summary" && quote && <section className="checkout-card" aria-labelledby="summary-title">
         <h2 id="summary-title">Resumen de envío</h2>
         <p>{selectedAddress?.label}: {selectedAddress?.street}, {selectedAddress?.district}</p>
@@ -326,7 +371,7 @@ export function CheckoutFlow() {
         </ul>
         <div className="checkout-actions">
           <Button variant="secondary" onClick={copyOrderCode} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
-          <Link className="button button--secondary button--md" href={`/mis-pedidos/${encodeURIComponent(orderId)}`}>Ver mi pedido</Link>
+          {backendMockEnabled && verifiedOrder && <Link className="button button--secondary button--md" href={`/checkout/confirmado/${encodeURIComponent(orderId)}?operationId=${encodeURIComponent(operationId)}`}>Ver mi pedido</Link>}
           <Button onClick={() => window.location.assign("/")}>Seguir comprando</Button>
         </div>
         {copyMessage && <p role="status" aria-live="polite">{copyMessage}</p>}
