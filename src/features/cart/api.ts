@@ -95,9 +95,9 @@ export async function addCartItemApi(
     };
   }
 
-  // Llamada real al BFF
+  // Llamada real al BFF de Next.js
   try {
-    const res = await fetch('/api/v1/carts/current/items', {
+    const res = await fetch('/api/cart/current/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -143,7 +143,7 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
   if (useMock) {
     return { ...mockCart };
   }
-  const res = await fetch('/api/v1/carts/current', {
+  const res = await fetch('/api/cart/current', {
     credentials: 'include',
   });
   if (!res.ok) {
@@ -154,7 +154,7 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
   return {
     cartId: data?.cartId ?? null,
     version: data?.version ?? 0,
-    items: (data?.items ?? []).map((it: any) => ({
+    items: (data?.items ?? []).map((it: CartItemDTO) => ({
       sku: it.sku,
       name: it.sku.replace('INKA-', '').replace(/-/g, ' '),
       quantity: it.quantity,

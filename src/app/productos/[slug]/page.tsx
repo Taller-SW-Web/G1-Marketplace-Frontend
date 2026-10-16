@@ -104,7 +104,7 @@ export default function ProductDetailPage({ params }: PageProps) {
               priceReady={priceReady}
               busy={isBusy}
               onAdd={handleAdd}
-              onRetryAvailability={() => setAvailability('AVAILABLE')}
+              onRetryAvailability={() => {}}
             />
           </div>
         </div>

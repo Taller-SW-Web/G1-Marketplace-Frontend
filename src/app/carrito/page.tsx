@@ -10,17 +10,7 @@ export default function CarritoPage() {
     useCurrentCart(false);
 
   const handleCheckout = () => {
-    if (cart) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('checkout_cart_id', cart.cartId || '');
-        sessionStorage.setItem('checkout_cart_version', String(cart.version || 1));
-      }
-      router.push(
-        `/checkout?cartId=${encodeURIComponent(cart.cartId || '')}&version=${cart.version || 1}`
-      );
-    } else {
-      router.push('/checkout');
-    }
+    router.push('/checkout');
   };
 
   return (
