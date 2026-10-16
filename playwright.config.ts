@@ -14,15 +14,17 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "node ../G1-Marketplace-Backend/src/server.js",
+      command: "npm --prefix ../G1-Marketplace-Backend run build && npm --prefix ../G1-Marketplace-Backend run start:prod",
       url: "http://127.0.0.1:10100/api/v1/catalog/home",
       env: {
         CATALOG_SOURCE: "mock",
         PORT: "10100",
-        HOST: "127.0.0.1",
-        NODE_ENV: "development",
+        DATABASE_URL: "postgresql://test:test@127.0.0.1:1/catalog_ui_tests?schema=public",
+        CORS_ORIGINS: "http://127.0.0.1:3100",
+        NODE_ENV: "test",
       },
       reuseExistingServer: false,
+      timeout: 120000,
     },
     {
       command: "npm run start -- --port 3100 --hostname 127.0.0.1",
