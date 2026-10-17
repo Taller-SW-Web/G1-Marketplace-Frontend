@@ -1619,6 +1619,20 @@ body:has(.auth-page) .site-footer {
   margin-bottom: 16px;
 }
 
+/* CTA "Agregar al carrito" (mock V-007/F-016): el naranja lo aporta
+   Button primary de DS-001; acá sólo se ubica en el resumen. */
+.detail-add-to-cart {
+  margin-top: 24px;
+}
+
+.detail-add-feedback {
+  margin-top: 8px;
+  min-height: 20px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
 .detail-info h2 {
   font-size: 20px;
   line-height: 26px;
