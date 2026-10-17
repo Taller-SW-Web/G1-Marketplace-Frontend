@@ -1,9 +1,15 @@
 import { defineConfig } from "vitest/config";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     environment: "happy-dom",
-    include: ["tests/components/**/*.test.tsx"],
+    include: [
+      "tests/components/**/*.test.{ts,tsx}",
+      "tests/catalog/**/*.test.{ts,tsx}",
+      "tests/routes/**/*.test.ts",
+    ],
     setupFiles: ["./tests/components/setup.ts"],
   },
 });

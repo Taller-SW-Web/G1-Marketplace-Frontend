@@ -4,13 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
 
-export function SearchBox() {
+export function SearchBox({ compact = false }: { compact?: boolean }) {
   const params = useSearchParams();
   const applied = params.get("q") || "";
-  return <SearchForm key={applied} applied={applied} />;
+  return <SearchForm key={applied} applied={applied} compact={compact} />;
 }
 
-function SearchForm({ applied }: { applied: string; }) {
+function SearchForm({ applied, compact }: { applied: string; compact: boolean }) {
   const params = useSearchParams();
   const router = useRouter();
   const [value, setValue] = useState(applied);
@@ -27,7 +27,7 @@ function SearchForm({ applied }: { applied: string; }) {
       setError("Escribe entre 2 y 120 caracteres.");
       return;
     }
-    const next = new URLSearchParams(params.toString());
+    const next = compact ? new URLSearchParams() : new URLSearchParams(params.toString());
     if(normalized) next.set("q", normalized);
     else next.delete("q");
     next.delete("page");
@@ -46,6 +46,7 @@ function SearchForm({ applied }: { applied: string; }) {
     >
       <TextField
         label="Buscar productos"
+        labelHidden={compact}
         name="q"
         type="search"
         autoComplete="off"
@@ -54,7 +55,7 @@ function SearchForm({ applied }: { applied: string; }) {
           setValue(event.target.value);
           setError("");
         }}
-        placeholder="¿Qué necesitas para tu próxima meta?"
+        placeholder={compact ? "Buscar zapatillas, ropa y accesorios" : "¿Qué necesitas para tu próxima meta?"}
         error={error}
         controlClassName="search-control"
         endAdornment={
@@ -66,7 +67,7 @@ function SearchForm({ applied }: { applied: string; }) {
             className="search-submit"
             aria-label="Buscar"
           >
-            <img src="/figma/search-20.svg" alt="" width="20" height="20" />
+            <img src={compact ? "/figma/favorite-search-17.svg" : "/figma/search-20.svg"} alt="" width={compact ? 17 : 20} height={compact ? 17 : 20} />
             <span className="sr-only">Buscar</span>
           </Button>
         }

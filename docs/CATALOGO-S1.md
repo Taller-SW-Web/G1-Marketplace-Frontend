@@ -8,9 +8,13 @@ Requisito: Node.js 22.18 o posterior. En una terminal dentro de Backend:
 
 ```powershell
 npm ci
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 $env:CATALOG_SOURCE = 'mock'
-npm start
+npm run build
+npm run start:prod
 ```
+
+El Backend usa el baseline NestJS de develop y exige DATABASE_URL PostgreSQL válido al iniciar; el catálogo MOCK funciona aunque esa BD no esté disponible. CORS utiliza CORS_ORIGINS. No ejecutar el antiguo src/server.js.
 
 En otra terminal dentro de Frontend:
 
@@ -31,7 +35,7 @@ npm run build
 npm run test:e2e
 ```
 
-`test:e2e` primero construye el frontend. Las pruebas de navegador utilizan Microsoft Edge instalado (canal `msedge`) y levantan sus propios servidores: frontend compilado 3100 y BFF 10100. Se detienen al finalizar. No reutilizan servidores ajenos. Reporte local ignorado en Git: `playwright-report/`; capturas/trazas: `test-results/`. Son pruebas `MOCK` del recorrido web→Next→BFF, más fallos controlados en navegador; no llaman a G6 real. El proxy exige HTTPS salvo loopback, permitido para un BFF en la misma máquina.
+`test:e2e` primero construye el frontend; Playwright compila e inicia el Backend NestJS usando los scripts de su baseline. Las pruebas de navegador utilizan Microsoft Edge instalado (canal `msedge`) y levantan sus propios servidores: frontend compilado 3100 y BFF 10100. Se detienen al finalizar. No reutilizan servidores ajenos. El BFF de prueba recibe NODE_ENV=test, CATALOG_SOURCE=mock, CORS_ORIGINS explícito y DATABASE_URL sintético a un puerto sin servicio; no necesita una BD real ni ejecuta migraciones. Reporte local ignorado en Git: `playwright-report/`; capturas/trazas: `test-results/`. Son pruebas `MOCK` del recorrido web→Next→BFF, más fallos controlados en navegador; no llaman a G6 real. El proxy exige HTTPS salvo loopback, permitido para un BFF en la misma máquina.
 
 ## Implementado
 
@@ -66,3 +70,20 @@ Referencias: [Next App Router](https://nextjs.org/docs/app/getting-started/insta
 ## Elementos compartidos
 
 Consultar la [guía de elementos compartidos](ELEMENTOS-COMPARTIDOS.md) para contratos, consumo, ownership y límites del corte.
+
+
+## Compatibilidad con el baseline Backend
+
+El 15/10/2026 se adaptó `playwright.config.ts` al baseline NestJS `ed9582e` de Backend/develop. Las rutas públicas, DTO y estados de la web se conservan; el Frontend sigue basado en main `0f47537`. No se incorporan ramas de ficha, checkout ni historial. La configuración y contratos de catálogo se consultan en `G1-Marketplace-Backend/docs/CATALOGO-S1.md`.
+
+## Ajuste de imagen opcional — 16/10/2026
+
+`ProductCardDTO.image` admite `{url, alt}` o `null`. ProductCard utiliza `/images/product-placeholder.svg` para null en Inicio y Catálogo, sin retirar tarjetas, cambiar totales ni perder slug/returnTo. El resto del DTO y sus imágenes presentes siguen validados. El nuevo caso de navegador comprueba la carga real del SVG local y las tarjetas con y sin imagen; las pruebas de componentes cubren placeholder/alt, imagen original, enlace y validación runtime. No habilita Productos REAL ni cierra H3.
+
+## Actualización de baseline — 16/10/2026
+
+Se incorpora develop 843dfde con carrito, estilos, lockfile y configuración Vitest del equipo. Se mantiene búsqueda, URL/returnTo e imagen opcional. El proxy cart deja de solicitar automáticamente un token de prueba, conserva cookies de sesión anónima y reenvía Authorization explícita sin reemplazarla. Nuevas regresiones de Route Handler cubren esos casos y POST/rutas permitidas. [Configuración de despliegue](DESPLIEGUE-H3.md); no equivale a implementar la sesión real del bloque de acceso ni integración G6.
+
+## Integracion de develop — 17/10/2026
+
+Se incorpora develop 0b0ed1c conservando catalogo y todos los bloques del baseline. [Resoluciones y validacion actual](INTEGRACION-DEVELOP-H3-2026-10-17.md). El proxy incluye detalle por slug y comparte el helper de origen Docker con la ficha server-side. Las cifras de secciones anteriores son historicas.
