@@ -10,6 +10,7 @@
     "test": "npm run test:components && npm run test:e2e",
     "test:e2e": "npm run build && playwright test",
     "test:checkout:e2e": "npm run build && playwright test --config playwright.checkout.config.ts",
+    "test:cart-checkout:e2e": "playwright test --config playwright.cart-checkout.config.ts -g \"backend-mock quotes\"",
     "lint": "eslint .",
     "test:components": "vitest run"
   },

@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+process.env.CHECKOUT_MODE = process.env.CHECKOUT_MODE || "backend-mock";
+process.env.NEXT_PUBLIC_CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE || "backend-mock";
+process.env.MOCK_SALES_OUTCOME = process.env.MOCK_SALES_OUTCOME || "PAID";
+
 export default defineConfig({
   testDir: "./tests",
   testMatch: "checkout.spec.ts",
@@ -15,8 +19,13 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --port 3101 --hostname 127.0.0.1",
     url: "http://127.0.0.1:3101/checkout",
-    env: { NEXT_TELEMETRY_DISABLED: "1" },
-    reuseExistingServer: !process.env.CI,
+    env: {
+      NEXT_TELEMETRY_DISABLED: "1",
+      CHECKOUT_MODE: "backend-mock",
+      NEXT_PUBLIC_CHECKOUT_MODE: "backend-mock",
+      MOCK_SALES_OUTCOME: "PAID",
+    },
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });
