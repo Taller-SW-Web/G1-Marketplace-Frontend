@@ -59,7 +59,7 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
     ).toHaveAttribute("href", /\/catalogo\?categoryIds=running/);
   });
 
-  test("la ficha MOCK llega por el proxy con aviso y sin precio ni stock", async ({
+  test("UI-F011-09: ficha descriptiva MOCK sin región comercial", async ({
     page,
   }) => {
     await page.goto("/productos/zapatillas-running-aero-x");
@@ -72,15 +72,7 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
     await expect(body).not.toContainText(/S\//);
     await expect(body).not.toContainText(/precio/i);
     await expect(body).not.toContainText(/stock/i);
-
-    // CTA mock (V-007/F-016): el botón existe y confirma sin llamar al
-    // carrito real.
-    const cta = page.getByRole("button", { name: "Agregar al carrito" });
-    await expect(cta).toBeVisible();
-    await cta.click();
-    await expect(
-      page.getByText("Producto agregado al carrito (demostración)"),
-    ).toBeVisible();
+    await expect(body).not.toContainText(/carrito/i);
   });
 
   test("producto inexistente responde HTTP 404 con estado neutral", async ({

@@ -17,9 +17,8 @@ interface Props {
 }
 
 /**
- * Ficha de producto F-011 (corte H3 MOCK). Región descriptiva sin precio,
- * stock ni variantes; el CTA "Agregar al carrito" es el mock visual de
- * V-007/F-016, todavía sin integración con el carrito real.
+ * Ficha de producto F-011 (corte H3 MOCK). Región descriptiva únicamente:
+ * sin precio, stock, variantes ni controles de carrito no disponibles (UI-F011-09).
  */
 export function ProductDetailContainer({ slug, returnTo }: Props) {
   // Retorno validado: ruta interna o /catalogo por defecto (F-011 UI §97).
@@ -38,10 +37,6 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
     viewerState.slug === slug
       ? viewerState
       : { slug, open: false, index: 0 };
-  // Confirmación del CTA mock por slug (F-016 en V-007); sin efectos y sin
-  // integración real de carrito — precio, variantes e inventario llegan con
-  // F-012…F-014.
-  const [addedSlug, setAddedSlug] = useState<string | null>(null);
 
   if (state.kind === "loading") {
     return (
@@ -124,23 +119,6 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
             specs={product.technicalSpecifications}
             description={product.description}
           />
-
-          {/* CTA mock: mismo texto y estilo primario (naranja DS-001) que en
-              el diseño; sólo confirma en pantalla, no llama al carrito. */}
-          <div className="detail-add-to-cart">
-            <Button
-              fullWidth
-              size="lg"
-              onClick={() => setAddedSlug(slug)}
-            >
-              Agregar al carrito
-            </Button>
-            <p className="detail-add-feedback" role="status">
-              {addedSlug === slug
-                ? "Producto agregado al carrito (demostración)."
-                : ""}
-            </p>
-          </div>
         </div>
       </div>
 
