@@ -83,3 +83,7 @@ El 15/10/2026 se adaptó `playwright.config.ts` al baseline NestJS `ed9582e` de 
 ## Actualización de baseline — 16/10/2026
 
 Se incorpora develop 843dfde con carrito, estilos, lockfile y configuración Vitest del equipo. Se mantiene búsqueda, URL/returnTo e imagen opcional. El proxy cart deja de solicitar automáticamente un token de prueba, conserva cookies de sesión anónima y reenvía Authorization explícita sin reemplazarla. Nuevas regresiones de Route Handler cubren esos casos y POST/rutas permitidas. [Configuración de despliegue](DESPLIEGUE-H3.md); no equivale a implementar la sesión real del bloque de acceso ni integración G6.
+
+## Integracion de develop — 17/10/2026
+
+Se incorpora develop 0b0ed1c conservando catalogo y todos los bloques del baseline. [Resoluciones y validacion actual](INTEGRACION-DEVELOP-H3-2026-10-17.md). El proxy incluye detalle por slug y comparte el helper de origen Docker con la ficha server-side. Las cifras de secciones anteriores son historicas.

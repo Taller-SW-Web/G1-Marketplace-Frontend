@@ -1,6 +1,13 @@
 <!-- CATALOGO-S1 -->
 
 > **Entorno actual solicitado: Docker local.** Render queda como referencia futura. Consultar [Docker H3](docs/DOCKER-H3.md) para levantar los tres servicios. No se ha desplegado en Render.
+
+# Favoritos — corte individual H3 de Diego
+
+Consultar [ejecución de demo, contratos, pruebas y límites](docs/H3-DIEGO-FRONTEND.md). UI y persistencia local mediante NestJS/PostgreSQL; sesión y elegibilidad MOCK. No acredita cierre de F-036/F-038 ni gates externos.
+
+Vistas completas de favoritos: `npm run demo:favoritos`, abrir `/demo/h3/favoritos/lista` y elegir un escenario. No requiere backend. [Estados, pruebas y pendientes de integración](docs/FAVORITOS-VISTAS.md); [encargo de endpoints para backend](docs/FAVORITOS-FRONTEND-HANDOFF.md).
+
 # Inicio y búsqueda — corte local de Giuliano
 
 Consultar [ejecución, pruebas, contrato y pendientes del catálogo](docs/CATALOGO-S1.md).

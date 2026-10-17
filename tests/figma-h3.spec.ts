@@ -57,8 +57,8 @@ test("Figma catalog has three desktop columns and one mobile column", async ({ p
   expect(mobileFirst?.width).toBe(358);
   expect(mobileFirst?.x).toBe(16);
   expect(mobileSecond!.y).toBeGreaterThan(mobileFirst!.y);
-  await expect(page.getByRole("button", { name: /Iniciar sesión/ })).toBeDisabled();
-  await expect(page.getByRole("button", { name: /Favoritos/ })).toBeDisabled();
+  await expect(page.getByRole("link", { name: /Iniciar sesión/ })).toHaveAttribute("href", "/login");
+  await expect(page.getByRole("link", { name: /Favoritos/ })).toHaveAttribute("href", "/favoritos");
   await expect(page.locator(".product-grid")).not.toContainText("S/");
 });
 

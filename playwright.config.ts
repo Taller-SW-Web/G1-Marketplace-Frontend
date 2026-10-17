@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
+  // Wishlist uses its explicit sandbox configs, kept outside this default suite.
+  testIgnore: ["**/wishlist/**"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
@@ -15,9 +17,14 @@ export default defineConfig({
   webServer: [
     {
       command: "npm --prefix ../G1-Marketplace-Backend run build && npm --prefix ../G1-Marketplace-Backend run start:prod",
-      url: "http://127.0.0.1:10100/api/v1/catalog/home",
+      url: "http://127.0.0.1:10100/live",
       env: {
         CATALOG_SOURCE: "mock",
+        BFF_MODE: "mock",
+        USE_MOCKS: "true",
+        H3_SANDBOX_ENABLED: "false",
+        H3_AUTH_MOCK: "false",
+        ORDERS_SOURCE: "unconfigured",
         PORT: "10100",
         DATABASE_URL: "postgresql://test:test@127.0.0.1:1/catalog_ui_tests?schema=public",
         CORS_ORIGINS: "http://127.0.0.1:3100",

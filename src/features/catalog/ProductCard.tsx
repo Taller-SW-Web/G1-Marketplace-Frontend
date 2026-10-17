@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProductCardDTO } from "./types";
+import { FavoriteControl } from "@/features/wishlist/FavoriteControl";
 export function ProductCard({
   product,
   returnPath,
@@ -30,6 +31,7 @@ export function ProductCard({
           </span>
         </div>
       </Link>
+      <FavoriteControl productId={product.productId} />
     </article>
   );
 }

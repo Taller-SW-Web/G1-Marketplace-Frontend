@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: Taller-SW-Web/G1-Marketplace-Backend
-          ref: 9a410af4342696441f076d20a72a706663f3a18d
+          ref: f25857469f1ff05dacb506773b3889ce4afc6273
           path: G1-Marketplace-Backend
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -44,12 +44,13 @@ jobs:
       - run: npm --prefix ../G1-Marketplace-Backend ci
       - run: npm run lint
       - run: npm run test:components
+      - run: npm run test:server
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run typecheck
       - run: python -m pip install -r .security/requirements.txt
       - run: python scripts/install-gitleaks.py
-      - run: python scripts/security-check.py --base 843dfde7a4e52e1a836db0eb207d8f9aa3502c28 --artifact .next/static
+      - run: python scripts/security-check.py --base 0b0ed1c8c3449442e5611ddb321b80c73b1c0fc8 --artifact .next/static
       - name: Build and start our Docker H3 stack
         working-directory: G1-Marketplace-Backend
         run: docker compose -f compose.h3.yaml up --build --detach --wait --wait-timeout 180
