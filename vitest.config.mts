@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "happy-dom",
-    include: ["tests/components/**/*.test.tsx"],
+    include: ["tests/components/**/*.test.{ts,tsx}"],
     setupFiles: ["./tests/components/setup.ts"],
   },
 });
