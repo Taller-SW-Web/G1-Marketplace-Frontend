@@ -23,6 +23,10 @@ const statusLabels: Record<string, string> = {
   ANULADO: "Cancelado",
 };
 
+// F-030 (detalle de pedido) está fuera de esta entrega: no se enlaza a una ruta inexistente.
+const DETAIL_PENDING_LABEL = "Detalle próximamente";
+const DETAIL_PENDING_HINT = "El detalle del pedido estará disponible en una próxima entrega.";
+
 function statusTone(state: string) {
   switch (state) {
     case "PAGADO":
@@ -100,13 +104,15 @@ function OrderCard({ order }: { order: OrderSummary }) {
         <strong>{formatMoney(order)}</strong>
       </div>
       <div className="order-card__actions">
-        <Link
-          className="button button--secondary button--sm"
-          href={`/mis-pedidos/${encodeURIComponent(order.orderId)}`}
-          aria-label={`Ver detalle del pedido ${order.orderId}`}
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled
+          title={DETAIL_PENDING_HINT}
+          aria-label={`Detalle del pedido ${order.orderId}: ${DETAIL_PENDING_LABEL.toLowerCase()}`}
         >
-          Ver detalle
-        </Link>
+          {DETAIL_PENDING_LABEL}
+        </Button>
       </div>
     </article>
   );
@@ -134,13 +140,13 @@ function DesktopOrdersTable({ orders }: { orders: OrderSummary[] }) {
               <td>{formatMoney(order)}</td>
               <td><StatusBadge state={order.state} /></td>
               <td>
-                <Link
-                  className="orders-table__detail"
-                  href={`/mis-pedidos/${encodeURIComponent(order.orderId)}`}
-                  aria-label={`Ver detalle del pedido ${order.orderId}`}
+                <span
+                  className="orders-table__detail orders-table__detail--pending"
+                  title={DETAIL_PENDING_HINT}
+                  aria-label={`Detalle del pedido ${order.orderId}: ${DETAIL_PENDING_LABEL.toLowerCase()}`}
                 >
-                  Ver detalle
-                </Link>
+                  {DETAIL_PENDING_LABEL}
+                </span>
               </td>
             </tr>
           ))}
