@@ -113,6 +113,20 @@ test("HTTP container loads the proposed DTO and clears private data after 401", 
   await expect(page.getByRole("heading", { name: "Tus favoritos te esperan" })).toBeFocused();
 });
 
+test("favorites navigate to the integrated detail and expose cart after confirmed movement", async ({ page }) => {
+  await page.route("**/api/h3/session", route => route.fulfill({ json: { enabled: true, identity: "A", scope: "navigation-scope" } }));
+  await page.route("**/api/wishlist", route => route.fulfill({ json: [{ productId: "P1", createdAt: "2026-10-16T12:00:00.000Z", name: "Producto navegable", slug: "producto-navegable", brand: null, image: null, price: null, availability: "AVAILABLE" }] }));
+  await page.route("**/api/wishlist/items/P1/move-to-cart", route => route.fulfill({ json: { productId: "P1", cart: { cartId: "cart-test", version: 1, items: [{ sku: "SKU-TEST", quantity: 1 }] } } }));
+  await page.goto("/favoritos");
+  await page.getByRole("link", { name: "Producto navegable" }).getByRole("heading", { name: "Producto navegable" }).click();
+  await expect(page).toHaveURL(/\/productos\/producto-navegable\?returnTo=%2Ffavoritos$/);
+  await expect(page.getByRole("heading", { name: "Producto: producto-navegable" })).toBeVisible();
+  await page.goBack();
+  await page.getByRole("button", { name: "Mover al carrito: Producto navegable" }).click();
+  await expect(page.getByText("Producto en tu carrito", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ver carrito", exact: true })).toHaveAttribute("href", "/carrito");
+});
+
 test("responsive images, original SVG dimensions and all state screens", async ({ page }) => {
   test.setTimeout(90000);
   for (const scenario of ["lista", "vacio", "cargando", "error-catalogo", "agotados", "retirado", "quitando", "error-quitar", "eliminado", "restaurando", "restaurado", "error-restaurar", "moviendo", "variante", "movido", "error-mover", "incierto", "sesion-vencida"]) {

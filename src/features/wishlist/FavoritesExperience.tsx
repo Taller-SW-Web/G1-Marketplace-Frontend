@@ -24,7 +24,7 @@ export function FavoritesLoading() {
   </div>;
 }
 
-function NoticeView({ notice, controller, returnPath }: { notice: Notice; controller: FavoritesController; returnPath: string }) {
+function NoticeView({ notice, controller, returnPath, demo }: { notice: Notice; controller: FavoritesController; returnPath: string; demo: boolean }) {
   const action = () => {
     if (!notice.productId) return;
     if (notice.action === "move") void controller.move(notice.productId, true);
@@ -36,7 +36,8 @@ function NoticeView({ notice, controller, returnPath }: { notice: Notice; contro
     <img src={`/figma/favorite-${icon}-20.svg`} width="20" height="20" alt="" />
     <div role={notice.kind === "error" ? "alert" : "status"}><strong>{notice.title}</strong><p>{notice.message}</p></div>
     {notice.action === "catalog" ? <Link className="text-link" href="/catalogo">Explorar productos</Link>
-      : notice.action === "cart" ? <Button variant="tertiary" disabled title="Próximamente">Ver carrito</Button>
+      : notice.action === "cart" && !demo ? <Link className="text-link" href="/carrito">Ver carrito</Link>
+      : notice.action === "cart" ? <span>Carrito simulado; consulta el resultado al final de la lista.</span>
       : notice.action === "variant" && safeProductPath(notice.redirectUrl) ? <Link className="text-link" href={`${notice.redirectUrl}?returnTo=${encodeURIComponent(returnPath)}`}>Elegir variante</Link>
       : notice.action === "variant" ? <Button variant="tertiary" disabled title="La ficha estará disponible próximamente">Elegir variante</Button>
       : notice.action && <Button variant="tertiary" disabled={!!notice.productId && ["moving", "removing", "restoring"].includes(controller.getSnapshot().pending[notice.productId])} onClick={action}>
@@ -58,7 +59,7 @@ export function FavoritesExperience({ state, controller, returnPath = "/favorito
   }, [state.focus]);
   const feedback = <>
     {state.queryError && state.items.length > 0 && <div className="favorites-notice favorites-notice--error"><p role="alert">{state.queryError} Tus productos visibles se conservan.</p><Button onClick={() => void controller.load()}>Reintentar consulta</Button></div>}
-    {state.notices.map(notice => <NoticeView key={notice.id} notice={notice} controller={controller} returnPath={returnPath} />)}
+    {state.notices.map(notice => <NoticeView key={notice.id} notice={notice} controller={controller} returnPath={returnPath} demo={demo} />)}
   </>;
   if (state.expired) return <div ref={root}><FavoritesHeading description="Tu sesión terminó." /><EmptyState className="favorites-empty" title="Inicia sesión para continuar" description="Ocultamos tus favoritos para proteger tu información." actions={<Button disabled title="Próximamente">Iniciar sesión</Button>} /></div>;
   if (state.status === "loading") return <FavoritesLoading />;

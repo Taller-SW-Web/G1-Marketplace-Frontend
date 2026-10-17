@@ -22,7 +22,7 @@ function FavoritesHeader() {
           <img className="favorites-nav-mobile" src="/figma/favorite-nav-heart-21.svg" width="21" height="21" alt="" /><span>Favoritos</span>
         </Link>
         <button type="button" className="favorites-account-link" disabled title="Próximamente"><img src="/figma/favorite-user-16.svg" width="16" height="16" alt="" /><span>{session.identity || preview ? "Mi cuenta" : "Iniciar sesión"}</span></button>
-        <button type="button" className="favorites-nav-mobile favorites-cart-link" disabled title="Próximamente" aria-label="Carrito, próximamente"><img src="/figma/favorite-bag-21.svg" width="21" height="21" alt="" /></button>
+        <Link href="/carrito" className="favorites-nav-mobile favorites-cart-link" aria-label="Carrito de compras"><img src="/figma/favorite-bag-21.svg" width="21" height="21" alt="" /></Link>
       </nav>
     </div>
   </header>;
