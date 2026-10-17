@@ -36,6 +36,7 @@ export function CheckoutFlow() {
   const [addingAddress, setAddingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteInvalid, setQuoteInvalid] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
   const [consented, setConsented] = useState(false);
@@ -47,6 +48,7 @@ export function CheckoutFlow() {
   const [orderSubmission, setOrderSubmission] = useState<"READY" | "UNCERTAIN" | "REJECTED">("READY");
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<string | null>(null);
+  const preparationAttempt = useRef(0);
   const contactRef = useRef<Contact | null>(null);
   const submitting = useRef(false);
   const [contact, setContact] = useState<Contact>({ fullName: "", documentType: "DNI", documentNumber: "", phone: "", email: "" });
@@ -111,6 +113,7 @@ export function CheckoutFlow() {
     try {
       const nextQuote = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(nextQuote as CheckoutQuote);
+      setQuoteInvalid(false);
       setCouponMessage("");
       setStep("summary");
     } catch (error: unknown) {
@@ -126,6 +129,13 @@ export function CheckoutFlow() {
     try {
       const next = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(next);
+      setQuoteInvalid(false);
+      preparationKey.current = null;
+      setHasPreparationAttempt(false);
+      setOperationId("");
+      setConsented(false);
+      orderKey.current = null;
+      contactRef.current = null;
       setCouponMessage("La cotización se actualizó.");
     } catch (error: unknown) {
       setCouponMessage(checkoutErrorMessage(error, "No se pudo actualizar la cotización."));
@@ -162,7 +172,7 @@ export function CheckoutFlow() {
 
   function applyCoupon(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!quote || expired) return;
+    if (!quote || quoteInvalid || expired) return;
     setBusy(true);
     const normalized = coupon.trim().toUpperCase();
     const apply = backendMockEnabled
@@ -171,13 +181,14 @@ export function CheckoutFlow() {
     apply.then((next) => {
       if (next) {
         setQuote(next as CheckoutQuote);
+        setQuoteInvalid(false);
         setCouponMessage("Cupón aplicado.");
       } else setCouponMessage("Ese cupón no se puede aplicar a esta compra.");
     }).catch((error: unknown) => setCouponMessage(checkoutErrorMessage(error, "No se pudo validar el cupón."))).finally(() => setBusy(false));
   }
 
   function removeCoupon() {
-    if (!quote) return;
+    if (!quote || quoteInvalid) return;
     if (backendMockEnabled) {
       setBusy(true);
       checkoutApi.removeBenefit(quote).then(setQuote).then(() => { setCoupon(""); setCouponMessage("Se actualizó el resumen sin el beneficio."); })
@@ -191,16 +202,18 @@ export function CheckoutFlow() {
   }
 
   function prepare() {
-    if (!quote || expired || !consented) return;
+    if (!quote || quoteInvalid || expired || !consented || busy) return;
     setBusy(true);
     setNotice("");
     const key = preparationKey.current ?? crypto.randomUUID();
     preparationKey.current = key;
     setHasPreparationAttempt(true);
+    const attempt = ++preparationAttempt.current;
     const preparation = backendMockEnabled
       ? checkoutApi.prepare(quote.quoteId, quote.cartVersion, key)
       : new Promise<CheckoutOperation>((resolve) => window.setTimeout(() => resolve({ checkoutOperationId: crypto.randomUUID(), state: "PREPARED" }), 200));
     preparation.then((operation) => {
+      if (attempt !== preparationAttempt.current) return;
       if (operation.state !== "PREPARED") throw new Error("PREPARATION_NOT_CONFIRMED");
       preparationKey.current = null;
       setHasPreparationAttempt(false);
@@ -209,7 +222,29 @@ export function CheckoutFlow() {
       setOrderSubmission("READY");
       setNotice("");
       setStep("order");
-    }).catch((error: unknown) => setNotice(checkoutErrorMessage(error, "No se pudo preparar la compra. Intenta actualizar el resumen."))).finally(() => setBusy(false));
+    }).catch((error: unknown) => {
+      if (attempt !== preparationAttempt.current) return;
+      if (error instanceof CheckoutApiError && error.status === 409 && ["REVALIDATION_CHANGED", "QUOTE_EXPIRED"].includes(error.code)) {
+        preparationKey.current = null;
+        setHasPreparationAttempt(false);
+        setOperationId("");
+        setConsented(false);
+        setQuoteInvalid(true);
+        setStep("summary");
+        setNotice("");
+        return;
+      }
+      setNotice(checkoutErrorMessage(error, "No se pudo preparar la compra. Intenta actualizar el resumen."));
+    }).finally(() => {
+      if (attempt === preparationAttempt.current) setBusy(false);
+    });
+  }
+
+  function returnToSummaryDuringPreparation() {
+    preparationAttempt.current += 1;
+    setBusy(false);
+    setNotice("");
+    setStep("summary");
   }
 
   function finishVerifiedOrder(operation: CheckoutOperation) {
@@ -237,6 +272,11 @@ export function CheckoutFlow() {
     checkoutApi.createOrder(operationId, contactRef.current, orderKey.current)
       .then((operation) => { finishVerifiedOrder(operation); })
       .catch((error: unknown) => {
+        if (error instanceof CheckoutApiError && error.status === 400 && error.code === "CONTACT_VALIDATION_ERROR") {
+          setOrderSubmission("READY");
+          setNotice(checkoutErrorMessage(error, "Revisa los datos de contacto e inténtalo de nuevo."));
+          return;
+        }
         setOrderSubmission("UNCERTAIN");
         setNotice(checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave."));
       }).finally(() => setBusy(false));
@@ -244,9 +284,9 @@ export function CheckoutFlow() {
 
   function createOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!operationId || !quote || submitting.current || orderKey.current) return;
+    if (!operationId || !quote || submitting.current || busy) return;
     submitting.current = true;
-    orderKey.current = crypto.randomUUID();
+    orderKey.current ??= crypto.randomUUID();
     contactRef.current = contact;
     setBusy(true);
     setNotice("Estamos registrando tu pedido. La simulación de pago ocurre después de crear el pedido; no habrá cobro real.");
@@ -271,6 +311,11 @@ export function CheckoutFlow() {
     setNotice("Consultando la operación original…");
     if (backendMockEnabled) {
       checkoutApi.getOperation(operationId).then((operation) => {
+        if (operation.state === "PREPARED") {
+          setOrderSubmission("READY");
+          setNotice("La operación está preparada. Puedes revisar o corregir tus datos de contacto y continuar.");
+          return;
+        }
         if (!finishVerifiedOrder(operation) && operation.state === "SUBMITTED" && operation.recoveryRequired) submitBackendOrder();
       }).catch((error: unknown) => {
         if (error instanceof CheckoutApiError && error.code === "ORDER_NOT_SUBMITTED") {
@@ -339,21 +384,21 @@ export function CheckoutFlow() {
         </dl>
         {quote.selectedBenefit ? <div className="checkout-coupon">
           <p>{quote.selectedBenefit.type === "COUPON" ? "Cupón" : quote.selectedBenefit.type === "PROMOTION" ? "Promoción" : "Beneficio"} aplicado: {quote.selectedBenefit.id}</p>
-          <Button variant="tertiary" onClick={removeCoupon} disabled={busy}>Quitar beneficio</Button>
+          <Button variant="tertiary" onClick={removeCoupon} disabled={busy || quoteInvalid}>Quitar beneficio</Button>
         </div> : <form className="checkout-coupon" onSubmit={applyCoupon}>
           <TextField label="Código promocional" value={coupon} onChange={(event) => setCoupon(event.target.value)} hint={backendMockEnabled ? "Ingresa tu código promocional" : "Prueba SAVE20 o DEPORTE20"} />
-          <Button type="submit" variant="secondary" loading={busy}>Aplicar</Button>
+          <Button type="submit" variant="secondary" loading={busy} disabled={quoteInvalid}>Aplicar</Button>
         </form>}
         {couponMessage && <p role="status">{couponMessage}</p>}
-        {expired && <p role="alert" className="checkout-error">La cotización venció. Actualiza el resumen para continuar.</p>}
+        {(expired || quoteInvalid) && <p role="alert" className="checkout-error">{quoteInvalid ? "La cotización fue invalidada. Actualiza el resumen para continuar." : "La cotización venció. Actualiza el resumen para continuar."}</p>}
         <p className="checkout-muted">Cotización {backendMockEnabled ? "Backend MOCK" : "de demostración"} · vence {new Date(quote.expiresAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}</p>
         <div className="checkout-actions">
-          {expired && <Button variant="secondary" onClick={refreshQuote} loading={busy}>Actualizar resumen</Button>}
+          {(expired || quoteInvalid) && <Button variant="secondary" onClick={refreshQuote} loading={busy}>Actualizar resumen</Button>}
           <Button variant="tertiary" onClick={() => setStep("address")}>Volver a dirección</Button>
-          <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || busy}>Continuar al pago simulado</Button>
+          <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || quoteInvalid || busy}>Continuar al pago simulado</Button>
         </div>
       </section>}
-      {step === "prepare" && quote && <section className="checkout-card" aria-labelledby="prepare-title"><h2 id="prepare-title">Pago simulado</h2><p>Al continuar, registraremos tu consentimiento. El pedido aún no existe y no se inicia un cobro real.</p><label className="checkout-consent"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />Entiendo que esta compra es una simulación y no habrá cobro real.</label><p>Total estimado: <strong>{formatCheckoutMoney(quote.total)}</strong></p><div className="checkout-actions"><Button variant="tertiary" onClick={() => { preparationKey.current = null; setHasPreparationAttempt(false); setStep("summary"); }}>Volver al resumen</Button><Button onClick={prepare} loading={busy} disabled={!consented || expired}>{hasPreparationAttempt ? "Reintentar misma preparación" : "Registrar consentimiento"}</Button></div></section>}
+       {step === "prepare" && quote && <section className="checkout-card" aria-labelledby="prepare-title"><h2 id="prepare-title">Pago simulado</h2><p>Al continuar, registraremos tu consentimiento. El pedido aún no existe y no se inicia un cobro real.</p><label className="checkout-consent"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />Entiendo que esta compra es una simulación y no habrá cobro real.</label><p>Total estimado: <strong>{formatCheckoutMoney(quote.total)}</strong></p><div className="checkout-actions"><Button variant="tertiary" onClick={returnToSummaryDuringPreparation}>Volver al resumen</Button><Button onClick={prepare} loading={busy} disabled={!consented || expired || quoteInvalid}>{hasPreparationAttempt ? "Reintentar misma preparación" : "Registrar consentimiento"}</Button></div></section>}
       {step === "order" && <section className="checkout-card" aria-labelledby="order-title"><h2 id="order-title">Confirma y crea tu pedido</h2><p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>{notice && <p role="status" className="checkout-notice">{notice}</p>}{orderSubmission === "UNCERTAIN" ? <div className="checkout-actions"><Button onClick={verifyOriginalOperation} loading={busy}>Verificar operación original</Button></div> : orderSubmission === "REJECTED" ? <><p role="alert" className="checkout-error">El pago simulado fue rechazado y el pedido no se confirmó. No vuelvas a enviar esta operación.</p><div className="checkout-actions"><Button onClick={() => window.location.assign("/catalogo")}>Seguir comprando</Button></div></> : <form className="checkout-form" onSubmit={createOrder}><TextField label="Nombre completo" required minLength={2} maxLength={120} value={contact.fullName} onChange={(event) => setContact({ ...contact, fullName: event.target.value })} /><label className="checkout-label" htmlFor="documentType">Tipo de documento</label><select id="documentType" value={contact.documentType} onChange={(event) => setContact({ ...contact, documentType: event.target.value as Contact["documentType"] })}><option value="DNI">DNI</option><option value="RUC">RUC</option><option value="CE">CE</option><option value="PASAPORTE">Pasaporte</option></select><TextField label="Número de documento" required minLength={5} maxLength={24} hint="Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento." value={contact.documentNumber} onChange={(event) => setContact({ ...contact, documentNumber: event.target.value })} /><TextField label="Teléfono" type="tel" required minLength={5} maxLength={40} value={contact.phone} onChange={(event) => setContact({ ...contact, phone: event.target.value })} /><TextField label="Correo electrónico" type="email" required maxLength={254} value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /><div className="checkout-actions"><Button variant="tertiary" onClick={() => setStep("summary")}>Volver al resumen</Button><Button type="submit" loading={busy}>Crear pedido</Button></div></form>}</section>}
       {step === "confirmed" && <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">
         <p className="checkout-success-tag">{backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
