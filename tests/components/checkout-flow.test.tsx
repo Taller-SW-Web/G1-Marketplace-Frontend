@@ -1,0 +1,84 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { CheckoutFlow } from "../../src/features/checkout/CheckoutFlow";
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("CheckoutFlow local fixtures", () => {
+  it("runs address, quote, preparation and order to a clearly labeled fixture result", async () => {
+    render(<CheckoutFlow />);
+
+    expect(screen.getByRole("heading", { name: "Dirección de envío" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+
+    fireEvent.change(screen.getByLabelText("Código promocional"), {
+      target: { value: "SAVE20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect((await screen.findByRole("status")).textContent).toContain("Cupón aplicado");
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+    expect(screen.getByRole("option", { name: "DNI" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "RUC" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "CE" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "Pasaporte" })).toBeDefined();
+
+    const documentInput = screen.getByLabelText("Número de documento") as HTMLInputElement;
+    expect(screen.getByText("Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento.")).toBeDefined();
+    expect(documentInput.required).toBe(true);
+    expect(documentInput.minLength).toBe(5);
+    expect(documentInput.maxLength).toBe(24);
+    fireEvent.change(documentInput, { target: { value: "1234" } });
+    expect(documentInput.checkValidity()).toBe(false);
+    fireEvent.change(documentInput, { target: { value: "12345" } });
+    expect(documentInput.checkValidity()).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Ana Prueba" } });
+    fireEvent.change(documentInput, { target: { value: "12345678" } });
+    fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
+    fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "ana@example.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeDefined());
+    expect(screen.getByRole("heading", { name: "Resumen de productos" })).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Ver mi pedido" })).toBe(null);
+    const clipboardWrite = vi.fn().mockResolvedValue(undefined);
+    const testNavigator = Object.create(navigator) as Navigator;
+    Object.defineProperty(testNavigator, "clipboard", { configurable: true, value: { writeText: clipboardWrite } });
+    vi.stubGlobal("navigator", testNavigator);
+    fireEvent.click(screen.getByRole("button", { name: /^Copiar código de pedido PED-MOCK-/ }));
+    expect((await screen.findByRole("status")).textContent).toContain("Código de pedido copiado.");
+    expect(clipboardWrite).toHaveBeenCalledWith(expect.stringMatching(/^PED-MOCK-/));
+    expect(screen.getByText(/Resultado de fixture/)).toBeDefined();
+    expect(screen.getByText("PAGADO (fixture)")).toBeDefined();
+    expect(screen.getByRole("region", { name: "¡Pedido confirmado!" }).textContent).toContain("No se llamó al Backend");
+  });
+
+  it("does not create a preparation until the no-charge consent is checked", async () => {
+    render(<CheckoutFlow />);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    expect((screen.getByRole("button", { name: "Registrar consentimiento" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("heading", { name: "Confirma y crea tu pedido" })).toBe(null);
+  });
+
+  it("keeps the current quote when a local coupon is not applicable", async () => {
+    render(<CheckoutFlow />);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    const totalBefore = screen.getByText(/Total estimado/).parentElement?.textContent;
+
+    fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "NOTVALID" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect((await screen.findByRole("status")).textContent).toContain("no se puede aplicar");
+    expect(screen.getByText(/Total estimado/).parentElement?.textContent).toBe(totalBefore);
+  });
+});
