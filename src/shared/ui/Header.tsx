@@ -22,10 +22,10 @@ export function Header() {
             <SearchBox />
           </Suspense>
           <div className="header-actions" aria-label="Cuenta y compras">
-            <button className="header-action account-action" disabled title="Próximamente" aria-label="Iniciar sesión, próximamente">
+            <Link className="header-action account-action" href="/login" aria-label="Iniciar sesión">
               <img className="mobile-icon" src="/figma/user-24.svg" alt="" width="24" height="24" />
               <span>Iniciar sesión</span>
-            </button>
+            </Link>
             <Link href="/favoritos" className="header-action" aria-label="Favoritos">
               {favoritesContent}
             </Link>
