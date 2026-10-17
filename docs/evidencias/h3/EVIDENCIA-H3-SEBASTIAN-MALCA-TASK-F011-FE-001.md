@@ -24,6 +24,7 @@
   1. **Cada tarjeta abre la ficha correspondiente + inexistente → 404:** el modo MOCK ahora **pasa por el BFF** — el adaptador dejó su fixture local y consulta siempre el proxy → BFF (`BFF_MODE=mock` vive allá; el BFF sirve las 32 fichas `producto-demostracion-N` espejo del listado); el aviso `[MOCK]` se deriva de `meta.source` de la respuesta (data-driven: reproducible en build limpio, sin `NEXT_PUBLIC_*`); **HTTP 404 real** con gate server-only en `page.tsx` (slug fuera de contrato o 404 del BFF → `notFound()`) + nuevo `not-found.tsx` de la ruta que conserva el estado neutral RC-F-011-03 («Producto no disponible» + «Volver al catálogo»).
   2. **Prueba Frontend → BFF MOCK reproducible:** `playwright.config.ts` arranca el **BFF NestJS** (`npm ci` + `build` del backend hermano, verificación por `/live`) y `next start` con `MARKETPLACE_API_URL` apuntando a él; `testIgnore` documentado para `catalog.spec.ts`/`figma-h3.spec.ts` (dependen de `GET /home` y `GET /products` del PR #11 F-006/F-007, aún sin fusionar — se reincorporan al fusionarlo); spec nueva `tests/product-detail.e2e.spec.ts` con **6 casos**: tarjeta → ficha con `returnTo`, aviso MOCK vía proxy, HTTP 404 (inexistente y slug especial) y errores acordados 503/504. Comando único: `npm run test:e2e`.
   3. **Coordinaciones:** conflictos de integración con el revisor (merge develop: `page.tsx` del carrito reemplazado por el de F-011, sin región comercial en H3) y acceso al avance de carrito con `@andreus710` — mensajes pendientes de publicar.
+- **Corrección de errores de API — Problem Details + `X-Request-Id` (2026-10-17):** la lógica del proxy se extrajo a `src/app/api/catalog/bff-proxy.ts` (la ruta se volvió un orquestador fino, testeable sin `next/server`) y ahora (1) **propaga o genera `X-Request-Id`** hacia el BFF y lo devuelve siempre al navegador (si el BFF aún no lo envía — versión previa — se conserva el id del proxy) y (2) responde sus **errores propios** (ruta no permitida, BFF caído o cuerpo no-JSON) en el **mismo sobre `application/problem+json`** del contrato F-011 §4 — `{type, title, status, code, instance, requestId}`. 8 tests unitarios nuevos en `tests/catalog/bff-proxy.test.ts` (correlación, problem+json propio, passthrough del problema del BFF y fallo recuperable).
 
 ## Verificación contra specs (G1-Marketplace-SPECS)
 
@@ -56,7 +57,7 @@ Leídos y contrastados: `funcional/F-011` · `ui/F-011` · `contrato-api/F-011` 
 |---|---|
 | `npm run typecheck` | ✅ 0 errores |
 | `npm run lint` | ✅ 0 errores / 0 warnings |
-| `npm run test:components` | ✅ **75/75** (9 suites; unitarios F-011 con stub de fetch espejo del contrato del BFF) |
+| `npm run test:components` | ✅ **161/161** (20 suites — F-011 + las de otras features de la rama; unitarios F-011 con stub de fetch espejo del contrato del BFF) |
 | `npm run build` | ✅ `ƒ /productos/[slug]` |
 | `npm run test:e2e` | ✅ **6/6** — reproducible: levanta el BFF NestJS en MOCK (`npm ci` + `build` + `/live`) y `next start` |
 | `npm run test` | ✅ components + e2e (igual que los dos anteriores en serie) |
@@ -69,6 +70,7 @@ Leídos y contrastados: `funcional/F-011` · `ui/F-011` · `contrato-api/F-011` 
 - Handoff `returnTo`: PASS — validador InternalPath (`tests/catalog/returnTo.test.tsx`, 12 tests): conserva `/catalogo?q=…`, rechaza externos (`https:`, `//`, `javascript:`), backslashes y chars de control; consumido en los enlaces "Volver al catálogo" y en la migra "Catálogo" — **verificado también en e2e**: la tarjeta navega a `/productos/producto-demostracion-5?returnTo=…` y la migra conserva `/catalogo?categoryIds=running`
 - Tarjeta → ficha del producto correspondiente: PASS (e2e con listado interceptado: clic en tarjeta → ficha «Zapatillas de running 05» + aviso `[MOCK]`; en el BFF cada slug tiene su ficha propia)
 - Errores acordados: PASS — `producto-error-503-mock` → estado de error con `Reintentar` + `data-error-code=PRODUCT_CATALOG_UNAVAILABLE`; `producto-error-504-mock` → `PRODUCT_CATALOG_TIMEOUT`
+- Correlación y Problem Details del proxy: PASS (unit + **smoke end-to-end** con el BFF NestJS real en `BFF_MODE=mock`: `X-Request-Id` conservado de punta a punta, `application/problem+json` en los errores del BFF y en los propios del proxy)
 - Etiqueta: **MOCK**
 
 ### Verificación en navegador (Playwright, chromium)
