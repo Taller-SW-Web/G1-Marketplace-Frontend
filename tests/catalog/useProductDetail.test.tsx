@@ -1,7 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useProductDetail } from "../../src/features/catalog/hooks/useProductDetail";
 import { ProductDetailContainer } from "../../src/features/catalog/components/ProductDetailContainer";
+import { installBffFetchStub, restoreBffFetchStub } from "./bffFetch.stub";
+
+// El modo MOCK vive en el BFF: los tests sustituyen `fetch` por un stub que
+// replica el contrato (200 con meta.source=MOCK, 404/503/504 acordados).
+beforeEach(() => {
+  installBffFetchStub();
+});
+afterEach(() => {
+  restoreBffFetchStub();
+});
 
 // El contenedor navega con next/link; fuera de Next sólo interesa el destino.
 vi.mock("next/link", () => ({

@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   sanitizeCatalogReturnTo,
   sanitizeReturnTo,
 } from "../../src/features/catalog/returnTo";
 import { ProductDetailContainer } from "../../src/features/catalog/components/ProductDetailContainer";
+import { installBffFetchStub, restoreBffFetchStub } from "./bffFetch.stub";
 
 // El contenedor navega con next/link; fuera de Next sólo interesa el destino.
 vi.mock("next/link", () => ({
@@ -21,6 +22,14 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+
+// El modo MOCK vive en el BFF: stub de fetch que replica sus respuestas.
+beforeEach(() => {
+  installBffFetchStub();
+});
+afterEach(() => {
+  restoreBffFetchStub();
+});
 
 describe("sanitizeReturnTo (validador InternalPath del handoff)", () => {
   it("conserva rutas internas válidas", () => {

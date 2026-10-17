@@ -16,7 +16,5 @@ export default defineConfig({
       "tests/catalog/**/*.test.{ts,tsx}",
     ],
     setupFiles: ["./tests/components/setup.ts"],
-    // Corte H3: las pruebas de F-011 corren contra el adaptador MOCK.
-    env: { NEXT_PUBLIC_BFF_MODE: "mock" },
   },
 });

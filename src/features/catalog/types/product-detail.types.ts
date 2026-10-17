@@ -37,7 +37,8 @@ export interface ProductDetailResponseDTO {
 // Estados de la máquina F-011
 export type ProductDetailStatus =
   | { kind: "loading" }
-  | { kind: "ready"; data: ProductDetailDTO }
+  // `source` viene del `meta.source` del BFF: gobierna el aviso [MOCK].
+  | { kind: "ready"; data: ProductDetailDTO; source?: string }
   | { kind: "not_available" } // 404 / slug inválido
   | { kind: "error"; code: ProductDetailErrorCode };
 

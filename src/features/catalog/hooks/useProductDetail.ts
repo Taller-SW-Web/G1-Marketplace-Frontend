@@ -24,7 +24,10 @@ export function useProductDetail(slug: string) {
     getProductDetail(slug, controller.signal)
       .then((res) => {
         if (!controller.signal.aborted)
-          setResult({ key, status: { kind: "ready", data: res.data } });
+          setResult({
+            key,
+            status: { kind: "ready", data: res.data, source: res.meta?.source },
+          });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;

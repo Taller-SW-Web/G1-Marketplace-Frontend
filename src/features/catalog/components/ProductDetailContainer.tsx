@@ -16,8 +16,6 @@ interface Props {
   returnTo?: string;
 }
 
-const MOCK_MODE = process.env.NEXT_PUBLIC_BFF_MODE === "mock";
-
 /**
  * Ficha de producto F-011 (corte H3 MOCK). Región descriptiva únicamente:
  * sin precio, stock, variantes ni carrito.
@@ -101,7 +99,9 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
         <span aria-current="page">{product.name}</span>
       </nav>
 
-      {MOCK_MODE && (
+      {/* Aviso data-driven: el BFF declara meta.source (MOCK en H3, REAL
+          post I-01); no depende de variables de entorno de build. */}
+      {state.source === "MOCK" && (
         <p className="demo-notice" role="note">
           Ficha de demostración · Datos de prueba [MOCK]
         </p>
