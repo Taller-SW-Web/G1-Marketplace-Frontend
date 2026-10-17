@@ -78,13 +78,33 @@ test("HTTP container loads the proposed DTO and clears private data after 401", 
   await expect(page.getByRole("heading", { name: "Tus favoritos te esperan" })).toBeFocused();
 });
 
+test("favorites use the shared site header and footer", async ({ page }) => {
+  await page.route("**/api/h3/session", route => route.fulfill({ json: { enabled: true, identity: "A", scope: "shared-chrome-scope" } }));
+  await page.route("**/api/wishlist", route => route.fulfill({ json: [] }));
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(size);
+    await page.goto("/favoritos");
+    const header = page.getByRole("banner");
+    await expect(header.getByRole("link", { name: "Inka Athletics, inicio" })).toBeVisible();
+    await expect(header.getByRole("searchbox", { name: "Buscar productos" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Favoritos" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Carrito de compras" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Saltar al contenido" })).toHaveCount(1);
+    await expect(page.getByRole("main")).toHaveCount(1);
+    const footer = page.getByRole("contentinfo");
+    await expect(footer).toContainText("INKA ATHLETICS");
+    const reachesBottom = await footer.evaluate(node => Math.abs(node.getBoundingClientRect().bottom - document.documentElement.scrollHeight) <= 1);
+    expect(reachesBottom).toBe(true);
+  }
+});
+
 test("favorites navigate to the integrated detail", async ({ page }) => {
   await page.route("**/api/h3/session", route => route.fulfill({ json: { enabled: true, identity: "A", scope: "navigation-scope" } }));
-  await page.route("**/api/wishlist", route => route.fulfill({ json: [{ productId: "P1", createdAt: "2026-10-16T12:00:00.000Z", name: "Producto navegable", slug: "producto-navegable", brand: null, image: null, price: null, availability: "AVAILABLE" }] }));
+  await page.route("**/api/wishlist", route => route.fulfill({ json: [{ productId: "P1", createdAt: "2026-10-16T12:00:00.000Z", name: "Producto navegable", slug: "producto-demostracion-5", brand: null, image: null, price: null, availability: "AVAILABLE" }] }));
   await page.goto("/favoritos");
   await page.getByRole("link", { name: "Producto navegable" }).getByRole("heading", { name: "Producto navegable" }).click();
-  await expect(page).toHaveURL(/\/productos\/producto-navegable\?returnTo=%2Ffavoritos$/);
-  await expect(page.getByRole("heading", { name: "Producto: producto-navegable" })).toBeVisible();
+  await expect(page).toHaveURL(/\/productos\/producto-demostracion-5\?returnTo=%2Ffavoritos$/);
+  // El contenido de la ficha lo cubre product-detail.e2e.spec.ts (requiere el BFF); aquí solo el handoff.
 });
 
 test("responsive images, original SVG dimensions and all state screens", async ({ page }) => {
