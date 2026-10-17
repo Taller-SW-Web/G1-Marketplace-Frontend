@@ -1,0 +1,163 @@
+{
+  "fileKey": "k6JZRdgbO7YtZXeFqygE8p",
+  "nodes": [
+    "206:3140",
+    "206:3224",
+    "206:3299",
+    "206:3362",
+    "206:3393",
+    "206:3483",
+    "206:3514",
+    "206:3599",
+    "206:3685",
+    "206:3761",
+    "215:2976",
+    "215:3135"
+  ],
+  "assets": [
+    {
+      "file": "favorite-alert-20.svg",
+      "width": "20",
+      "height": "20",
+      "sha256": "775cfbf788cbc2d7460e7e252189ba68bb13217889592e12f5add5d04ffcd8bf"
+    },
+    {
+      "file": "favorite-bag-21.svg",
+      "width": "21",
+      "height": "21",
+      "sha256": "0caf38157e3040c5f56ac7b617e342eb144ba6f2a5b86cb4c416198f4896144a"
+    },
+    {
+      "file": "favorite-bottle.png",
+      "width": 65536,
+      "height": 4293722192,
+      "sha256": "d75d3552750746924a542ec49d405a11aeafea6d988998f15b4c61c319315542"
+    },
+    {
+      "file": "favorite-check-20.svg",
+      "width": "20",
+      "height": "20",
+      "sha256": "918fbe9177d0b387253322dbedc56c77d993eb7cc7fa8e14fc37c3d28ba8234f"
+    },
+    {
+      "file": "favorite-chevron-12.svg",
+      "width": "12",
+      "height": "12",
+      "sha256": "3f3cd24d9af49822ac48ca1fc338828788f5746b98389921b734e00819999649"
+    },
+    {
+      "file": "favorite-close-15.svg",
+      "width": "15",
+      "height": "15",
+      "sha256": "b00a214124329d0b9f26e36e531eda80774d34ac019286c85f768a800269d48b"
+    },
+    {
+      "file": "favorite-cloud-off-32.svg",
+      "width": "32",
+      "height": "32",
+      "sha256": "5497dbb7fcf4635eba986ef327e02dee0399f0530b567acb18cd48975be791ef"
+    },
+    {
+      "file": "favorite-grid-17.svg",
+      "width": "17",
+      "height": "17",
+      "sha256": "d1c9cc4e7c14d6509a702eb5967a48aa4ec936e6fd1f1ad09849c32bedae1a49"
+    },
+    {
+      "file": "favorite-heart-17.svg",
+      "width": "17",
+      "height": "17",
+      "sha256": "c2e78a6503206db90e220d608446c2b59d3ba2f3b19ca3dbf9796115044ecfed"
+    },
+    {
+      "file": "favorite-heart-19.svg",
+      "width": "19",
+      "height": "19",
+      "sha256": "09f0a024659cb2164e2fb5c6030e123b9fadd61beeb7d3d1d313f8d416104094"
+    },
+    {
+      "file": "favorite-heart-32.svg",
+      "width": "32",
+      "height": "32",
+      "sha256": "bb933a97500f0e138e13b5b37f34f5afdca192d884d54873921a2cea3d08ef5c"
+    },
+    {
+      "file": "favorite-info-20.svg",
+      "width": "20",
+      "height": "20",
+      "sha256": "32aa202a242067587239b23c59bd9033db191418c3706ba895cdf42f946ff0b3"
+    },
+    {
+      "file": "favorite-menu-22.svg",
+      "width": "22",
+      "height": "22",
+      "sha256": "dc5fbe4a323bc6fdfd5808eca7c5b831acfc69f3d5370187f2960f63cf5627d8"
+    },
+    {
+      "file": "favorite-nav-heart-21.svg",
+      "width": "21",
+      "height": "21",
+      "sha256": "50968496853402310478327cf682334f47cd59abd7e892aeab40fdd0f0cd098c"
+    },
+    {
+      "file": "favorite-pegasus.png",
+      "width": 1500,
+      "height": 1500,
+      "sha256": "318e7877f5a1299863807919e4aadda3e1c514aa778f405632d196c7b1711c33"
+    },
+    {
+      "file": "favorite-refresh.svg",
+      "width": "15",
+      "height": "15",
+      "sha256": "87f55c18e8b68862eaaa2182c455d86c977fe1f07bf4d70fa2fbf46861637c32"
+    },
+    {
+      "file": "favorite-search-17.svg",
+      "width": "17",
+      "height": "17",
+      "sha256": "a879f24db33390bc2ee13f5cc32c0082a4a272c4978e16fd94aa1be60aae8c73"
+    },
+    {
+      "file": "favorite-shield.svg",
+      "width": "15",
+      "height": "15",
+      "sha256": "bf0b4a2298f7ce2e6b341022625ac9fb412d28f3057d40d02abf2bb388653e8f"
+    },
+    {
+      "file": "favorite-terrex.png",
+      "width": 65536,
+      "height": 4293722192,
+      "sha256": "c8b9bcb9b74690a9251115ae5d945323ad12fa09036e5258022232b5c42a4e09"
+    },
+    {
+      "file": "favorite-trash-17.svg",
+      "width": "17",
+      "height": "17",
+      "sha256": "50451b07360af27718d8cb84d80aaf89b36be7b60545a46da4ff75029904f71c"
+    },
+    {
+      "file": "favorite-truck.svg",
+      "width": "15",
+      "height": "15",
+      "sha256": "f52e682a7d4c644fe2ecfa82f70d63f9e90903455f855cbc5c628b324bbec513"
+    },
+    {
+      "file": "favorite-undo-17.svg",
+      "width": "17",
+      "height": "17",
+      "sha256": "ab3acdcfc5c1e272e25fa0a2ec9634b4804cad1d8edb60387e67be42cdf357fb"
+    },
+    {
+      "file": "favorite-user-16.svg",
+      "width": "16",
+      "height": "16",
+      "sha256": "5f3250e445b1c30e6335f96e422486005737976f01f84701bca94ae2c80aca93"
+    },
+    {
+      "file": "favorite-vest.png",
+      "width": 65536,
+      "height": 4293722192,
+      "sha256": "43e3298181c861d7cbeefeb75d512c29d46d558596d4f61d48465cd59dd93ec4"
+    }
+  ]
+}

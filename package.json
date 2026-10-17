@@ -7,14 +7,22 @@
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:components && npm run test:e2e",
+    "test": "npm run test:components && npm run test:server && npm run test:e2e",
     "test:e2e": "npm run build && playwright test",
     "lint": "eslint .",
-    "test:components": "vitest run"
+    "test:components": "vitest run",
+    "test:server": "vitest run --config vitest.server.config.mts",
+    "test:e2e:wishlist": "playwright test --config playwright.wishlist.config.ts",
+    "test:e2e:wishlist:connected": "node scripts/h3-connected.mjs",
+    "test:e2e:wishlist:production": "playwright test --config playwright.wishlist-production.config.ts",
+    "demo:h3": "node scripts/h3-connected.mjs --demo",
+    "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",
+    "demo:favoritos": "node scripts/favorites-demo.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
     "@fontsource/oswald": "5.3.0",
+    "@fontsource/roboto-condensed": "5.2.8",
     "next": "16.4.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
