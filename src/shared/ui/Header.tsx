@@ -16,10 +16,10 @@ export function Header() {
             <SearchBox />
           </Suspense>
           <div className="header-actions" aria-label="Cuenta y compras">
-            <button className="header-action account-action" disabled title="Próximamente" aria-label="Iniciar sesión, próximamente">
+            <Link className="header-action account-action" href="/login" aria-label="Iniciar sesión">
               <img className="mobile-icon" src="/figma/user-24.svg" alt="" width="24" height="24" />
               <span>Iniciar sesión</span>
-            </button>
+            </Link>
             <button className="header-action" disabled title="Próximamente" aria-label="Favoritos, próximamente">
               <img className="desktop-icon" src="/figma/heart-20.svg" alt="" width="20" height="20" />
               <img className="mobile-icon" src="/figma/heart-24.svg" alt="" width="24" height="24" />

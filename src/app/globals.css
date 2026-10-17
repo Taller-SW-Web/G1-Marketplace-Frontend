@@ -1194,6 +1194,135 @@ h3 {
 .field-control.has-error {
   border-color: var(--error);
 }
+
+/* V-001 · Acceso H3. La vista usa los mismos tokens y controles compartidos. */
+body:has(.auth-page) .site-header,
+body:has(.auth-page) .site-footer {
+  display: none;
+}
+
+.auth-page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--surface-subtle);
+}
+
+.auth-card {
+  width: min(100%, 496px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-cloud);
+}
+
+.auth-intro,
+.auth-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.auth-intro { gap: 24px; }
+.auth-heading { gap: 8px; }
+.auth-heading p { color: var(--text-secondary); }
+
+.auth-logo {
+  width: 195px;
+  height: 79px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-logo img {
+  position: absolute;
+  left: -3.91%;
+  top: -48.08%;
+  width: 107.66%;
+  height: 199.39%;
+  max-width: none;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-card .field-control {
+  height: 48px;
+  padding: 0 12px;
+  border-color: var(--text-secondary);
+}
+
+.auth-card .field-control input { padding: 8px 4px; }
+.auth-card .field-control input::placeholder { color: var(--text-secondary); opacity: 1; }
+.auth-card .field-control.has-error { border-color: var(--error); }
+.auth-toggle {
+  min-width: 58px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.auth-text-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-text-link:hover { text-decoration: underline; }
+.auth-register {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.auth-register .auth-text-link { color: var(--text-primary); }
+.auth-demo-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.auth-feedback {
+  padding: 16px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.auth-feedback--error { background: var(--error-background); border-color: var(--error); }
+.auth-feedback--success { background: #eff9e4; border-color: #43811f; }
+
+@media (max-width: 600px) {
+  .auth-card { padding: 32px 24px; }
+  .auth-register { flex-wrap: wrap; }
+}
 .field-adornment,
 .field-actions {
   display: inline-flex;
