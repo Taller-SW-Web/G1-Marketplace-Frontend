@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     environment: "happy-dom",
-    include: ["tests/components/**/*.test.tsx"],
+    include: ["tests/components/**/*.test.{ts,tsx}"],
     setupFiles: ["./tests/components/setup.ts"],
   },
 });

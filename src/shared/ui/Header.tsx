@@ -29,11 +29,11 @@ export function Header() {
             <Link href="/favoritos" className="header-action" aria-label="Favoritos">
               {favoritesContent}
             </Link>
-            <button className="header-action" disabled title="Próximamente" aria-label="Carrito, próximamente">
+            <Link href="/carrito" className="header-action" aria-label="Carrito de compras">
               <img className="desktop-icon" src="/figma/bag-20.svg" alt="" width="20" height="20" />
               <img className="mobile-icon" src="/figma/bag-24.svg" alt="" width="24" height="24" />
               <span>Carrito</span>
-            </button>
+            </Link>
           </div>
         </div>
         <CategoryNavigation />
