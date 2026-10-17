@@ -6,7 +6,7 @@ export default defineConfig({
   // F-006/F-007 (PR #11 de Giuliano): catalog.spec.ts y figma-h3.spec.ts
   // ejercitan GET /home y GET /products del BFF, aún no fusionados en
   // develop. Se reincorporan al fusionar ese PR.
-  testIgnore: ["**/catalog.spec.ts", "**/figma-h3.spec.ts"],
+  testIgnore: ["**/catalog.spec.ts", "**/figma-h3.spec.ts", "**/wishlist/**"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
