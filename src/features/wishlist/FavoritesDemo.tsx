@@ -19,19 +19,18 @@ export function FavoritesDemo({ scenario }: { scenario: Scenario }) {
         await controller.remove(id);
         if (active && ["restaurando", "restaurado", "error-restaurar"].includes(scenario)) await controller.restore(id);
       }
-      if (active && ["moviendo", "movido", "error-mover", "incierto", "variante"].includes(scenario)) await controller.move(scenario === "variante" ? demoProducts[1].productId : id);
     });
     return () => { active = false; };
   }, [controller, scenario]);
   return <>
     <aside className="favorites-demo-controls" aria-label="Escenarios de demostración">
-      <p><strong>Demostración local</strong> · Datos y operaciones simulados; no modifica tu cuenta ni el carrito real.</p>
+      <p><strong>Demostración local</strong> · Datos y operaciones simulados; no modifica tu cuenta real.</p>
       <label htmlFor="favorites-scenario">Estado de favoritos</label>
       <select id="favorites-scenario" value={scenario} onChange={event => {
         if (isScenario(event.target.value)) router.replace(`/demo/h3/favoritos/lista?estado=${event.target.value}`);
       }}>{Object.entries(scenarios).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-      {["quitando", "restaurando", "moviendo", "cargando"].includes(scenario) && <Button variant="secondary" onClick={demo.complete}>Completar operación simulada</Button>}
+      {["quitando", "restaurando", "cargando"].includes(scenario) && <Button variant="secondary" onClick={demo.complete}>Completar operación simulada</Button>}
     </aside>
-    <FavoritesExperience state={state} controller={controller} returnPath={`/demo/h3/favoritos/lista?estado=${scenario}`} demo />
+    <FavoritesExperience state={state} controller={controller} returnPath={`/demo/h3/favoritos/lista?estado=${scenario}`} />
   </>;
 }

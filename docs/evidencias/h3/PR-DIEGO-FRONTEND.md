@@ -1,20 +1,21 @@
-# feat(favoritos): implementar interfaz V-009 y operaciones F-036–039
+# feat(favoritos): implementar interfaz V-009 y operaciones F-036–038
 
 Base: `develop`. Rama: `feat/s1-f036-f038-frontend`. Auditoría como borrador; no está listo para entrega al cliente.
 
-La cabecera abre `/favoritos`, con solicitud de sesión, lista de productos, vacío, carga y errores. Las tarjetas separan disponibles, agotados y retirados; permiten quitar y deshacer con recuperación ante fallos. El movimiento mantiene el favorito hasta confirmar la operación y conserva la clave idempotente cuando el resultado es incierto. Se usan los recursos de Figma y los mismos componentes en la vista real y en los 18 escenarios de demostración.
+La cabecera abre `/favoritos`, con solicitud de sesión, lista de productos, vacío, carga y errores. Las tarjetas separan disponibles, agotados y retirados; permiten quitar y deshacer con recuperación ante fallos. Se usan los recursos de Figma y los mismos componentes en la vista real y en los escenarios de demostración.
 
-Se integra `origin/develop` para conservar carrito, checkout, historial y ficha existentes. Imagen/nombre y Elegir variante enlazan a `/productos/{slug}` con `returnTo`; Ver carrito tras éxito enlaza a `/carrito`. La ficha actual es provisional MOCK y pertenece a otro integrante; falta su acción de retorno seguro.
+Se integra `origin/develop` para conservar carrito, checkout, historial y ficha existentes. Imagen/nombre enlazan a `/productos/{slug}` con `returnTo`. La ficha actual es provisional MOCK y pertenece a otro integrante; falta su acción de retorno seguro. La sección de favoritos no mueve productos al carrito.
 
 ## Límites de entrega
 
-- GET de favoritos y movimiento atómico/idempotente no existen todavía en el backend de este corte. Los flags permanecen desactivados. Contrato: [FAVORITOS-FRONTEND-HANDOFF.md](../../FAVORITOS-FRONTEND-HANDOFF.md).
+- El GET de favoritos no existe todavía en el backend de este corte. El flag de lectura permanece desactivado. Contrato: [FAVORITOS-FRONTEND-HANDOFF.md](../../FAVORITOS-FRONTEND-HANDOFF.md).
+- El movimiento de favoritos al carrito (F-039) se retiró de este PR durante la auditoría por desajuste de contrato con el backend; se reespecificará en un corte posterior.
 - La identidad A/B es sandbox development/test; no reemplaza la sesión real. Los handlers de favoritos rechazan producción aunque el flag sandbox sea true. Login/mi cuenta quedan pendientes.
 - No se promete integración comercial, detalle homologado ni cierre de gates. Las pruebas con HTTP interceptado no acreditan persistencia real de las operaciones nuevas. La evidencia conectada anterior aplica exclusivamente a guardar/quitar.
 
 ## Auditoría solicitada
 
-Revisar aislamiento de sesión, origen y sanitización del BFF; carreras por producto, DELETE incierto, Deshacer y foco; idempotencia de movimiento y versionado de snapshots; fidelidad visual y accesibilidad; compatibilidad de los componentes compartidos con develop. No se solicitan revisores automáticamente ni se publica en producción.
+Revisar aislamiento de sesión, origen y sanitización del BFF; carreras por producto, DELETE incierto, Deshacer y foco; fidelidad visual y accesibilidad; compatibilidad de los componentes compartidos con develop. No se solicitan revisores automáticamente ni se publica en producción.
 
 Antes de integrar develop pasaron TypeScript, lint, build, 46 pruebas de componentes, 45 de servidor, 10 E2E de vistas y una regresión de agotado/Deshacer. La aserción de bloqueo de producción pasó, pero la ejecución se interrumpió durante limpieza; no se declara cierre limpio. La revalidación tras integrar develop se registra en la descripción del PR.
 

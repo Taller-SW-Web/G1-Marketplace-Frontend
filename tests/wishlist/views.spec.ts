@@ -45,11 +45,10 @@ test("confirmed removal of the last favorite focuses the empty heading and does 
 test("out of stock and retired have distinct sections and remain removable", async ({ page }) => {
   await page.goto(preview + "?estado=agotados");
   const out = page.getByRole("region", { name: "Sin existencias (1)" });
-  await expect(out.getByRole("button", { name: "Sin existencias: Nano Puff Vest" })).toBeDisabled();
-  await expect(out.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" })).toBeEnabled();
+  await expect(out.getByText("Sin existencias", { exact: true })).toBeVisible();
   await out.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" }).click();
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
-  await expect(out.getByRole("button", { name: "Sin existencias: Nano Puff Vest" })).toBeDisabled();
+  await expect(out.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" })).toBeVisible();
   await page.goto(preview + "?estado=retirado");
   const retired = page.getByRole("region", { name: "Productos no disponibles (1)" });
   await expect(retired.getByText("Imagen no disponible")).toBeVisible();
@@ -63,40 +62,6 @@ test("remove and restore failures never claim success", async ({ page }) => {
   await page.goto(preview + "?estado=error-restaurar");
   await expect(page.getByText("No pudimos restaurar el producto", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: first })).toHaveCount(0);
-});
-
-test("moving is local, preserves the card and only removes after confirmation", async ({ page }) => {
-  await page.goto(preview + "?estado=moviendo");
-  const moving = page.locator('[data-favorite-id="preview-1"]');
-  await expect(moving).toHaveAttribute("aria-busy", "true");
-  await expect(moving.getByRole("button", { name: `Eliminar de favoritos: ${first}` })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Eliminar de favoritos: Terrex Swift R3 GTX" })).toBeEnabled();
-  await page.getByRole("button", { name: "Completar operación simulada" }).click();
-  await expect(page.getByText("Producto en tu carrito", { exact: true })).toBeVisible();
-  await expect(moving).toHaveCount(0);
-});
-
-test("variant and move failures preserve favorite and do not invent SKU or reserve", async ({ page }) => {
-  await page.goto(preview + "?estado=variante");
-  await expect(page.getByText("Elige una variante", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Terrex Swift R3 GTX" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Elegir variante" })).toHaveAttribute("href", /\/productos\/terrex-swift-r3-gtx\?returnTo=/);
-  await page.goto(preview + "?estado=error-mover");
-  await expect(page.getByText("No pudimos mover el producto", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: first })).toBeVisible();
-  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
-  await expect(page.getByText("Producto en tu carrito", { exact: true })).toBeVisible();
-  await expect(page.getByText(/20 minutos|68%/)).toHaveCount(0);
-});
-
-test("lost response replays the original operation without adding a second unit", async ({ page }) => {
-  await page.goto(preview + "?estado=incierto");
-  await expect(page.getByRole("alert").getByText("Movimiento sin confirmar", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: first })).toBeVisible();
-  await page.getByRole("button", { name: "Comprobar resultado" }).click();
-  await expect(page.getByText("Producto en tu carrito", { exact: true })).toBeVisible();
-  await page.getByText("Ver resultado del carrito de demostración", { exact: true }).click();
-  await expect(page.getByText("Versión 1 · 1 unidades. No es una reserva.")).toBeVisible();
 });
 
 test("HTTP container loads the proposed DTO and clears private data after 401", async ({ page }) => {
@@ -113,23 +78,18 @@ test("HTTP container loads the proposed DTO and clears private data after 401", 
   await expect(page.getByRole("heading", { name: "Tus favoritos te esperan" })).toBeFocused();
 });
 
-test("favorites navigate to the integrated detail and expose cart after confirmed movement", async ({ page }) => {
+test("favorites navigate to the integrated detail", async ({ page }) => {
   await page.route("**/api/h3/session", route => route.fulfill({ json: { enabled: true, identity: "A", scope: "navigation-scope" } }));
   await page.route("**/api/wishlist", route => route.fulfill({ json: [{ productId: "P1", createdAt: "2026-10-16T12:00:00.000Z", name: "Producto navegable", slug: "producto-navegable", brand: null, image: null, price: null, availability: "AVAILABLE" }] }));
-  await page.route("**/api/wishlist/items/P1/move-to-cart", route => route.fulfill({ json: { productId: "P1", cart: { cartId: "cart-test", version: 1, items: [{ sku: "SKU-TEST", quantity: 1 }] } } }));
   await page.goto("/favoritos");
   await page.getByRole("link", { name: "Producto navegable" }).getByRole("heading", { name: "Producto navegable" }).click();
   await expect(page).toHaveURL(/\/productos\/producto-navegable\?returnTo=%2Ffavoritos$/);
   await expect(page.getByRole("heading", { name: "Producto: producto-navegable" })).toBeVisible();
-  await page.goBack();
-  await page.getByRole("button", { name: "Mover al carrito: Producto navegable" }).click();
-  await expect(page.getByText("Producto en tu carrito", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Ver carrito", exact: true })).toHaveAttribute("href", "/carrito");
 });
 
 test("responsive images, original SVG dimensions and all state screens", async ({ page }) => {
   test.setTimeout(90000);
-  for (const scenario of ["lista", "vacio", "cargando", "error-catalogo", "agotados", "retirado", "quitando", "error-quitar", "eliminado", "restaurando", "restaurado", "error-restaurar", "moviendo", "variante", "movido", "error-mover", "incierto", "sesion-vencida"]) {
+  for (const scenario of ["lista", "vacio", "cargando", "error-catalogo", "agotados", "retirado", "quitando", "error-quitar", "eliminado", "restaurando", "restaurado", "error-restaurar", "sesion-vencida"]) {
     await page.goto(preview + "?estado=" + scenario);
     await expect(page.getByRole("heading", { name: "Tus favoritos", exact: true })).toBeVisible();
     if (scenario !== "cargando") await expect(page.getByRole("status", { name: "Cargando tus favoritos" })).toHaveCount(0);

@@ -9,12 +9,10 @@ import type { ItemOperation } from "./FavoritesController";
 import { FavoritesHeading } from "./FavoritesHeading";
 export type { FavoriteProduct } from "./contract";
 
-export function FavoritesList({ products, onAddToCart, onRemove, addingProductId, removingProductId, returnPath = "/favoritos", showAssurances = false,
+export function FavoritesList({ products, onRemove, removingProductId, returnPath = "/favoritos", showAssurances = false,
   pending = {}, feedback }: {
   products: FavoriteProduct[];
-  onAddToCart?: (product: FavoriteProduct) => void;
   onRemove?: (product: FavoriteProduct) => void;
-  addingProductId?: string;
   removingProductId?: string;
   returnPath?: string;
   showAssurances?: boolean;
@@ -30,8 +28,7 @@ export function FavoritesList({ products, onAddToCart, onRemove, addingProductId
     return <ul className="favorites-grid">{items.map(product => {
       const outOfStock = product.availability !== "in_stock";
       const operation = Object.hasOwn(pending, product.productId) ? pending[product.productId] : undefined;
-      const moving = operation === "moving" || addingProductId === product.productId;
-      const busy = !!operation || moving || removingProductId === product.productId;
+      const busy = !!operation || removingProductId === product.productId;
       const content = <>
           <div className="favorites-card-image">
             {product.image ? <img src={product.image.url} alt={product.image.alt} width="154" height="144" loading="lazy" />
@@ -44,17 +41,15 @@ export function FavoritesList({ products, onAddToCart, onRemove, addingProductId
             {product.description && <p className="favorites-card-description">{product.description}</p>}
           </div>
         </>;
-      return <li key={product.productId}><article data-favorite-id={product.productId} aria-busy={moving || undefined}
-        className={`favorites-card${outOfStock ? " favorites-card--unavailable" : ""}${moving ? " favorites-card--moving" : ""}`}>
+      return <li key={product.productId}><article data-favorite-id={product.productId}
+        className={`favorites-card${outOfStock ? " favorites-card--unavailable" : ""}`}>
         {product.slug && product.availability !== "unavailable" ? <Link className="favorites-card-link" href={`/productos/${encodeURIComponent(product.slug)}?returnTo=${encodeURIComponent(returnPath)}`}>{content}</Link>
           : <div className="favorites-card-link">{content}</div>}
         <img className="favorites-card-heart" src="/figma/favorite-heart-19.svg" width="19" height="19" alt="" aria-hidden="true" />
         {product.price && <p className="favorites-card-price">{new Intl.NumberFormat("es-PE", {
           style: "currency", currency: product.price.currency,
         }).format(product.price.amount)}</p>}
-        <div className="favorites-stock-block"><p className="favorites-stock">{product.availability === "unavailable" ? "Producto no disponible" : outOfStock ? "Sin existencias" : "Disponible"}</p>
-          {moving && <div className="favorites-operation-progress"><span>Moviendo al carrito…</span><div className="favorites-progress" /></div>}
-        </div>
+        <div className="favorites-stock-block"><p className="favorites-stock">{product.availability === "unavailable" ? "Producto no disponible" : outOfStock ? "Sin existencias" : "Disponible"}</p></div>
         <Button variant="tertiary" className="favorites-remove" disabled={!onRemove || busy}
           title={!onRemove ? "Próximamente" : undefined} loading={removingProductId === product.productId}
           aria-label={`Eliminar de favoritos: ${product.name}`} onClick={() => onRemove?.(product)}>
@@ -62,21 +57,13 @@ export function FavoritesList({ products, onAddToCart, onRemove, addingProductId
           <img className="favorites-remove-icon" src="/figma/favorite-trash-17.svg" width="17" height="17" alt="" />
           <span className="favorites-remove-short">Quitar</span>
         </Button>
-        <div className="favorites-card-actions">
-          <Button fullWidth disabled={outOfStock || !onAddToCart || busy} loading={addingProductId === product.productId}
-            title={outOfStock ? "Este producto no tiene existencias" : !onAddToCart ? "Próximamente" : undefined}
-            aria-label={`${outOfStock ? "Sin existencias:" : "Mover al carrito:"} ${product.name}`}
-            onClick={() => { if (!outOfStock) onAddToCart?.(product); }}>
-            {moving ? "Moviendo…" : product.availability === "unavailable" ? "No disponible" : outOfStock ? "Sin existencias" : "Mover al carrito"}
-          </Button>
-        </div>
       </article></li>;
     })}</ul>;
   }
 
   return <div className="favorites-list">
     <FavoritesHeading count={products.length + Object.values(pending).filter(value => value === "removing" || value === "remove-uncertain").length}
-      description={products.length || confirmingRemoval ? "Guarda tus productos preferidos y muévelos al carrito cuando estés listo." : "Aquí aparecerán los productos que marques con el corazón."} />
+      description={products.length || confirmingRemoval ? "Guarda los productos que te gustan y encuéntralos aquí." : "Aquí aparecerán los productos que marques con el corazón."} />
     {feedback}
     {!products.length && confirmingRemoval ? <p role="status">Confirmando la eliminación. Tu lista se actualizará al recibir el resultado.</p> : !products.length ? <EmptyState className="favorites-empty" title="Aún no tienes favoritos"
       description="Explora el catálogo y guarda zapatillas, ropa o accesorios para encontrarlos fácilmente después."

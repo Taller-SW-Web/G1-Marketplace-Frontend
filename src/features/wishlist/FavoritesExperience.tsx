@@ -8,7 +8,6 @@ import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 import type { FavoritesController, FavoritesState, Notice } from "./FavoritesController";
-import { safeProductPath } from "./contract";
 
 export function FavoritesLoading() {
   return <div className="favorites-list">
@@ -24,10 +23,9 @@ export function FavoritesLoading() {
   </div>;
 }
 
-function NoticeView({ notice, controller, returnPath, demo }: { notice: Notice; controller: FavoritesController; returnPath: string; demo: boolean }) {
+function NoticeView({ notice, controller }: { notice: Notice; controller: FavoritesController }) {
   const action = () => {
     if (!notice.productId) return;
-    if (notice.action === "move") void controller.move(notice.productId, true);
     if (notice.action === "remove") void controller.remove(notice.productId, true);
     if (notice.action === "restore") void controller.restore(notice.productId);
   };
@@ -36,19 +34,15 @@ function NoticeView({ notice, controller, returnPath, demo }: { notice: Notice; 
     <img src={`/figma/favorite-${icon}-20.svg`} width="20" height="20" alt="" />
     <div role={notice.kind === "error" ? "alert" : "status"}><strong>{notice.title}</strong><p>{notice.message}</p></div>
     {notice.action === "catalog" ? <Link className="text-link" href="/catalogo">Explorar productos</Link>
-      : notice.action === "cart" && !demo ? <Link className="text-link" href="/carrito">Ver carrito</Link>
-      : notice.action === "cart" ? <span>Carrito simulado; consulta el resultado al final de la lista.</span>
-      : notice.action === "variant" && safeProductPath(notice.redirectUrl) ? <Link className="text-link" href={`${notice.redirectUrl}?returnTo=${encodeURIComponent(returnPath)}`}>Elegir variante</Link>
-      : notice.action === "variant" ? <Button variant="tertiary" disabled title="La ficha estará disponible próximamente">Elegir variante</Button>
-      : notice.action && <Button variant="tertiary" disabled={!!notice.productId && ["moving", "removing", "restoring"].includes(controller.getSnapshot().pending[notice.productId])} onClick={action}>
+      : notice.action && <Button variant="tertiary" disabled={!!notice.productId && ["removing", "restoring"].includes(controller.getSnapshot().pending[notice.productId])} onClick={action}>
         {notice.title.includes("sin confirmar") || notice.title.includes("confirmar") ? "Comprobar resultado" : "Reintentar"}
       </Button>}
     {!notice.action && <Button variant="tertiary" aria-label={`Cerrar aviso: ${notice.title}`} onClick={() => controller.dismiss(notice.id, true)}>×</Button>}
   </div>;
 }
 
-export function FavoritesExperience({ state, controller, returnPath = "/favoritos", demo = false }: {
-  state: FavoritesState; controller: FavoritesController; returnPath?: string; demo?: boolean;
+export function FavoritesExperience({ state, controller, returnPath = "/favoritos" }: {
+  state: FavoritesState; controller: FavoritesController; returnPath?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -59,7 +53,7 @@ export function FavoritesExperience({ state, controller, returnPath = "/favorito
   }, [state.focus]);
   const feedback = <>
     {state.queryError && state.items.length > 0 && <div className="favorites-notice favorites-notice--error"><p role="alert">{state.queryError} Tus productos visibles se conservan.</p><Button onClick={() => void controller.load()}>Reintentar consulta</Button></div>}
-    {state.notices.map(notice => <NoticeView key={notice.id} notice={notice} controller={controller} returnPath={returnPath} demo={demo} />)}
+    {state.notices.map(notice => <NoticeView key={notice.id} notice={notice} controller={controller} />)}
   </>;
   if (state.expired) return <div ref={root}><FavoritesHeading description="Tu sesión terminó." /><EmptyState className="favorites-empty" title="Inicia sesión para continuar" description="Ocultamos tus favoritos para proteger tu información." actions={<Button disabled title="Próximamente">Iniciar sesión</Button>} /></div>;
   if (state.status === "loading") return <FavoritesLoading />;
@@ -71,10 +65,7 @@ export function FavoritesExperience({ state, controller, returnPath = "/favorito
   </div>;
   return <div ref={root}>
     <FavoritesList products={state.items} pending={state.pending} feedback={feedback} returnPath={returnPath}
-      onAddToCart={product => void controller.move(product.productId)} onRemove={product => void controller.remove(product.productId)} />
-    {demo && state.cart && <details className="favorites-cart-preview"><summary>Ver resultado del carrito de demostración</summary>
-      <p>Versión {state.cart.version} · {state.cart.items.reduce((sum, item) => sum + item.quantity, 0)} unidades. No es una reserva.</p>
-    </details>}
+      onRemove={product => void controller.remove(product.productId)} />
     <div className="favorites-toasts" aria-label="Eliminaciones recientes">
       {state.undos.slice(0, 3).map(undo => {
         const id = undo.product.productId;

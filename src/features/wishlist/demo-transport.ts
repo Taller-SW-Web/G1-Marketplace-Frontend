@@ -1,13 +1,12 @@
 import { WishlistError } from "./api";
-import type { FavoriteProduct, MoveResult } from "./contract";
+import type { FavoriteProduct } from "./contract";
 import type { FavoritesTransport } from "./transport";
 
 export const scenarios = {
   lista: "Con favoritos", vacio: "Lista vacía", cargando: "Cargando", "error-catalogo": "Error de catálogo",
   agotados: "Sin existencias", retirado: "Producto retirado", quitando: "Quitando producto", "error-quitar": "Error al quitar",
   eliminado: "Eliminado / Deshacer", restaurando: "Restaurando", restaurado: "Restauración confirmada", "error-restaurar": "No restaurado",
-  moviendo: "Moviendo al carrito", variante: "Variante requerida", movido: "Movimiento exitoso", "error-mover": "Error al mover",
-  incierto: "Movimiento sin confirmar", "sesion-vencida": "Sesión vencida",
+  "sesion-vencida": "Sesión vencida",
 } as const;
 export type Scenario = keyof typeof scenarios;
 export const isScenario = (value: unknown): value is Scenario => typeof value === "string" && Object.hasOwn(scenarios, value);
@@ -27,8 +26,7 @@ export function createDemoTransport(scenario: Scenario) {
   if (scenario === "agotados") items.push({ ...vest, availability: "out_of_stock" });
   if (scenario === "retirado") items.push({ ...vest, availability: "unavailable", slug: null, image: null, price: undefined });
   const saved = new Map([vest, ...items].map(item => [item.productId, item]));
-  const results = new Map<string, MoveResult>();
-  let cartVersion = 0; let listCalls = 0; let removeCalls = 0; let moveCalls = 0;
+  let listCalls = 0; let removeCalls = 0;
   let pending: { complete: () => void; reject: () => void } | undefined;
   let released = false;
   const delay = (signal: AbortSignal, duration = 350) => new Promise<void>((resolve, reject) => {
@@ -61,18 +59,6 @@ export function createDemoTransport(scenario: Scenario) {
       if (scenario === "error-restaurar" || saved.get(id)?.availability === "unavailable") throw new WishlistError("PRODUCT_NOT_AVAILABLE", 404);
       const item = saved.get(id);
       if (item) items = [{ ...item, createdAt: new Date().toISOString() }, ...items.filter(product => product.productId !== id)];
-    },
-    async move(id, key, signal) {
-      if (results.has(key)) return structuredClone(results.get(key)!);
-      if (scenario === "moviendo" && moveCalls++ === 0) await hold(signal); else await delay(signal);
-      if (scenario === "variante") throw new WishlistError("VARIANT_SELECTION_REQUIRED", 422, "/productos/terrex-swift-r3-gtx");
-      if (scenario === "error-mover" && moveCalls++ === 0) throw new WishlistError("COMMERCE_DATA_UNAVAILABLE", 503);
-      items = items.filter(item => item.productId !== id);
-      const result: MoveResult = { productId: id, cart: { cartId: "DEMO-CART", version: ++cartVersion,
-        items: [...results.values()].map(item => ({ sku: `demo-sku-${item.productId}`, quantity: 1 })).concat({ sku: `demo-sku-${id}`, quantity: 1 }) } };
-      results.set(key, result);
-      if (scenario === "incierto" && moveCalls++ === 0) throw new WishlistError("RESULT_UNCERTAIN", 504);
-      return structuredClone(result);
     },
   };
   return { adapter, complete: () => { released = true; pending?.complete(); } };

@@ -4,7 +4,6 @@ test("production denies sandbox despite enabled flag and hides its UI", async ({
   expect((await request.get("/demo/h3/favoritos/lista")).status()).toBe(404);
   expect((await request.get("/demo/h3/favoritos/lista/vacia")).status()).toBe(404);
   expect((await request.get("/api/wishlist")).status()).toBe(404);
-  expect((await request.post("/api/wishlist/items/PRD-1/move-to-cart")).status()).toBe(404);
   expect((await request.get("/api/h3/session")).status()).toBe(404);
   expect((await request.post("/api/h3/session", { data: { identity: "A" } })).status()).toBe(404);
   expect((await request.post("/api/wishlist/items", { data: { productId: "PRD-1" } })).status()).toBe(404);

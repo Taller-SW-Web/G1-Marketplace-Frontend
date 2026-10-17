@@ -1,16 +1,16 @@
 import { WishlistError } from "./api";
-import type { CartSnapshot, FavoriteProduct } from "./contract";
+import type { FavoriteProduct } from "./contract";
 import type { FavoritesTransport } from "./transport";
 
-export type ItemOperation = "removing" | "moving" | "restoring" | "remove-uncertain" | "move-uncertain" | "restore-uncertain";
+export type ItemOperation = "removing" | "restoring" | "remove-uncertain" | "restore-uncertain";
 export type Notice = {
   id: string; kind: "info" | "success" | "error" | "warning"; title: string; message: string;
-  productId?: string; action?: "remove" | "restore" | "move" | "variant" | "cart" | "catalog"; redirectUrl?: string;
+  productId?: string; action?: "remove" | "restore" | "catalog"; redirectUrl?: string;
 };
 export type Undo = { product: FavoriteProduct; remaining: number; paused: boolean; failed?: boolean; cannotRestore?: boolean };
 export type FavoritesState = {
   status: "loading" | "ready" | "error"; items: FavoriteProduct[]; pending: Record<string, ItemOperation>;
-  notices: Notice[]; undos: Undo[]; queryError: string; expired: boolean; cart?: CartSnapshot;
+  notices: Notice[]; undos: Undo[]; queryError: string; expired: boolean;
   focus?: { productId: string | null; sequence: number };
 };
 type Hooks = { confirmed?: (id: string, saved: boolean) => void; listed?: (items: FavoriteProduct[]) => void; expired?: () => void };
@@ -21,7 +21,6 @@ export class FavoritesController {
   private listeners = new Set<() => void>();
   private requests = new Map<string, AbortController>();
   private removed = new Map<string, { product: FavoriteProduct; index: number }>();
-  private moveKeys = new Map<string, string>();
   private query?: AbortController;
   private querySequence = 0;
   private epoch = 0;
@@ -69,13 +68,13 @@ export class FavoritesController {
     if (!(error instanceof WishlistError) || error.status !== 401) return false;
     this.query?.abort();
     for (const request of this.requests.values()) request.abort();
-    this.requests.clear(); this.removed.clear(); this.moveKeys.clear();
-    this.patch({ items: [], undos: [], pending: Object.create(null), notices: [], queryError: "", expired: true, status: "ready", cart: undefined });
+    this.requests.clear(); this.removed.clear();
+    this.patch({ items: [], undos: [], pending: Object.create(null), notices: [], queryError: "", expired: true, status: "ready" });
     this.hooks.expired?.();
     return true;
   }
   private uncertain(error: unknown) {
-    return !(error instanceof WishlistError) || error.code === "RESULT_UNCERTAIN" || error.code === "OPERATION_IN_PROGRESS";
+    return !(error instanceof WishlistError) || error.code === "RESULT_UNCERTAIN";
   }
   async load() {
     if (this.disposed || this.state.expired) return;
@@ -167,41 +166,9 @@ export class FavoritesController {
         action: unavailable ? "catalog" : "restore", productId: id });
     } finally { this.finish(id, request); }
   }
-  async move(id: string, retry = false) {
-    const product = this.state.items.find(item => item.productId === id);
-    if (!product || product.availability !== "in_stock") return;
-    const request = this.start(id, "moving", retry); if (!request) return;
-    const key = this.moveKeys.get(id) ?? crypto.randomUUID(); this.moveKeys.set(id, key);
-    this.notice({ id: `move:${id}`, kind: "info", title: `Moviendo ${product.name}`, message: "Confirmaremos el resultado cuando el carrito se actualice.", productId: id });
-    try {
-      const result = await this.transport.move(id, key, request.signal);
-      if (request.signal.aborted || this.disposed) return;
-      const before = this.state.items;
-      this.pending(id); this.moveKeys.delete(id); this.hooks.confirmed?.(id, false);
-      // Concurrent responses may arrive in reverse order: keep the newest cart version.
-      const cart = this.state.cart && this.state.cart.version > result.cart.version ? this.state.cart : result.cart;
-      this.patch({ items: before.filter(item => item.productId !== id), cart, focus: this.focusAfter(id, before) });
-      this.notice({ id: `move:${id}`, kind: "success", title: "Producto en tu carrito", message: `${product.name} se movió correctamente.`, action: "cart", productId: id });
-    } catch (error) {
-      if (request.signal.aborted || this.disposed || this.handleExpired(error)) return;
-      const uncertain = this.uncertain(error);
-      this.pending(id, uncertain ? "move-uncertain" : undefined);
-      if (!uncertain) this.moveKeys.delete(id);
-      if (error instanceof WishlistError && error.code === "VARIANT_SELECTION_REQUIRED") {
-        this.notice({ id: `move:${id}`, kind: "warning", title: "Elige una variante", message: "El producto sigue en tus favoritos. Selecciona una variante en su ficha.", action: error.redirectUrl ? "variant" : undefined, redirectUrl: error.redirectUrl, productId: id });
-      } else {
-        if (error instanceof WishlistError && ["STOCK_LIMIT_REACHED", "PRODUCT_NOT_AVAILABLE"].includes(error.code)) {
-          this.patch({ items: this.state.items.map(item => item.productId === id ? { ...item, availability: error.code === "STOCK_LIMIT_REACHED" ? "out_of_stock" : "unavailable" } : item) });
-        }
-        this.notice({ id: `move:${id}`, kind: "error", title: uncertain ? "Movimiento sin confirmar" : "No pudimos mover el producto",
-          message: uncertain ? "No sabemos si el carrito se actualizó. Comprueba el mismo intento para evitar duplicados." : error instanceof Error ? error.message : "El producto continúa en tus favoritos.",
-          action: product.availability === "in_stock" && (!(error instanceof WishlistError) || !["STOCK_LIMIT_REACHED", "PRODUCT_NOT_AVAILABLE", "IDEMPOTENCY_CONFLICT"].includes(error.code)) ? "move" : undefined, productId: id });
-      }
-    } finally { this.finish(id, request); }
-  }
   dispose() {
     this.disposed = true; this.query?.abort();
     for (const request of this.requests.values()) request.abort();
-    this.listeners.clear(); this.requests.clear(); this.removed.clear(); this.moveKeys.clear();
+    this.listeners.clear(); this.requests.clear(); this.removed.clear();
   }
 }

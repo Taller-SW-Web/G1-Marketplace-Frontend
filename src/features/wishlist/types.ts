@@ -35,10 +35,4 @@ export const publicErrors: Record<string, string> = {
   SANDBOX_DISABLED: "La sesión de prueba no está disponible en este entorno.",
   WISHLIST_UNAVAILABLE: "Tu lista todavía no está disponible. Inténtalo de nuevo más tarde.",
   INVALID_RESPONSE: "No pudimos leer tus favoritos. Inténtalo nuevamente.",
-  STOCK_LIMIT_REACHED: "No hay existencias suficientes para mover este producto. Sigue en tus favoritos.",
-  VARIANT_SELECTION_REQUIRED: "Elige una variante en la ficha antes de agregar este producto al carrito.",
-  CART_CONFLICT: "El carrito cambió. Revisa su contenido antes de continuar.",
-  COMMERCE_DATA_UNAVAILABLE: "No pudimos comprobar las condiciones de compra. Inténtalo nuevamente.",
-  IDEMPOTENCY_CONFLICT: "No pudimos identificar este intento. Revisa el carrito antes de continuar.",
-  OPERATION_IN_PROGRESS: "El movimiento sigue en curso. Puedes volver a comprobar el mismo intento.",
 };
