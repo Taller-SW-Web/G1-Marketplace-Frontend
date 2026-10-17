@@ -141,6 +141,129 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     expect(api.prepare.mock.calls[1]?.[2]).not.toBe(api.prepare.mock.calls[0]?.[2]);
   });
 
+  it("creates a new preparation key when a transient failure is followed by a new quote", async () => {
+    api.prepare.mockRejectedValueOnce(new CheckoutApiError(503, "REVALIDATION_UNAVAILABLE"));
+    api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(1));
+    const firstKey = api.prepare.mock.calls[0]?.[2];
+    await screen.findByText("No se pudo preparar la compra. Intenta actualizar el resumen.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Volver al resumen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+
+    expect(api.prepare.mock.calls[1]?.[0]).toBe("Q-2");
+    expect(api.prepare.mock.calls[1]?.[2]).not.toBe(firstKey);
+  });
+
+  it("uses a fresh preparation key when applying or removing a benefit changes the quote", async () => {
+    api.prepare.mockRejectedValueOnce(new CheckoutApiError(503, "REVALIDATION_UNAVAILABLE"));
+    api.applyBenefit.mockResolvedValueOnce({
+      ...quote("Q-2"),
+      selectedBenefit: { type: "COUPON", id: "SAVE20", discount: 20 },
+    });
+    api.removeBenefit.mockResolvedValueOnce(quote("Q-3"));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByText("No se pudo preparar la compra. Intenta actualizar el resumen.");
+    const firstKey = api.prepare.mock.calls[0]?.[2];
+
+    fireEvent.click(screen.getByRole("button", { name: "Volver al resumen" }));
+    fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    await screen.findByText("Cupón aplicado.");
+    fireEvent.click(screen.getByRole("button", { name: "Quitar beneficio" }));
+    await screen.findByText("Se actualizó el resumen sin el beneficio.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+
+    expect(api.prepare.mock.calls[1]?.[0]).toBe("Q-3");
+    expect(api.prepare.mock.calls[1]?.[2]).not.toBe(firstKey);
+  });
+
+  it("invalidates the quote instead of labeling a context failure as payment rejection", async () => {
+    api.createOrder.mockRejectedValueOnce(new CheckoutApiError(409, "QUOTE_EXPIRED"));
+    api.getOperation.mockResolvedValueOnce({
+      checkoutOperationId: "operation-1", state: "FAILED", failureCode: "QUOTE_EXPIRED",
+    });
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    await screen.findByRole("button", { name: "Verificar operación original" });
+    fireEvent.click(screen.getByRole("button", { name: "Verificar operación original" }));
+
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    expect(screen.getByRole("alert").textContent).toContain("cotización fue invalidada");
+    expect(screen.getByRole("button", { name: "Actualizar resumen" })).toBeDefined();
+    expect(screen.queryByText(/pago simulado fue rechazado/i)).toBe(null);
+  });
+
+  it("keeps the rejection message for a terminal failed payment", async () => {
+    api.createOrder.mockResolvedValueOnce({
+      checkoutOperationId: "operation-1",
+      state: "FAILED",
+      failureCode: "PAGO_NO_COMPLETADO",
+      orderState: "ANULADO",
+    });
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("La operación fue rechazada o anulada");
+    expect(screen.getByRole("button", { name: "Seguir comprando" })).toBeDefined();
+  });
+
+  it.each([
+    ["SUBMITTED with recoveryRequired", "submitted"],
+    ["ORDER_NOT_SUBMITTED", "not-submitted"],
+  ])("keeps verification busy until the recovered POST finishes (%s)", async (_label, recoveryPath) => {
+    api.createOrder.mockRejectedValueOnce(new Error("initial timeout"));
+    let resolveRecoveredPost!: (value: { checkoutOperationId: string; state: string }) => void;
+    api.createOrder.mockImplementationOnce(() => new Promise((resolve) => { resolveRecoveredPost = resolve; }));
+    if (recoveryPath === "submitted") {
+      api.getOperation.mockResolvedValueOnce({
+        checkoutOperationId: "operation-1", state: "SUBMITTED", recoveryRequired: true,
+      });
+    } else {
+      api.getOperation.mockRejectedValueOnce(new CheckoutApiError(404, "ORDER_NOT_SUBMITTED"));
+    }
+
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    const verifyButton = await screen.findByRole("button", { name: "Verificar operación original" });
+    fireEvent.click(verifyButton);
+    await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
+    expect((screen.getByRole("button", { name: /Verificar operación original/ }) as HTMLButtonElement).disabled).toBe(true);
+
+    resolveRecoveredPost({ checkoutOperationId: "operation-1", state: "SUBMITTED" });
+    await waitFor(() => expect((screen.getByRole("button", { name: /Verificar operación original/ }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
   it("ignores a late PREPARED response after returning to summary and reuses its key", async () => {
     let resolvePreparation!: (value: { checkoutOperationId: string; state: string }) => void;
     api.prepare.mockImplementationOnce(() => new Promise((resolve) => { resolvePreparation = resolve; }));
