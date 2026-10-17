@@ -141,6 +141,33 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     expect(api.prepare.mock.calls[1]?.[2]).not.toBe(api.prepare.mock.calls[0]?.[2]);
   });
 
+  it("returns to summary and offers cart review after STOCK_NOT_AVAILABLE", async () => {
+    api.prepare.mockRejectedValueOnce(new CheckoutApiError(409, "STOCK_NOT_AVAILABLE"));
+    api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    expect(screen.getByRole("alert").textContent).toContain("La disponibilidad cambió");
+    expect(screen.getByRole("link", { name: "Revisar carrito" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar resumen" }));
+    await waitFor(() => expect(api.createQuote).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Pago simulado" });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+    expect(api.prepare.mock.calls[1]?.[0]).toBe("Q-2");
+    expect(api.prepare.mock.calls[1]?.[2]).not.toBe(api.prepare.mock.calls[0]?.[2]);
+  });
+
   it("creates a new preparation key when a transient failure is followed by a new quote", async () => {
     api.prepare.mockRejectedValueOnce(new CheckoutApiError(503, "REVALIDATION_UNAVAILABLE"));
     api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));

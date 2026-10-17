@@ -79,7 +79,7 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
     await expect(page.getByRole("heading", { name: "Estado del pedido" })).toBeVisible();
     await expect(page.getByText("Estado verificado · SUCCEEDED/PAGADO")).toBeVisible();
   } else if (process.env.MOCK_SALES_OUTCOME === "REJECTED") {
-    await expect(page.getByText("El pago simulado fue rechazado y el pedido no se confirmó. No vuelvas a enviar esta operación.")).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("La operación fue rechazada o anulada. No se mostrará como pedido pagado.");
     await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toHaveCount(0);
   } else {
     await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();

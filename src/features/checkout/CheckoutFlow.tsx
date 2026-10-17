@@ -46,6 +46,7 @@ export function CheckoutFlow() {
   const [addressError, setAddressError] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteInvalid, setQuoteInvalid] = useState(false);
+  const [stockUnavailable, setStockUnavailable] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
   const [consented, setConsented] = useState(false);
@@ -123,6 +124,7 @@ export function CheckoutFlow() {
       const nextQuote = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(nextQuote as CheckoutQuote);
       setQuoteInvalid(false);
+      setStockUnavailable(false);
       preparationKey.current = null;
       setHasPreparationAttempt(false);
       setCouponMessage("");
@@ -141,6 +143,7 @@ export function CheckoutFlow() {
       const next = await quoteCurrentCart(selectedAddress.addressId);
       setQuote(next);
       setQuoteInvalid(false);
+      setStockUnavailable(false);
       preparationKey.current = null;
       setHasPreparationAttempt(false);
       setOperationId("");
@@ -193,6 +196,7 @@ export function CheckoutFlow() {
       if (next) {
         setQuote(next as CheckoutQuote);
         setQuoteInvalid(false);
+        setStockUnavailable(false);
         preparationKey.current = null;
         setHasPreparationAttempt(false);
         setCouponMessage("Cupón aplicado.");
@@ -247,12 +251,13 @@ export function CheckoutFlow() {
       setStep("order");
     }).catch((error: unknown) => {
       if (attempt !== preparationAttempt.current) return;
-      if (error instanceof CheckoutApiError && error.status === 409 && ["REVALIDATION_CHANGED", "QUOTE_EXPIRED"].includes(error.code)) {
+      if (error instanceof CheckoutApiError && error.status === 409 && ["REVALIDATION_CHANGED", "QUOTE_EXPIRED", "STOCK_NOT_AVAILABLE"].includes(error.code)) {
         preparationKey.current = null;
         setHasPreparationAttempt(false);
         setOperationId("");
         setConsented(false);
         setQuoteInvalid(true);
+        setStockUnavailable(error.code === "STOCK_NOT_AVAILABLE");
         setStep("summary");
         setNotice("");
         return;
@@ -287,6 +292,7 @@ export function CheckoutFlow() {
       orderKey.current = null;
       contactRef.current = null;
       setQuoteInvalid(true);
+      setStockUnavailable(operation.failureCode === "STOCK_NOT_AVAILABLE");
       setStep("summary");
       setOrderSubmission("READY");
       setNotice("");
@@ -433,10 +439,11 @@ export function CheckoutFlow() {
           <Button type="submit" variant="secondary" loading={busy} disabled={quoteInvalid}>Aplicar</Button>
         </form>}
         {couponMessage && <p role="status">{couponMessage}</p>}
-        {(expired || quoteInvalid) && <p role="alert" className="checkout-error">{quoteInvalid ? "La cotización fue invalidada. Actualiza el resumen para continuar." : "La cotización venció. Actualiza el resumen para continuar."}</p>}
+        {(expired || quoteInvalid) && <p role="alert" className="checkout-error">{stockUnavailable ? "La disponibilidad cambió. Revisa tu carrito o actualiza el resumen antes de continuar." : quoteInvalid ? "La cotización fue invalidada. Actualiza el resumen para continuar." : "La cotización venció. Actualiza el resumen para continuar."}</p>}
         <p className="checkout-muted">Cotización {backendMockEnabled ? "Backend MOCK" : "de demostración"} · vence {new Date(quote.expiresAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}</p>
         <div className="checkout-actions">
           {(expired || quoteInvalid) && <Button variant="secondary" onClick={refreshQuote} loading={busy}>Actualizar resumen</Button>}
+          {stockUnavailable && <Link className="button button--secondary button--md" href="/carrito">Revisar carrito</Link>}
           <Button variant="tertiary" onClick={() => setStep("address")}>Volver a dirección</Button>
           <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || quoteInvalid || busy}>Continuar al pago simulado</Button>
         </div>
