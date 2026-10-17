@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 import { ProductDetailContainer } from "@/features/catalog/components/ProductDetailContainer";
 
 /** Patrón canónico del contrato F-011 (espejo del BFF y del proxy). */
@@ -20,21 +21,17 @@ interface Props {
 async function resolveBffStatus(slug: string): Promise<number | null> {
   let base: URL;
   try {
-    base = new URL(process.env.MARKETPLACE_API_URL || "http://127.0.0.1:10000");
+    base = marketplaceApiUrl();
   } catch {
     return null;
   }
-  const originAllowed =
-    base.protocol === "https:" ||
-    (base.protocol === "http:" &&
-      ["localhost", "127.0.0.1"].includes(base.hostname));
-  if (!originAllowed) return null;
 
   try {
     const response = await fetch(
       new URL(`/api/v1/catalog/products/${encodeURIComponent(slug)}`, base),
       {
         cache: "no-store",
+        redirect: "error",
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(8000),
       },

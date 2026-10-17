@@ -16,8 +16,8 @@ export function ProductCard({
       >
         <div className="product-image">
           <img
-            src={product.image.url}
-            alt={product.image.alt}
+            src={product.image?.url ?? "/images/product-placeholder.svg"}
+            alt={product.image?.alt ?? `Imagen no disponible para ${product.name}`}
             loading="lazy"
             width="280"
             height="187"

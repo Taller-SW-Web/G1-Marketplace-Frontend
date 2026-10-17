@@ -1,12 +1,9 @@
 import { defineConfig } from "@playwright/test";
-
 export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
-  // F-006/F-007 (PR #11 de Giuliano): catalog.spec.ts y figma-h3.spec.ts
-  // ejercitan GET /home y GET /products del BFF, aún no fusionados en
-  // develop. Se reincorporan al fusionar ese PR.
-  testIgnore: ["**/catalog.spec.ts", "**/figma-h3.spec.ts", "**/wishlist/**"],
+  // Wishlist uses its explicit sandbox configs, kept outside this default suite.
+  testIgnore: ["**/wishlist/**"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
@@ -14,26 +11,27 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3100",
     browserName: "chromium",
-    channel: "msedge",
+    channel: process.env.CI ? undefined : "msedge",
     trace: "retain-on-failure",
   },
   webServer: [
     {
-      // BFF NestJS en MOCK (F-011): compilado con sus dependencias y
-      // verificado por /live. Requiere el repositorio backend como directorio
-      // hermano (misma estructura clásica del workspace).
-      command:
-        "npm --prefix ../G1-Marketplace-Backend ci && npm --prefix ../G1-Marketplace-Backend run build && node ../G1-Marketplace-Backend/dist/main.js",
+      command: "npm --prefix ../G1-Marketplace-Backend run build && npm --prefix ../G1-Marketplace-Backend run start:prod",
       url: "http://127.0.0.1:10100/live",
       env: {
-        PORT: "10100",
+        CATALOG_SOURCE: "mock",
         BFF_MODE: "mock",
-        NODE_ENV: "development",
-        DATABASE_URL:
-          "postgresql://postgres:postgres@127.0.0.1:5432/marketplace_db?schema=public",
+        USE_MOCKS: "true",
+        H3_SANDBOX_ENABLED: "false",
+        H3_AUTH_MOCK: "false",
+        ORDERS_SOURCE: "unconfigured",
+        PORT: "10100",
+        DATABASE_URL: "postgresql://test:test@127.0.0.1:1/catalog_ui_tests?schema=public",
+        CORS_ORIGINS: "http://127.0.0.1:3100",
+        NODE_ENV: "test",
       },
       reuseExistingServer: false,
-      timeout: 300000,
+      timeout: 120000,
     },
     {
       command: "npm run start -- --port 3100 --hostname 127.0.0.1",

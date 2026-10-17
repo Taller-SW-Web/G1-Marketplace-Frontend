@@ -108,7 +108,7 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
     expect(link.textContent).toBe("Volver al catálogo");
   });
 
-  it("migas, un único h1 y región comercial sin precio ni stock", async () => {
+  it("UI-F011-09: migas, un único h1 y región comercial omitida", async () => {
     render(<ProductDetailContainer slug="zapatillas-running-aero-x" />);
 
     expect(
@@ -128,15 +128,7 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
     expect(page).not.toMatch(/S\//u);
     expect(page).not.toMatch(/stock/i);
     expect(page).not.toMatch(/precio/i);
-
-    // El CTA "Agregar al carrito" es el mock visual de V-007/F-016: existe
-    // y confirma en pantalla sin mostrar precios ni inventario.
-    const cta = screen.getByRole("button", { name: "Agregar al carrito" });
-    expect(cta).toBeTruthy();
-    fireEvent.click(cta);
-    expect(
-      screen.getByText(/agregado al carrito \(demostración\)/i),
-    ).toBeTruthy();
+    expect(page).not.toMatch(/carrito/i);
   });
 
   it("RC-F-011-02 (integración): la imagen fallida conserva h1 y descripción", async () => {

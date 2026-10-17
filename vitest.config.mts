@@ -6,10 +6,9 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     include: [
-      // Corte vertical F-016/F-019 (desarrollado en develop).
       "tests/components/**/*.test.{ts,tsx}",
-      // Tests de componentes de F-011 (ficha de producto).
       "tests/catalog/**/*.test.{ts,tsx}",
+      "tests/routes/**/*.test.ts",
     ],
     setupFiles: ["./tests/components/setup.ts"],
   },

@@ -1,3 +1,5 @@
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
+
 /**
  * Proxy server-only al BFF Marketplace (`/api/v1/catalog/...`).
  *
@@ -83,21 +85,7 @@ export async function catalogProxyGet(
     });
 
   try {
-    const base = new URL(
-      process.env.MARKETPLACE_API_URL || "http://127.0.0.1:10000",
-    );
-    if (
-      base.username ||
-      base.password ||
-      base.search ||
-      base.hash ||
-      (base.protocol !== "https:" &&
-        !(
-          base.protocol === "http:" &&
-          ["localhost", "127.0.0.1"].includes(base.hostname)
-        ))
-    )
-      throw new Error("Invalid BFF origin");
+    const base = marketplaceApiUrl();
     const url = new URL(`/api/v1/catalog/${path.join("/")}`, base);
     url.search = new URL(request.url).search;
     const response = await fetch(url, {
