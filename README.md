@@ -105,3 +105,7 @@ flowchart LR
 ## Adaptación a develop y preparación de despliegue — 16/10/2026
 
 Se incorpora el carrito del develop actual sin sustituir el catálogo. Se restaura el arranque Render y se elimina la identidad de prueba automática del proxy de carrito. Consultar [preparación y límites del despliegue](docs/DESPLIEGUE-H3.md). Los PR existentes siguen en draft hacia develop; no se publica ni se modifica main/develop.
+
+## Conexión parcial G6 — demo H3 (17/10/2026)
+
+La [guía G6 H3](docs/INTEGRACION-G6-H3.md) explica la demo REAL en localhost:3300 y el modo temporal sin JWT. Categorías ya responde; productos seguía devolviendo 503 en el corte público registrado. Verificar cada ruta antes de exponer.
