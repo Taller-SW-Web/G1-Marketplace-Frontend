@@ -35,7 +35,8 @@ export async function addCartItemApi(
     await new Promise((resolve) => setTimeout(resolve, 350));
 
     // Regla de simulación de rechazo por producto sin stock (caso negativo para QA)
-    if (payload.sku.toUpperCase().includes('OUT-OF-STOCK') || payload.sku === 'SKU-UNAVAILABLE') {
+    const mockSku = payload.sku ?? payload.productId ?? '';
+    if (mockSku.toUpperCase().includes('OUT-OF-STOCK') || mockSku === 'SKU-UNAVAILABLE') {
       return {
         success: false,
         status: 404,
@@ -45,7 +46,7 @@ export async function addCartItemApi(
     }
 
     // Regla de simulación de límite de stock (409 STOCK_LIMIT_REACHED)
-    const existingIndex = mockCart.items.findIndex((it) => it.sku === payload.sku);
+    const existingIndex = mockCart.items.findIndex((it) => it.sku === mockSku);
     if (existingIndex >= 0 && mockCart.items[existingIndex].quantity >= 3) {
       return {
         success: true, // El carrito existe y fue ajustado al máximo
@@ -74,7 +75,7 @@ export async function addCartItemApi(
     // Línea creada (201)
     mockCart.version += 1;
     const newItem: CartItemDTO = {
-      sku: payload.sku,
+      sku: mockSku,
       name: 'Camiseta Deportiva Inka Pro',
       quantity: 1,
       unitPrice: {
