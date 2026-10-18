@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "checkout.spec.ts",
+  testMatch: ["catalog-cart-integration.e2e.spec.ts", "checkout.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
