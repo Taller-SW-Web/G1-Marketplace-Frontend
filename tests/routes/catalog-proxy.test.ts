@@ -72,3 +72,28 @@ describe("Integrated collection/detail catalog proxy", () => {
     expect(await response.json()).toEqual(problem);
   });
 });
+
+describe('G6 partial REAL integration through the Marketplace proxy', () => {
+  it.each([
+    { path: 'home', status: 200, body: { categories: [{ categoryId: 'g6-category', name: 'Calzado' }], featuredProducts: [] } },
+    { path: 'products', status: 503, body: { status: 503, code: 'CATALOG_UNAVAILABLE', requestId: 'g6-demo-request' } },
+  ])('preserves REAL provenance and status $status for $path', async ({ path, status, body }) => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'http://backend:10000');
+    vi.stubEnv('MARKETPLACE_INTERNAL_HTTP_HOST', 'backend');
+    const upstream = vi.fn().mockResolvedValue(Response.json(body, { status, headers: {
+      'X-Catalog-Source': 'REAL', 'X-Request-Id': 'g6-demo-request',
+    } }));
+    vi.stubGlobal('fetch', upstream);
+    const result = await GET(new NextRequest(`http://localhost/api/catalog/${path}`, {
+      headers: { Authorization: 'Bearer visitor-token', Cookie: 'private=session' },
+    }), { params: Promise.resolve({ path: [path] }) });
+    expect(result.status).toBe(status);
+    expect(result.headers.get('x-catalog-source')).toBe('REAL');
+    expect(result.headers.get('x-request-id')).toBe('g6-demo-request');
+    expect(result.headers.get('cache-control')).toBe('no-store');
+    expect(await result.json()).toEqual(body);
+    const forwarded = new Headers(upstream.mock.calls[0][1].headers);
+    expect(forwarded.has('Authorization')).toBe(false);
+    expect(forwarded.has('Cookie')).toBe(false);
+  });
+});
