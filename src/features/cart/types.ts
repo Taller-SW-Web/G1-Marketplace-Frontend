@@ -46,12 +46,14 @@ export interface CartMutationResult {
 }
 
 export interface AddToCartPayload {
-  sku: string;
+  /** Legacy direct-SKU callers remain supported; product detail sends productId. */
+  sku?: string;
+  productId?: string;
   quantity: 1;
 }
 
 export interface AddToCartActionProps {
-  sku?: string;
+  productId?: string;
   availability: AvailabilityState;
   priceReady: boolean;
   busy: boolean;
