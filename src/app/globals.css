@@ -1,4 +1,4 @@
-﻿@import "../theme/tokens.css";
+@import "../theme/tokens.css";
 * {
   box-sizing: border-box;
 }
@@ -2699,3 +2699,149 @@ body:has(.viewer-backdrop) {
   border-radius: var(--radius-md);
   margin-top: var(--spacing-md);
 }
+
+/* F-016: Add to Cart Action & Feedback Overlay */
+.detail-cart-action-wrapper {
+  margin: 28px 0;
+  max-width: 420px;
+}
+
+.add-to-cart-action-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-to-cart-button-row {
+  display: flex;
+  gap: 12px;
+}
+
+.add-to-cart-btn {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 14px 28px;
+}
+
+.add-to-cart-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.add-to-cart-hint--warning {
+  color: var(--accent-signal);
+  font-weight: 600;
+}
+
+/* Overlay / Toast O-005: AddedToCartFeedback */
+.added-to-cart-feedback-banner {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  max-width: 440px;
+  width: calc(100vw - 48px);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  animation: slideUpFade 0.3s ease-out;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.added-to-cart-feedback-banner--adjusted {
+  border-left: 4px solid #f59e0b;
+}
+
+.feedback-content {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.feedback-icon-area {
+  flex-shrink: 0;
+}
+
+.feedback-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.feedback-badge--success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.feedback-badge--warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.feedback-text-area {
+  flex: 1;
+  padding-right: 24px;
+}
+
+.feedback-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+}
+
+.feedback-product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 2px 0;
+}
+
+.feedback-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.feedback-close-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  line-height: 1;
+}
+
+.feedback-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
