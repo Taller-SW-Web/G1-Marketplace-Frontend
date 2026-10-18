@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:components && npm run test:server && npm run test:e2e",
     "test:e2e": "npm run build && playwright test",
-    "test:checkout:e2e": "npm run build && playwright test --config playwright.checkout.config.ts",
+    "test:checkout:e2e": "playwright test --config playwright.checkout.config.ts",
     "lint": "eslint .",
     "test:components": "vitest run",
     "test:server": "vitest run --config vitest.server.config.mts",
