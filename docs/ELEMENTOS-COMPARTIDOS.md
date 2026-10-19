@@ -1,6 +1,6 @@
 # Guía de uso de elementos compartidos — Frontend
 
-Versión documental 0.2.1 · 15/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
+Versión documental 0.2.2 · 16/10/2026 · En revisión · Custodio: Giuliano. Esta guía refleja los exports y props del checkout actual. DS-001 v0.2.0 y el inventario de SPECS conservan la autoridad de diseño. Los componentes son un corte local parcial, con revisión independiente pendiente.
 
 ## 1. Ubicación y reglas de consumo
 
@@ -80,11 +80,11 @@ type ProductCardDTO = {
   name: string;
   categoryId: string;
   brandId: string;
-  image: { url: string; alt: string };
+  image: { url: string; alt: string } | null;
 };
 ```
 
-La tarjeta muestra imagen, nombre y enlace. Los IDs opacos no se muestran como nombre de marca/categoría. No calcula importes ni presenta precio/stock/favoritos no suministrados. No anidar un botón de favorito dentro del enlace cuando se integre el bloque de Diego.
+La tarjeta muestra nombre y enlace, y una imagen o el placeholder local `/images/product-placeholder.svg` cuando `image === null`. El placeholder lleva el texto «Sin imagen» y alt «Imagen no disponible para {nombre}»; no representa una imagen suministrada por G6. Los consumidores directos del DTO deben contemplar null. El validador acepta null explícito y sigue rechazando objetos de imagen mal formados. Los IDs opacos no se muestran como nombre de marca/categoría. No calcula importes ni presenta precio/stock/favoritos no suministrados. No anidar un botón de favorito dentro del enlace cuando se integre el bloque de Diego.
 
 El destino `/productos/{slug}?returnTo=...` es el handoff a Sebastian; la ficha todavía no está implementada. El receptor debe validar `returnTo` como ruta interna permitida antes de usarlo: `encodeURIComponent` codifica, no autoriza destinos ni reemplaza el validador InternalPath pendiente.
 
@@ -241,3 +241,19 @@ Referencias, recursos y diferencias de alcance: [FIGMA-H3.md](FIGMA-H3.md). La g
 | `ErrorState`, `src/shared/ui/Feedback.tsx` | Se añade `home?: boolean`, por defecto false | Variante de error de inicio con fondo semántico e icono; mantiene compatibles los consumidores existentes. |
 
 Los componentes base conservan sus props. ProductCard mantiene el DTO mínimo y las imágenes dinámicas: no obtiene precio/stock ni simula favoritos. `public/figma/manifest.json` registra la procedencia y hashes de los recursos locales, sin URLs temporales de ejecución. Se mantienen los 10 tests de componentes y se amplía la verificación de navegador con geometría, recursos visibles y estados de H3.
+
+## 11. Handoff de favoritos H3 — Diego
+
+ProductCard conserva su DTO/props y añade FavoriteControl como hermano del Link. El layout monta WishlistProvider; consumidores aislados de ProductCard deben montar también ese proveedor. Con sandbox deshabilitado no muestra el control ni consulta sesión. No modifica enlaces, IDs o contenido del catálogo. Header enlaza Favoritos con `/favoritos`; Footer conserva su comportamiento.
+
+FavoriteToggle es presentacional: productId, confirmed (`unknown`/`saved`/`absent`), busy, authenticated; eventos onSave(id), onRemove(id), onRequireAuth(). `aria-pressed` se omite en desconocido. FavoriteControl conecta transporte/contexto y aviso local de sesión requerida; no navega a login ficticio. El control secundario de la demo usa announce=false para compartir estado sin duplicar anuncios. Button y tokens mantienen su API.
+
+No hay GET: ningún corazón infiere ausencia inicial ni persiste favoritos en storage. 201/200 confirma guardar; 204 confirma quitar. El estado se comparte por producto/ámbito opaco de sesión, se limpia al cambiar identidad y se ignoran respuestas anteriores. Mutaciones serializadas por producto, sin retry automático. La demo independiente no implementa V-009/F-037 ni O-006 completo. Guía y decisiones: [H3-DIEGO-FRONTEND.md](H3-DIEGO-FRONTEND.md). Revisión humana y coordinación de componentes compartidos pendientes.
+
+FavoritesList recibe productos con disponibilidad explícita, separa disponibles y sin existencias y ofrece un estado vacío con enlace al catálogo. Descripción, categoría legible, color y precio son opcionales; el DTO compartido de catálogo no cambia. La eliminación de un favorito se expone mediante `onRemove` opcional; sin él el control queda deshabilitado. Las tarjetas reutilizan el patrón de URL de detalle; la pantalla de detalle todavía no existe en esta rama. Los estilos de imágenes que llenan su área están limitados a `.favorites-card`.
+
+### Ampliación de vistas de favoritos
+
+La interfaz V-009 y O-006 ya tiene controlador compartido para HTTP y demostración de escenarios; el párrafo de alcance preparatorio anterior describe el corte H3 original. Backend todavía no implementa el GET F-037: el proxy nuevo está protegido por un flag server-only desactivado. El movimiento al carrito (F-039) queda fuera de este corte. No se afirma integración real por disponer de una vista.
+
+SiteChrome aplica marco específico únicamente a `/favoritos` y `/demo/h3/favoritos/lista…`, manteniendo el shell del catálogo. SearchBox admite `compact?: boolean` (default false), reutiliza validación y evita trasladar parámetros de demo a catálogo. FavoritesList conserva callbacks opcionales; `pending` describe la operación por producto. Las tarjetas enlazan a `/productos/{slug}` con `returnTo`; la ficha la entrega otro integrante. Productos retirados se distinguen de agotados y no enlazan a ficha; imágenes y precios pueden faltar. Recursos y fuentes originales son locales. Guía completa: [FAVORITOS-VISTAS.md](FAVORITOS-VISTAS.md).

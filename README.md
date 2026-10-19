@@ -1,4 +1,13 @@
 <!-- CATALOGO-S1 -->
+
+> **Entorno actual solicitado: Docker local.** Render queda como referencia futura. Consultar [Docker H3](docs/DOCKER-H3.md) para levantar los tres servicios. No se ha desplegado en Render.
+
+# Favoritos — corte individual H3 de Diego
+
+Consultar [ejecución de demo, contratos, pruebas y límites](docs/H3-DIEGO-FRONTEND.md). UI y persistencia local mediante NestJS/PostgreSQL; sesión y elegibilidad MOCK. No acredita cierre de F-036/F-038 ni gates externos.
+
+Vistas completas de favoritos: `npm run demo:favoritos`, abrir `/demo/h3/favoritos/lista` y elegir un escenario. No requiere backend. [Estados, pruebas y pendientes de integración](docs/FAVORITOS-VISTAS.md); [encargo de endpoints para backend](docs/FAVORITOS-FRONTEND-HANDOFF.md).
+
 # Inicio y búsqueda — corte local de Giuliano
 
 Consultar [ejecución, pruebas, contrato y pendientes del catálogo](docs/CATALOGO-S1.md).
@@ -92,3 +101,11 @@ flowchart LR
 1. **Spec-First:** Antes de implementar cualquier cambio funcional en el código, la modificación debe reflejarse y validarse en su correspondiente documento `SPEC`.
 2. **Branching:** Cada integrante trabaja sobre ramas asociadas a su módulo (e.g. `feat/SPEC-0X-nombre-historia`).
 3. **Definition of Done:** Cada entrega debe cumplir con los criterios de aceptación BDD, tipado estricto, manejo de errores HTTP y cobertura de pruebas estipulada en su SPEC.
+
+## Adaptación a develop y preparación de despliegue — 16/10/2026
+
+Se incorpora el carrito del develop actual sin sustituir el catálogo. Se restaura el arranque Render y se elimina la identidad de prueba automática del proxy de carrito. Consultar [preparación y límites del despliegue](docs/DESPLIEGUE-H3.md). Los PR existentes siguen en draft hacia develop; no se publica ni se modifica main/develop.
+
+## Conexión parcial G6 — demo H3 (17/10/2026)
+
+La [guía G6 H3](docs/INTEGRACION-G6-H3.md) explica la demo REAL en localhost:3300 y el modo temporal sin JWT. Categorías ya responde; productos seguía devolviendo 503 en el corte público registrado. Verificar cada ruta antes de exponer.

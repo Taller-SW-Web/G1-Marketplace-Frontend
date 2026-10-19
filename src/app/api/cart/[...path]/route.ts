@@ -1,35 +1,13 @@
 import { NextRequest } from "next/server";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
-function localHttpAllowed(url: URL) {
-  return (
-    url.protocol === "http:" &&
-    ["127.0.0.1", "localhost"].includes(url.hostname)
-  );
-}
-
-function configuredUrl(value: string | undefined, fallback: string) {
-  const url = new URL(value || fallback);
-  if (url.username || url.password || url.search || url.hash)
-    throw new Error("Invalid service URL");
-  if (url.protocol !== "https:" && !localHttpAllowed(url))
-    throw new Error("Insecure service URL");
-  return url;
-}
-
 async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joinedPath = path.join("/");
-
-  if (process.env.NODE_ENV === "production") {
-    return Response.json(
-      { error: { code: "CART_BACKEND_MODE_DISABLED" } },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
-  }
 
   // Endpoints válidos: "current", "current/items", o "items"
   if (!["current", "current/items", "items"].includes(joinedPath)) {
@@ -81,6 +59,7 @@ async function forward(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const api = marketplaceApiUrl();
     const backendEndpoint =
       joinedPath === "items" ? "current/items" : joinedPath;
     const url = new URL(`/api/v1/carts/${backendEndpoint}`, api);
@@ -89,9 +68,9 @@ async function forward(request: NextRequest, context: RouteContext) {
       Accept: "application/json",
     });
 
-    if (accessToken) {
-      headers.set("Authorization", `Bearer ${accessToken}`);
-    }
+    // Preserve explicit authentication; anonymous requests use the BFF cart session.
+    const authorization = request.headers.get("authorization");
+    if (authorization) headers.set("Authorization", authorization);
 
     const cookie = request.headers.get("cookie");
     if (cookie) headers.set("Cookie", cookie);

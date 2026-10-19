@@ -20,11 +20,12 @@ function product(value: unknown): value is ProductCardDTO {
     text(value.brandId) &&
     typeof value.slug === "string" &&
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slug) &&
-    record(value.image) &&
-    text(value.image.alt) &&
-    text(value.image.url) &&
-    (value.image.url.startsWith("https://") ||
-      /^\/fixtures\/product-[0-3]\.svg$/.test(value.image.url))
+    (value.image === null ||
+      (record(value.image) &&
+        text(value.image.alt) &&
+        text(value.image.url) &&
+        (value.image.url.startsWith("https://") ||
+          /^\/fixtures\/product-[0-3]\.svg$/.test(value.image.url))))
   );
 }
 export function isHome(value: unknown): value is HomeDTO {

@@ -6,7 +6,7 @@ export type ProductCardDTO = {
   name: string;
   categoryId: string;
   brandId: string;
-  image: { url: string; alt: string };
+  image: { url: string; alt: string } | null;
 };
 export type HomeDTO = {
   categories: Category[];

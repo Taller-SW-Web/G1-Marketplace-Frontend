@@ -4,9 +4,14 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "@fontsource/oswald/700.css";
+import "@fontsource/roboto-condensed/800.css";
+import "@fontsource/roboto-condensed/900.css";
 import "./globals.css";
 import { Header } from "@/shared/ui/Header";
 import { Footer } from "@/shared/ui/Footer";
+import { WishlistProvider } from "@/features/wishlist/WishlistProvider";
+import { sandboxEnabled } from "@/features/wishlist/server";
+import { SiteChrome } from "@/features/wishlist/FavoritesShell";
 
 export const metadata: Metadata = {
   title: {
@@ -22,9 +27,9 @@ export default function RootLayout({
   return (
     <html lang="es-PE" data-scroll-behavior="smooth">
       <body>
-        <Header />
-        <main id="contenido">{children}</main>
-        <Footer />
+        <WishlistProvider enabled={sandboxEnabled()}>
+          <SiteChrome header={<Header />} footer={<Footer />}>{children}</SiteChrome>
+        </WishlistProvider>
       </body>
     </html>
   );

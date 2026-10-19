@@ -6,7 +6,7 @@ process.env.MOCK_SALES_OUTCOME = process.env.MOCK_SALES_OUTCOME || "PAID";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "checkout.spec.ts",
+  testMatch: ["catalog-cart-integration.e2e.spec.ts", "checkout.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
