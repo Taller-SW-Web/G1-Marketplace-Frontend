@@ -72,11 +72,13 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
           npm run build
-          node scripts/mock-auth-server.mjs &
-          node dist/main.js &
-          sleep 8
+          nohup node scripts/mock-auth-server.mjs > ../mock-auth.log 2>&1 &
+          nohup node dist/main.js > ../backend.log 2>&1 &
+          sleep 6
+          curl -s http://127.0.0.1:4010/jwks || (echo "Mock Auth not running" && cat ../mock-auth.log && exit 1)
+          curl -s http://127.0.0.1:10000/health || (echo "Backend not running" && cat ../backend.log && exit 1)
 
       - name: Run Playwright E2E Tests
         run: |
           cd frontend
-          npm run test:cart-checkout:e2e
+          npm run test:cart-checkout:e2e || (echo "=== BACKEND LOGS ===" && cat ../backend.log && echo "=== MOCK AUTH LOGS ===" && cat ../mock-auth.log && exit 1)
