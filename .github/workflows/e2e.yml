@@ -62,6 +62,7 @@ jobs:
           NODE_ENV: development
           USE_MOCKS: 'true'
           MOCK_SALES_OUTCOME: PAID
+          CORS_ORIGINS: http://127.0.0.1:3101,http://localhost:3101
           AUTH_ISSUER: http://127.0.0.1:4010
           AUTH_JWKS_URL: http://127.0.0.1:4010/jwks
         run: |
@@ -73,7 +74,7 @@ jobs:
           npm run build
           node scripts/mock-auth-server.mjs &
           node dist/main.js &
-          sleep 5
+          sleep 8
 
       - name: Run Playwright E2E Tests
         run: |

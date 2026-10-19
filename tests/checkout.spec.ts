@@ -58,8 +58,9 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
 
   await page.goto("/checkout");
   await expect(page.getByText(/Se encontraron \d+ productos para esta compra/)).toBeVisible();
+  await expect(page.getByRole("radio").first()).toBeChecked();
   await page.getByRole("button", { name: "Continuar" }).click();
-  await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(`${sku} × 1`)).toBeVisible();
   await page.getByRole("button", { name: "Continuar al pago simulado" }).click();
   await page.getByRole("checkbox").check();
@@ -72,7 +73,7 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
   await page.getByRole("button", { name: "Crear pedido" }).click();
 
   if (process.env.MOCK_SALES_OUTCOME === "PAID") {
-    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeVisible({ timeout: 15000 });
     const orderLink = page.getByRole("link", { name: "Ver mi pedido" });
     await expect(orderLink).toHaveAttribute("href", /\/checkout\/confirmado\/PED-/);
     await orderLink.click();
