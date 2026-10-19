@@ -15,50 +15,6 @@ async function forward(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const api = configuredUrl(
-      process.env.MARKETPLACE_API_URL,
-      "http://127.0.0.1:10000",
-    );
-    const auth = configuredUrl(
-      process.env.MOCK_AUTH_URL,
-      "http://127.0.0.1:4010",
-    );
-    if (!localHttpAllowed(api) || !localHttpAllowed(auth)) {
-      throw new Error("Cart mock proxy is local-development only");
-    }
-
-    const isBackendMock =
-      process.env.CHECKOUT_MODE === "backend-mock" ||
-      process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock";
-
-    let accessToken: string | undefined;
-    try {
-      const tokenResponse = await fetch(new URL("/token?user=default", auth), {
-        cache: "no-store",
-        redirect: "error",
-        signal: AbortSignal.timeout(8000),
-      });
-      if (tokenResponse.ok) {
-        const tokenPayload: unknown = await tokenResponse.json();
-        if (
-          typeof tokenPayload === "object" &&
-          tokenPayload !== null &&
-          "access_token" in tokenPayload &&
-          typeof tokenPayload.access_token === "string"
-        ) {
-          accessToken = tokenPayload.access_token;
-        }
-      }
-    } catch {
-      // Si el mock auth server no está disponible, continuar sin Bearer para sesión anónima
-    }
-    if (!accessToken && isBackendMock) {
-      return Response.json(
-        { error: { code: "CART_AUTH_UNAVAILABLE" } },
-        { status: 503, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
     const api = marketplaceApiUrl();
     const backendEndpoint =
       joinedPath === "items" ? "current/items" : joinedPath;
