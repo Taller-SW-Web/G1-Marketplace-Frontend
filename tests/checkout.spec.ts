@@ -55,6 +55,7 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
     items: Array<{ sku: string; quantity: number }>;
   };
   expect(cart.items).toEqual(expect.arrayContaining([expect.objectContaining({ sku, quantity: 1 })]));
+  console.log("INITIAL_E2E_CART:", JSON.stringify(cart));
 
   page.on("console", (msg) => console.log("BROWSER_LOG:", msg.text()));
   page.on("pageerror", (err) => console.log("BROWSER_ERROR:", err.message));

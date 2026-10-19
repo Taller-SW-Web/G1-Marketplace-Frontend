@@ -24,6 +24,8 @@ export default defineConfig({
       CHECKOUT_MODE: "backend-mock",
       NEXT_PUBLIC_CHECKOUT_MODE: "backend-mock",
       MOCK_SALES_OUTCOME: "PAID",
+      MARKETPLACE_API_URL: "http://127.0.0.1:10000",
+      MOCK_AUTH_URL: "http://127.0.0.1:4010",
     },
     reuseExistingServer: false,
     timeout: 120000,

@@ -79,6 +79,12 @@ jobs:
           curl -s http://127.0.0.1:10000/health || (echo "Backend not running" && cat ../backend.log && exit 1)
 
       - name: Run Playwright E2E Tests
+        env:
+          CHECKOUT_MODE: backend-mock
+          NEXT_PUBLIC_CHECKOUT_MODE: backend-mock
+          MARKETPLACE_API_URL: http://127.0.0.1:10000
+          MOCK_AUTH_URL: http://127.0.0.1:4010
+          MOCK_SALES_OUTCOME: PAID
         run: |
           cd frontend
           npm run test:cart-checkout:e2e || (echo "=== BACKEND LOGS ===" && cat ../backend.log && echo "=== MOCK AUTH LOGS ===" && cat ../mock-auth.log && exit 1)
