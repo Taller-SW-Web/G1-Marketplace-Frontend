@@ -2845,3 +2845,11 @@ body:has(.viewer-backdrop) {
   border-top: 1px solid var(--border);
 }
 
+/* Account status shares the header layout on desktop and mobile. */
+.account-menu { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 180px; font-size: 14px; }
+.account-menu > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu button { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.account-menu button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.account-menu p { max-width: 220px; white-space: normal; }
+.auth-session-notice { margin: 0; padding: 12px 24px; text-align: center; background: #fff1dc; color: #653500; }
+

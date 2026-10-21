@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { isProductId, publicErrors } from "./types";
 import type { Identity } from "./types";
+import { authRequestGuard, authWebEnabled, bffFetch } from "@/features/auth/server";
 
 type Entry = { identity: Exclude<Identity, null>; scope: string; expires: number };
 const root = globalThis as typeof globalThis & { h3Sessions?: Map<string, Entry> };
@@ -80,11 +81,12 @@ export async function changeSession(request: NextRequest) {
 }
 
 export async function mutateWishlist(request: NextRequest, method: "POST" | "DELETE", pathId?: string) {
-  const rejected = mutationGuard(request);
+  const real = authWebEnabled();
+  const rejected = real ? authRequestGuard(request, true) : mutationGuard(request);
   if (rejected) return rejected;
   const entry = sessionEntry(request);
   const token = entry && process.env[`H3_SANDBOX_TOKEN_${entry.identity}`];
-  if (!entry || !token) return errorResponse("UNAUTHORIZED", 401);
+  if (!real && (!entry || !token)) return errorResponse("UNAUTHORIZED", 401);
   let productId: unknown = pathId;
   if (method === "POST") {
     let body: unknown;
@@ -108,7 +110,7 @@ export async function mutateWishlist(request: NextRequest, method: "POST" | "DEL
   if (method === "DELETE" && [".", ".."].includes(productId)) return errorResponse("INVALID_PRODUCT_ID", 400);
   const destination = new URL(`/api/v1/wishlist/items${method === "DELETE" ? `/${encodeURIComponent(productId)}` : ""}`, base);
   try {
-    const response = await fetch(destination, { method, redirect: "error", cache: "no-store",
+    const response = real ? await bffFetch(request, destination.pathname, method, method === "POST" ? { productId } : undefined) : await fetch(destination, { method, redirect: "error", cache: "no-store",
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json", ...(method === "POST" ? { "Content-Type": "application/json" } : {}) },
       ...(method === "POST" ? { body: JSON.stringify({ productId }) } : {}),

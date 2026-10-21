@@ -7,6 +7,8 @@ import { FavoritesHeading } from "./FavoritesHeading";
 import { useFavoritesController } from "./useFavoritesController";
 import { httpFavorites } from "./transport";
 import { useWishlist } from "./WishlistProvider";
+import Link from "next/link";
+import { useAuth } from "@/features/auth/AuthProvider";
 
 function ConnectedFavorites() {
   const { confirm, confirmList, expireSession, revision } = useWishlist();
@@ -20,6 +22,7 @@ export function FavoritesContent() {
   return <FavoritesGuest message={sessionMessage} />;
 }
 function FavoritesGuest({ message }: { message: string }) {
+  const { enabled } = useAuth();
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -33,13 +36,13 @@ function FavoritesGuest({ message }: { message: string }) {
       <h2 id="favorites-sign-in-title" tabIndex={-1} ref={title}>Tus favoritos te esperan</h2>
       <p>Inicia sesión para ver tu lista de favoritos.</p>
       <p>Guarda los productos que te gustan y encuéntralos aquí.</p>
-      <Button className="favorites-sign-in-button" disabled title="Próximamente">Iniciar sesión</Button>
+      {enabled ? <Link className="button button--primary favorites-sign-in-button" href="/login?returnTo=%2Ffavoritos">Iniciar sesión</Link> : <Button className="favorites-sign-in-button" disabled title="Próximamente">Iniciar sesión</Button>}
     </section>
     <dialog ref={dialog} className="wishlist-dialog" aria-labelledby="favorites-auth-title" aria-describedby="favorites-auth-message"
       onCancel={() => setDismissed(true)} onClose={() => { setDismissed(true); title.current?.focus(); }}>
       <h2 id="favorites-auth-title">Vuelve a iniciar sesión</h2>
       <p id="favorites-auth-message">{message} Tus productos privados ya no están visibles.</p>
-      <Button disabled title="Próximamente">Iniciar sesión</Button>
+      {enabled ? <Link className="auth-text-link" href="/login?returnTo=%2Ffavoritos">Iniciar sesión</Link> : <Button disabled title="Próximamente">Iniciar sesión</Button>}
       <Button variant="secondary" onClick={() => dialog.current?.close()}>Ahora no</Button>
     </dialog>
   </div>;

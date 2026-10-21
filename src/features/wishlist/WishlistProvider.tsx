@@ -19,7 +19,7 @@ type Store = {
 };
 const Context = createContext<Store | null>(null);
 
-export function WishlistProvider({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+export function WishlistProvider({ enabled, children, realAuth = false }: { enabled: boolean; children: ReactNode; realAuth?: boolean }) {
   const [session, setSession] = useState<Session>({ identity: null, scope: "anonymous", enabled });
   const sessionRef = useRef(session);
   const [sessionBusy, setSessionBusy] = useState(enabled);
@@ -53,7 +53,7 @@ export function WishlistProvider({ enabled, children }: { enabled: boolean; chil
       setSession(sessionRef.current);
     }
     try {
-      const next = await getSession(controller.signal, identity);
+      const next = await getSession(controller.signal, identity, realAuth);
       if (controller.signal.aborted) return;
       if (next.scope !== sessionRef.current.scope) clear();
       sessionRef.current = next;
@@ -70,18 +70,28 @@ export function WishlistProvider({ enabled, children }: { enabled: boolean; chil
         setSessionBusy(false);
       }
     }
-  }, [clear, enabled]);
+  }, [clear, enabled, realAuth]);
 
   useEffect(() => {
     if (!enabled) return;
     void syncSession();
     const refresh = () => { void syncSession(); };
     window.addEventListener("focus", refresh);
+    const changed = () => {
+      sessionRequest.current?.abort(); sessionLock.current = false;
+      clear(); sessionRef.current = { identity: null, scope: "anonymous", enabled };
+      setSession(sessionRef.current); void syncSession();
+    };
+    window.addEventListener("g1:session-changed", changed);
+    const channel = realAuth && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("g1-session") : null;
+    if (channel) channel.onmessage = changed;
     const timer = window.setInterval(refresh, 60000);
     const requests = pending.current;
     const counter = generation;
     return () => {
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("g1:session-changed", changed);
+      channel?.close();
       window.clearInterval(timer);
       sessionRequest.current?.abort();
       sessionLock.current = false;
@@ -89,7 +99,7 @@ export function WishlistProvider({ enabled, children }: { enabled: boolean; chil
       for (const request of requests.values()) request.abort();
       requests.clear();
     };
-  }, [enabled, syncSession]);
+  }, [enabled, syncSession, clear, realAuth]);
 
   const mutate = useCallback(async (id: string, operation: Operation) => {
     if (!sessionRef.current.identity || sessionLock.current || pending.current.has(id)) return;

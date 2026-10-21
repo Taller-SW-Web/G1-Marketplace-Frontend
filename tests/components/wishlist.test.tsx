@@ -95,7 +95,7 @@ it("401 clears private state and requests a new test session", async () => {
   await demo(); response = async () => Response.json({ code: "UNAUTHORIZED" }, { status: 401 });
   fireEvent.click(firstRegion().getByRole("button", { name: "Guardar en favoritos" }));
   await screen.findByText("Sin sesión activa.");
-  expect(screen.getByRole("alert").textContent).toContain("sesión de prueba terminó");
+  expect(screen.getByRole("alert").textContent).toContain("Tu sesión terminó");
   expect(screen.queryByRole("button", { name: "Quitar de favoritos" })).toBe(null);
 });
 

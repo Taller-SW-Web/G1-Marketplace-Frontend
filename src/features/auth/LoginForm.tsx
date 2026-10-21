@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
+import { AccessError, announceSessionChange, authCall, safeReturn } from "./client";
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
 
-export function LoginForm() {
+export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,39 @@ export function LoginForm() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
+  const [challenge, setChallenge] = useState<{ deadline: number; destination?: string } | null>(null);
+  const [codigo, setCodigo] = useState("");
+  const [remaining, setRemaining] = useState(0);
+  const [resendAt, setResendAt] = useState(0);
+  const [resendReady, setResendReady] = useState(false);
+
+  useEffect(() => {
+    if (!challenge) return;
+    const update = () => {
+      setRemaining(Math.max(0, Math.ceil((challenge.deadline - Date.now()) / 1000)));
+      setResendReady(Date.now() >= resendAt);
+    };
+    update(); const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [challenge, resendAt]);
+  function finish(result: Record<string, unknown>) {
+    if (result.authenticated !== true) throw new Error("Unexpected session");
+    announceSessionChange();
+    window.location.replace(safeReturn(new URLSearchParams(window.location.search).get("returnTo")));
+  }
+  async function sendCode() {
+    const result = await authCall("otp/solicitar", {});
+    setChallenge(previous => previous ? { ...previous, destination: typeof result.destinoEnmascarado === "string" ? result.destinoEnmascarado : undefined } : previous);
+    setResendAt(Date.now() + 30000);
+    setFeedback({ kind: "success", message: "Enviamos un código a tu correo. Revisa también la carpeta de spam." });
+  }
+  async function verify(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (busy || !/^\d{6}$/.test(codigo) || !remaining) return;
+    setBusy(true); setFeedback(null);
+    try { finish(await authCall("otp/verificar", { codigo })); }
+    catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos verificar el código." }); }
+    finally { setBusy(false); setCodigo(""); }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,6 +66,15 @@ export function LoginForm() {
 
     setBusy(true);
     try {
+      if (realAuth) {
+        const result = await authCall("login", { correo: correo.trim(), contrasena });
+        setContrasena("");
+        if (result.mfaRequerido === true && typeof result.expiraEn === "number") {
+          setChallenge({ deadline: Date.now() + result.expiraEn * 1000 });
+          await sendCode();
+        } else finish(result);
+        return;
+      }
       const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,10 +108,10 @@ export function LoginForm() {
         kind: "success",
         message: "Validación de ejemplo completada. No se inició una sesión real.",
       });
-    } catch {
+    } catch (error) {
       setFeedback({
         kind: "error",
-        message: "No pudimos conectar con la demostración. Inténtalo más tarde.",
+        message: realAuth ? error instanceof AccessError ? error.message : "No pudimos completar el acceso. Inténtalo más tarde." : "No pudimos conectar con la demostración. Inténtalo más tarde.",
       });
     } finally {
       setBusy(false);
@@ -83,8 +126,8 @@ export function LoginForm() {
             <img src="/figma/logo.png" alt="Inka Athletics" width="210" height="158" />
           </div>
           <div className="auth-heading">
-            <h1 id="auth-title">Inicia sesión</h1>
-            <p>Ingresa a tu cuenta para continuar.</p>
+            <h1 id="auth-title">{challenge ? "Verifica tu acceso" : "Inicia sesión"}</h1>
+            <p>{challenge ? "Ingresa el código de seis dígitos enviado por correo." : "Ingresa a tu cuenta para continuar."}</p>
           </div>
         </div>
 
@@ -97,7 +140,20 @@ export function LoginForm() {
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        {challenge ? <form className="auth-form" onSubmit={verify}>
+          {challenge.destination && <p>Correo: {challenge.destination}</p>}
+          <TextField label="Código de verificación" name="codigo" inputMode="numeric" autoComplete="one-time-code"
+            value={codigo} onChange={event => setCodigo(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            disabled={busy || !remaining} maxLength={6} required />
+          <p role="timer" aria-live="off">{remaining ? `Tiempo para completar el acceso: ${remaining} s` : "El desafío venció. Vuelve a iniciar sesión."}</p>
+          <Button type="submit" loading={busy} disabled={codigo.length !== 6 || !remaining} fullWidth>Verificar código</Button>
+          <button className="auth-text-link" type="button" disabled={busy || !remaining || !resendReady} onClick={async () => {
+            setBusy(true); setFeedback(null);
+            try { await sendCode(); } catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos enviar el código." }); }
+            finally { setBusy(false); }
+          }}>Reenviar código</button>
+          <button className="auth-text-link" type="button" disabled={busy} onClick={() => { setChallenge(null); setCodigo(""); setFeedback(null); }}>Volver al inicio de sesión</button>
+        </form> : <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <TextField
             label="Correo electrónico"
             type="email"
@@ -147,12 +203,12 @@ export function LoginForm() {
               Iniciar sesión
             </Button>
           </div>
-        </form>
+        </form>}
 
         <p className="auth-register">
           ¿No tienes cuenta? <Link className="auth-text-link" href="/registro">Crear cuenta</Link>
         </p>
-        <p className="auth-demo-label">Corte H3 · Demostración con datos de prueba</p>
+        {!realAuth && <p className="auth-demo-label">Corte H3 · Demostración con datos de prueba</p>}
       </div>
     </section>
   );
