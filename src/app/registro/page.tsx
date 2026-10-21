@@ -1,4 +1,7 @@
 import { RegistrationForm } from "@/features/auth/RegistrationForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Crea tu cuenta" };
 
 function documentUrl(value: string | undefined) {
   if (!value) return "";

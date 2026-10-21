@@ -25,6 +25,9 @@ jobs:
       - run: npm run test:server
       - run: npm run build
       - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - name: Keyboard and account state checks with browser-only fixtures
+        run: npx playwright test --config playwright.auth-ui.config.ts
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'

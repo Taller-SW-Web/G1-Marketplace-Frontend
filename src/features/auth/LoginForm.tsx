@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
 import { AccessError, announceSessionChange, authCall, safeReturn } from "./client";
+import { focusFirstInvalid } from "./form-focus";
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
@@ -23,6 +24,15 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
   const [resendAt, setResendAt] = useState(0);
   const [resendReady, setResendReady] = useState(false);
   const activeRequest = useRef<AbortController | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const feedbackElement = useRef<HTMLDivElement>(null);
+  const expiredNotice = useRef<HTMLParagraphElement>(null);
+  const mfaStep = Boolean(challenge);
+  useEffect(() => { heading.current?.focus(); }, [mfaStep]);
+  useEffect(() => { if (feedback?.kind === "error" && !busy) feedbackElement.current?.focus(); }, [feedback, busy]);
+  useEffect(() => {
+    if (challenge && challenge.deadline <= Date.now() && remaining === 0 && !busy) expiredNotice.current?.focus();
+  }, [challenge, remaining, busy]);
   useEffect(() => () => activeRequest.current?.abort(), []);
   async function call(action: string, body: unknown) {
     activeRequest.current?.abort(); const controller = new AbortController(); activeRequest.current = controller;
@@ -70,7 +80,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
     const nextPasswordError = contrasena ? "" : "Ingresa tu contraseña.";
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
-    if (nextEmailError || nextPasswordError) return;
+    if (nextEmailError || nextPasswordError) { focusFirstInvalid(event.currentTarget); return; }
 
     setBusy(true);
     try {
@@ -78,6 +88,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
         const result = await call("login", { correo: correo.trim(), contrasena });
         setContrasena("");
         if (result.mfaRequerido === true && typeof result.expiraEn === "number") {
+          setRemaining(Math.max(0, Math.ceil(result.expiraEn)));
           setChallenge({ deadline: Date.now() + result.expiraEn * 1000 });
           await sendCode();
         } else finish(result);
@@ -134,13 +145,14 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
             <img src="/figma/logo.png" alt="Inka Athletics" width="210" height="158" />
           </div>
           <div className="auth-heading">
-            <h1 id="auth-title">{challenge ? "Verifica tu acceso" : "Inicia sesión"}</h1>
+            <h1 ref={heading} tabIndex={-1} id="auth-title">{challenge ? "Verifica tu acceso" : "Inicia sesión"}</h1>
             <p>{challenge ? "Ingresa el código de seis dígitos enviado por correo." : "Ingresa a tu cuenta para continuar."}</p>
           </div>
         </div>
 
         {feedback && (
           <div
+            ref={feedbackElement} tabIndex={-1}
             className={`auth-feedback auth-feedback--${feedback.kind}`}
             role={feedback.kind === "error" ? "alert" : "status"}
           >
@@ -152,9 +164,10 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
           {challenge.destination && <p>Correo: {challenge.destination}</p>}
           <TextField label="Código de verificación" name="codigo" inputMode="numeric" autoComplete="one-time-code"
             value={codigo} onChange={event => setCodigo(event.target.value.replace(/\D/g, "").slice(0, 6))}
-            disabled={busy || !remaining} maxLength={6} required />
-          <p role="timer" aria-live="off">{remaining ? `Tiempo para completar el acceso: ${remaining} s` : "El desafío venció. Vuelve a iniciar sesión."}</p>
-          <Button type="submit" loading={busy} disabled={codigo.length !== 6 || !remaining} fullWidth>Verificar código</Button>
+            readOnly={busy} disabled={!remaining} maxLength={6} required />
+          {remaining ? <p role="timer" aria-live="off">Tiempo para completar el acceso: {remaining} s</p>
+            : <p ref={expiredNotice} tabIndex={-1} role="status">El desafío venció. Vuelve a iniciar sesión.</p>}
+          <Button type="submit" loading={busy} preserveFocusWhileLoading disabled={codigo.length !== 6 || !remaining} fullWidth>Verificar código</Button>
           <button className="auth-text-link" type="button" disabled={busy || !remaining || !resendReady} onClick={async () => {
             setBusy(true); setFeedback(null);
             try { await sendCode(); } catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos enviar el código." }); }
@@ -174,7 +187,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
               if (emailError) setEmailError("");
             }}
             error={emailError}
-            disabled={busy}
+            readOnly={busy}
             required
           />
           <TextField
@@ -189,7 +202,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
               if (passwordError) setPasswordError("");
             }}
             error={passwordError}
-            disabled={busy}
+            readOnly={busy}
             required
             endAdornment={
               <button
@@ -207,7 +220,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
             <Link className="auth-text-link" href="/recuperar-contrasena">
               ¿Olvidaste tu contraseña?
             </Link>
-            <Button type="submit" loading={busy} fullWidth>
+            <Button type="submit" loading={busy} preserveFocusWhileLoading fullWidth>
               Iniciar sesión
             </Button>
           </div>

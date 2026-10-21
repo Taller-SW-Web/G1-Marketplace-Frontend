@@ -10,6 +10,7 @@ import { accountCall, AccountError } from "./account-client";
 import { announceSessionChange, authCall } from "./client";
 import { useAccountCapabilities } from "./useAccountCapabilities";
 import { useAuth } from "./AuthProvider";
+import { focusFirstInvalid } from "./form-focus";
 
 export function ResetPasswordForm() {
   const token = useRef(""); const captured = useRef(false);
@@ -17,6 +18,9 @@ export function ResetPasswordForm() {
   const [link, setLink] = useState<"checking" | "present" | "invalid" | "expired" | "success">("checking");
   const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [message, setMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const feedback = useRef<HTMLParagraphElement>(null);
+  useEffect(() => { if (message && !busy) feedback.current?.focus(); }, [message, busy]);
   const [logoutWarning, setLogoutWarning] = useState(false);
   const rules = usePasswordPolicy(); const capabilities = useAccountCapabilities(); const auth = useAuth();
   useEffect(() => {
@@ -31,9 +35,10 @@ export function ResetPasswordForm() {
   }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || link !== "present" || !token.current || !rules.policy || !capabilities.recuperacion) return;
-    setMessage(""); setError("");
-    if (!formatMatches(rules.policy, password)) { setError("Revisa los requisitos de formato."); return; }
-    if (!confirmation || password !== confirmation) { setError("Las contraseñas deben coincidir."); return; }
+    const form = event.currentTarget;
+    setMessage(""); setError(""); setPasswordError("");
+    if (!formatMatches(rules.policy, password)) { setPasswordError("Revisa los requisitos de formato."); focusFirstInvalid(form); return; }
+    if (!confirmation || password !== confirmation) { setError("Las contraseñas deben coincidir."); focusFirstInvalid(form); return; }
     setBusy(true);
     const controller = new AbortController(); activeRequest.current = controller;
     try {
@@ -50,6 +55,8 @@ export function ResetPasswordForm() {
       if (controller.signal.aborted) return;
       if (failure instanceof AccountError && ["TOKEN_RECUPERACION_INVALIDO", "TOKEN_RECUPERACION_EXPIRADO"].includes(failure.code)) {
         token.current = ""; setPassword(""); setConfirmation(""); setLink(failure.code.endsWith("EXPIRADO") ? "expired" : "invalid");
+      } else if (failure instanceof AccountError && failure.code === "POLITICA_INCUMPLIDA") {
+        setPasswordError(failure.message); setPassword(""); setConfirmation(""); focusFirstInvalid(form);
       } else setMessage(failure instanceof AccountError ? failure.message : "No pudimos confirmar el cambio. Puedes intentar iniciar sesión o solicitar un nuevo enlace.");
     } finally { setBusy(false); }
   }
@@ -63,15 +70,15 @@ export function ResetPasswordForm() {
   return <AuthShell title="Crea una nueva contraseña" description="Ingresa y confirma tu nueva contraseña para recuperar el acceso.">
     {link === "checking" ? <p role="status">Preparando el formulario…</p> : <form className="auth-form" onSubmit={submit} noValidate>
       {!capabilities.loading && !capabilities.recuperacion && <p className="auth-feedback" role="status">El restablecimiento no está disponible por el momento. Inténtalo más adelante.</p>}
-      {message && <p className="auth-feedback auth-feedback--error" role="alert">{message}</p>}
-      <PasswordField label="Nueva contraseña" name="nuevaContrasena" autoComplete="new-password" placeholder="Ingresa una nueva contraseña" value={password} disabled={busy}
-        onChange={event => { setPassword(event.target.value); setError(""); }} required />
+      {message && <p ref={feedback} tabIndex={-1} className="auth-feedback auth-feedback--error" role="alert">{message}</p>}
+      <PasswordField label="Nueva contraseña" name="nuevaContrasena" autoComplete="new-password" placeholder="Ingresa una nueva contraseña" value={password} readOnly={busy} error={passwordError}
+        onChange={event => { setPassword(event.target.value); setPasswordError(""); }} required />
       {rules.policy ? <PasswordRules policy={rules.policy} value={password} confirmation={confirmation} />
         : <p className="auth-policy-message" role="status">{rules.loading ? "Consultando requisitos de contraseña…" : rules.error}
           {!rules.loading && <button type="button" className="auth-text-link" onClick={rules.retry}>Reintentar requisitos</button>}</p>}
-      <PasswordField label="Confirma tu contraseña" name="confirmacion" autoComplete="new-password" placeholder="Repite la nueva contraseña" value={confirmation} disabled={busy}
+      <PasswordField label="Confirma tu contraseña" name="confirmacion" autoComplete="new-password" placeholder="Repite la nueva contraseña" value={confirmation} readOnly={busy}
         onChange={event => { setConfirmation(event.target.value); setError(""); }} error={error} required />
-      <Button type="submit" fullWidth loading={busy} disabled={!rules.policy || !capabilities.recuperacion}>Guardar nueva contraseña</Button>
+      <Button type="submit" fullWidth loading={busy} preserveFocusWhileLoading disabled={!rules.policy || !capabilities.recuperacion}>Guardar nueva contraseña</Button>
     </form>}
   </AuthShell>;
 }
