@@ -46,3 +46,7 @@ Capturas sintéticas inspeccionadas. El texto de términos hace wrap en mobile p
 ## Gates conservados
 
 Jim confirmó que cuentas A/B G7 y URL/revisiones BFF desplegadas están pendientes. No hubo prueba REAL ni merge. La cadena histórica de migraciones sigue bloqueada; las pruebas usaron exclusivamente esquema desechable, sin reparar ni resetear una BD compartida. SAST/SCA/DAST completos, hosting sin query sensible, revisión de Andrés y evidencia desplegada siguen pendientes. Las issues permanecen abiertas.
+
+## Ampliación de QA de seguridad — 21/10/2026
+
+SAST/SCA/secrets e inventario de licencias ya ejecutados en CI Linux; resultados y límites en [SEGURIDAD-H4](SEGURIDAD-H4.md). Esto amplía el corte inicial anterior; DAST, revisión y prueba REAL siguen pendientes.
