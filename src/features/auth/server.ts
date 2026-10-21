@@ -79,7 +79,7 @@ export async function proxyAuth(request: Request, action: "login" | "session" | 
     }
     if (!upstream.ok) {
       const allowed = ["CREDENCIALES_INVALIDAS", "PASSWORD_CADUCADA", "CODIGO_INVALIDO", "OTP_INTENTOS_AGOTADOS", "OTP_EXPIRADO", "TOKEN_INVALIDO", "REFRESCO_INVALIDO", "RATE_LIMITED", "UNAUTHORIZED", "FORBIDDEN", "INVALID_REQUEST", "AUTH_UNAVAILABLE"];
-      const code = object(value) && typeof value.code === "string" && allowed.includes(value.code) ? value.code : "AUTH_UNAVAILABLE";
+      const code = object(value) && typeof value.code === "string" && allowed.includes(value.code) ? value.code : upstream.status === 400 ? "INVALID_REQUEST" : "AUTH_UNAVAILABLE";
       return Response.json({ code }, { status: [400, 401, 403, 410, 429].includes(upstream.status) ? upstream.status : 503, headers: outgoing });
     }
     let result: unknown = publicSession(value);

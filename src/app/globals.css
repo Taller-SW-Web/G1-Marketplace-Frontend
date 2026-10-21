@@ -2848,8 +2848,45 @@ body:has(.viewer-backdrop) {
 /* Account status shares the header layout on desktop and mobile. */
 .account-menu { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 180px; font-size: 14px; }
 .account-menu > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-menu button { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.account-menu > button { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
 .account-menu button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-.account-menu p { max-width: 220px; white-space: normal; }
+.account-menu > p { max-width: 220px; white-space: normal; }
 .auth-session-notice { margin: 0; padding: 12px 24px; text-align: center; background: #fff1dc; color: #653500; }
+
+.checkout-logout-dialog { width: min(496px, calc(100vw - 48px)); max-height: calc(100svh - 48px); overflow-y: auto; padding: 32px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-cloud); color: var(--text-primary); }
+.checkout-logout-dialog::backdrop { background: rgb(27 24 18 / 55%); }
+body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
+.checkout-logout-dialog[open] { display: flex; flex-direction: column; gap: 24px; }
+.logout-dialog-top { display: flex; align-items: center; justify-content: space-between; }
+.logout-dialog-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--action-soft); }
+.logout-dialog-close { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; background: transparent; }
+.logout-dialog-warning { padding: 16px; border: 1px solid var(--warning); border-radius: var(--radius-sm); background: var(--warning-background); font-size: 14px; line-height: 20px; }
+.logout-dialog-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.logout-dialog-confirm { color: var(--error); border: 0; background: transparent; }
+
+.auth-card--wide { width: min(100%, 800px); gap: 16px; }
+.auth-page--account h1 { text-transform: none; }
+.auth-page--account .field-label { line-height: 20px; }
+.auth-feedback--info { border-color: var(--info); background: var(--info-background); }
+.auth-small-copy { font-size: 14px; line-height: 20px; }
+.auth-card--wide .auth-intro { gap: 16px; }
+.auth-card--wide > .auth-register { margin-top: -8px; }
+.auth-card--compact, .auth-card--compact .auth-intro { gap: 16px; }
+.registration-form { gap: 16px; }
+.auth-field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.auth-actions--center { align-items: center; }
+.auth-consent { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.auth-consent input { flex: 0 0 20px; width: 20px; height: 20px; margin: 12px; accent-color: var(--action-primary); }
+.auth-consent a { font-weight: 600; color: var(--text-primary); text-decoration: underline; }
+.password-rules { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-subtle); font-size: 14px; line-height: 20px; }
+.password-rules > p:not(:first-child) { display: flex; align-items: center; gap: 8px; }
+.password-rules img { flex: 0 0 17.6px; width: 17.6px; height: 17.6px; }
+.password-rules small { color: var(--text-secondary); }
+.auth-policy-message { color: var(--text-secondary); font-size: 14px; line-height: 20px; }
+@media (max-width: 600px) {
+  .auth-page--account .auth-card { padding: 32px; }
+  .auth-field-row { grid-template-columns: minmax(0, 1fr); }
+  .auth-page--registration { align-items: flex-start; padding-inline: 16px; }
+  .auth-card--wide { width: min(100%, 356px); padding: 32px; }
+}
 

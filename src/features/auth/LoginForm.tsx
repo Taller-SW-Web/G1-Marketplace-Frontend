@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
@@ -22,6 +22,13 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
   const [remaining, setRemaining] = useState(0);
   const [resendAt, setResendAt] = useState(0);
   const [resendReady, setResendReady] = useState(false);
+  const activeRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => activeRequest.current?.abort(), []);
+  async function call(action: string, body: unknown) {
+    activeRequest.current?.abort(); const controller = new AbortController(); activeRequest.current = controller;
+    const value = await authCall(action, body, controller.signal);
+    controller.signal.throwIfAborted(); return value;
+  }
 
   useEffect(() => {
     if (!challenge) return;
@@ -33,12 +40,13 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
     return () => window.clearInterval(timer);
   }, [challenge, resendAt]);
   function finish(result: Record<string, unknown>) {
+    if (activeRequest.current?.signal.aborted) return;
     if (result.authenticated !== true) throw new Error("Unexpected session");
     announceSessionChange();
     window.location.replace(safeReturn(new URLSearchParams(window.location.search).get("returnTo")));
   }
   async function sendCode() {
-    const result = await authCall("otp/solicitar", {});
+    const result = await call("otp/solicitar", {});
     setChallenge(previous => previous ? { ...previous, destination: typeof result.destinoEnmascarado === "string" ? result.destinoEnmascarado : undefined } : previous);
     setResendAt(Date.now() + 30000);
     setFeedback({ kind: "success", message: "Enviamos un código a tu correo. Revisa también la carpeta de spam." });
@@ -46,7 +54,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
   async function verify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !/^\d{6}$/.test(codigo) || !remaining) return;
     setBusy(true); setFeedback(null);
-    try { finish(await authCall("otp/verificar", { codigo })); }
+    try { finish(await call("otp/verificar", { codigo })); }
     catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos verificar el código." }); }
     finally { setBusy(false); setCodigo(""); }
   }
@@ -67,7 +75,7 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
     setBusy(true);
     try {
       if (realAuth) {
-        const result = await authCall("login", { correo: correo.trim(), contrasena });
+        const result = await call("login", { correo: correo.trim(), contrasena });
         setContrasena("");
         if (result.mfaRequerido === true && typeof result.expiraEn === "number") {
           setChallenge({ deadline: Date.now() + result.expiraEn * 1000 });

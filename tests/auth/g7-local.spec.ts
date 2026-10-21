@@ -27,7 +27,8 @@ test("MFA → private wishlist → reload → second tab → logout", async ({ p
   const second = await context.newPage(); await second.goto("/favoritos");
   await expect(second.getByRole("button", { name: "Cerrar sesión", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
-  await expect(page).toHaveURL("http://127.0.0.1:3002/");
+  await expect(page).toHaveURL("http://127.0.0.1:3002/?sesion=cerrada");
+  await expect(page.getByRole("status").filter({ hasText: "Sesión cerrada." })).toBeVisible();
   await expect(second.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
   await expect(second.getByRole("link", { name: "Iniciar sesión", exact: true }).first()).toBeVisible();
   expect((await second.request.get("/api/wishlist")).status()).toBe(401);

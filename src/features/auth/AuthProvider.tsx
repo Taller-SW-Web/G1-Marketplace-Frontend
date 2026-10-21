@@ -9,7 +9,7 @@ export function AuthProvider({ enabled, children }: { enabled: boolean; children
   const [session, setSession] = useState(anonymous);
   const [busy, setBusy] = useState(enabled);
   const active = useRef<AbortController | null>(null);
-  const [notice, setNotice] = useState(false);
+  const [notice, setNotice] = useState<"cerrada" | "cierre-local" | null>(null);
   const sync = useCallback(async () => {
     if (!enabled) return;
     active.current?.abort();
@@ -23,7 +23,10 @@ export function AuthProvider({ enabled, children }: { enabled: boolean; children
   }, [enabled]);
   useEffect(() => {
     if (!enabled) return;
-    const noticeTimer = window.setTimeout(() => setNotice(new URLSearchParams(window.location.search).get("sesion") === "cierre-local"), 0);
+    const noticeTimer = window.setTimeout(() => {
+      const value = new URLSearchParams(window.location.search).get("sesion");
+      setNotice(value === "cerrada" || value === "cierre-local" ? value : null);
+    }, 0);
     const update = () => { void sync(); };
     update();
     window.addEventListener("focus", update);
@@ -38,8 +41,13 @@ export function AuthProvider({ enabled, children }: { enabled: boolean; children
       active.current?.abort();
     };
   }, [enabled, sync]);
+  useEffect(() => {
+    if (!notice || busy || session.authenticated) return;
+    const heading = document.querySelector<HTMLElement>("main h1") ?? document.querySelector<HTMLElement>("main");
+    heading?.setAttribute("tabindex", "-1"); heading?.focus();
+  }, [notice, busy, session.authenticated]);
   return <Context.Provider value={{ enabled, session, busy, sync }}>
-    {notice && <p className="auth-session-notice" role="status">Tu sesión en Marketplace se cerró. No pudimos confirmar la revocación remota en Seguridad.</p>}
+    {notice && !busy && !session.authenticated && <p className="auth-session-notice" role="status">{notice === "cerrada" ? "Sesión cerrada." : "Tu sesión en Marketplace se cerró. No pudimos confirmar la revocación remota en Seguridad."}</p>}
     {children}
   </Context.Provider>;
 }
