@@ -24,7 +24,7 @@ test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
       ],
     };
 
-    let cartItems: Array<{ sku: string; name?: string; quantity: number; unitPrice?: { amount: number; currency: string } }> = [];
+    const cartItems: Array<{ sku: string; name?: string; quantity: number; unitPrice?: { amount: number; currency: string } }> = [];
 
     // Interceptar llamadas al BFF de Catálogo
     await page.route("**/api/catalog/products/*", async (route) => {
