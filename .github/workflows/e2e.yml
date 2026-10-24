@@ -68,7 +68,6 @@ jobs:
         run: |
           cd backend
           npm ci
-          rm -rf prisma/migrations/20261018135249_npm_run_prisma_migrate
           npx prisma generate
           npx prisma migrate deploy
           npm run build
