@@ -13,7 +13,8 @@ export default defineConfig({
     channel: "msedge",
   },
   webServer: {
-    command: "npm run start -- --port 3101 --hostname 127.0.0.1",
+    // Checkout backend-mock routes are intentionally disabled under NODE_ENV=production.
+    command: "npm run dev -- --port 3101 --hostname 127.0.0.1",
     url: "http://127.0.0.1:3101/checkout",
     env: { NEXT_TELEMETRY_DISABLED: "1" },
     reuseExistingServer: false,

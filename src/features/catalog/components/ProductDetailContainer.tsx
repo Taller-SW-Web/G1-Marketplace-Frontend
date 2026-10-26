@@ -96,6 +96,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
   }
 
   const product = state.data;
+  const canAddToCart = showCart && state.source === "MOCK";
 
   return (
     <div className="container product-page">
@@ -123,10 +124,10 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
         <div className="detail-summary">
           <p className="detail-brand">Marca: {product.brand.name}</p>
           <h1>{product.name}</h1>
-          {showCart && (
+          {canAddToCart && (
             <div className="detail-cart-action-wrapper" style={{ margin: "24px 0" }}>
               <AddToCartAction
-                sku={product.productId}
+                productId={product.productId}
                 availability="AVAILABLE"
                 priceReady={true}
                 busy={isBusy}
@@ -150,7 +151,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
         onIndexChange={(index) => setViewerState({ slug, open: true, index })}
       />
 
-      {showCart && (
+      {canAddToCart && (
         <AddedToCartFeedback
           result={lastResult}
           opened={feedbackOpen}

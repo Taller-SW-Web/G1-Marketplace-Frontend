@@ -123,6 +123,7 @@ const publicErrorMessages: Record<string, string> = {
   CART_BACKEND_MODE_DISABLED: "La consulta del carrito no está disponible en este entorno.",
   CART_EMPTY: "Agrega un producto al carrito para continuar.",
   CART_NOT_FOUND: "No encontramos un carrito activo. Vuelve al carrito para continuar.",
+  CART_OWNERSHIP_CONFLICT: "Hay más de un carrito activo. Vuelve al carrito y revisa su contenido antes de continuar.",
   CHECKOUT_BACKEND_UNAVAILABLE: "No pudimos comunicarnos con Checkout. Inténtalo más tarde.",
   CONTACT_VALIDATION_ERROR: "Revisa los datos de contacto e inténtalo de nuevo.",
   COUPON_NOT_APPLICABLE: "Ese cupón no se puede aplicar a esta compra.",
