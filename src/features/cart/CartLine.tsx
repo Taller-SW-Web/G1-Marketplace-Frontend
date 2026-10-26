@@ -31,6 +31,13 @@ export function CartLine({
     ? `S/ ${(line.unitPrice.amount * line.quantity).toFixed(2)}`
     : 'Pendiente';
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    if (!isNaN(val) && val >= 1 && val <= 99) {
+      onQuantityChange?.(line.sku, val);
+    }
+  };
+
   return (
     <article className="cart-line-item" aria-label={`Producto ${line.name || line.sku}`}>
       <div className="cart-line-details">
@@ -59,9 +66,16 @@ export function CartLine({
           >
             -
           </Button>
-          <span className="cart-quantity-display" aria-live="polite">
-            {line.quantity}
-          </span>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={line.quantity}
+            onChange={handleInputChange}
+            disabled={busy}
+            className="cart-quantity-input"
+            aria-label={`Cantidad de ${line.name || line.sku}`}
+          />
           <Button
             type="button"
             variant="secondary"
