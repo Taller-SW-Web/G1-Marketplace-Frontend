@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { CartSnapshot } from './types';
-import { getCartApi } from './api';
+import { getCartApi, updateCartItemQuantityApi } from './api';
 
 export function useCurrentCart(useMock: boolean = true) {
   const [cart, setCart] = useState<CartSnapshot | null>(null);
@@ -51,22 +51,34 @@ export function useCurrentCart(useMock: boolean = true) {
       if (newQty < 1) return;
       setIsBusy(true);
       try {
-        setCart((prev) => {
-          if (!prev) return prev;
-          const updatedItems = prev.items.map((it) =>
-            it.sku === sku ? { ...it, quantity: newQty } : it
-          );
-          return {
-            ...prev,
-            version: prev.version + 1,
-            items: updatedItems,
-          };
-        });
+        const result = await updateCartItemQuantityApi(sku, newQty, cart?.version, useMock);
+        if (result.cart) {
+          setCart(result.cart);
+        } else if (result.success) {
+          setCart((prev) => {
+            if (!prev) return prev;
+            const updatedItems = prev.items.map((it) =>
+              it.sku === sku ? { ...it, quantity: newQty } : it
+            );
+            return {
+              ...prev,
+              version: prev.version + 1,
+              items: updatedItems,
+            };
+          });
+        }
+        if (!result.success) {
+          setErrorMessage(result.message);
+        } else {
+          setErrorMessage(undefined);
+        }
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Error al actualizar la cantidad.');
       } finally {
         setIsBusy(false);
       }
     },
-    []
+    [cart, useMock]
   );
 
   const handleRemove = useCallback(

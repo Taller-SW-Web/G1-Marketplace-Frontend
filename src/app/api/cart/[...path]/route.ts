@@ -9,15 +9,22 @@ async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joinedPath = path.join("/");
 
-  // Endpoints válidos: "current", "current/items", o "items"
-  if (!["current", "current/items", "items"].includes(joinedPath)) {
+  // Endpoints válidos: "current", "current/items", "items", o "current/items/:sku" / "items/:sku"
+  const isDirect = ["current", "current/items", "items"].includes(joinedPath);
+  const isItemBySku = path.length === 3 && path[0] === "current" && path[1] === "items" && path[2].length > 0;
+  const isItemBySkuShort = path.length === 2 && path[0] === "items" && path[1].length > 0;
+
+  if (!isDirect && !isItemBySku && !isItemBySkuShort) {
     return Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
   }
 
   try {
     const api = marketplaceApiUrl();
-    const backendEndpoint =
-      joinedPath === "items" ? "current/items" : joinedPath;
+    const backendEndpoint = isItemBySkuShort
+      ? `current/items/${encodeURIComponent(path[1])}`
+      : joinedPath === "items"
+        ? "current/items"
+        : joinedPath;
     const url = new URL(`/api/v1/carts/${backendEndpoint}`, api);
 
     const headers = new Headers({
@@ -31,8 +38,11 @@ async function forward(request: NextRequest, context: RouteContext) {
     const cookie = request.headers.get("cookie");
     if (cookie) headers.set("Cookie", cookie);
 
+    const ifMatch = request.headers.get("if-match");
+    if (ifMatch) headers.set("If-Match", ifMatch);
+
     let body: string | undefined;
-    if (request.method === "POST") {
+    if (request.method === "POST" || request.method === "PATCH") {
       const contentType = request.headers.get("content-type") || "";
       if (!contentType.toLowerCase().includes("application/json")) {
         return Response.json(
@@ -101,3 +111,4 @@ async function forward(request: NextRequest, context: RouteContext) {
 
 export const GET = forward;
 export const POST = forward;
+export const PATCH = forward;
