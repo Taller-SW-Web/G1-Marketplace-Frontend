@@ -59,6 +59,7 @@ export function CheckoutFlow() {
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<{ quoteId: string; cartVersion: number; key: string } | null>(null);
   const preparationAttempt = useRef(0);
+  const preparationSubmitting = useRef(false);
   const contactRef = useRef<Contact | null>(null);
   const submitting = useRef(false);
   const [contact, setContact] = useState<Contact>({ fullName: "", documentType: "DNI", documentNumber: "", phone: "", email: "" });
@@ -225,7 +226,8 @@ export function CheckoutFlow() {
   }
 
   function prepare() {
-    if (!quote || quoteInvalid || expired || !consented || busy) return;
+    if (!quote || quoteInvalid || expired || !consented || busy || preparationSubmitting.current) return;
+    preparationSubmitting.current = true;
     setBusy(true);
     setNotice("");
     const existingPreparation = preparationKey.current;
@@ -264,12 +266,16 @@ export function CheckoutFlow() {
       }
       setNotice(checkoutErrorMessage(error, "No se pudo preparar la compra. Intenta actualizar el resumen."));
     }).finally(() => {
-      if (attempt === preparationAttempt.current) setBusy(false);
+      if (attempt === preparationAttempt.current) {
+        preparationSubmitting.current = false;
+        setBusy(false);
+      }
     });
   }
 
   function returnToSummaryDuringPreparation() {
     preparationAttempt.current += 1;
+    preparationSubmitting.current = false;
     setBusy(false);
     setNotice("");
     setStep("summary");
@@ -337,9 +343,11 @@ export function CheckoutFlow() {
     setBusy(true);
     setNotice("Estamos registrando tu pedido. La simulación de pago ocurre después de crear el pedido; no habrá cobro real.");
     if (backendMockEnabled) {
-      submitting.current = false;
       setOrderSubmission("UNCERTAIN");
-      void submitBackendOrder().finally(() => setBusy(false));
+      void submitBackendOrder().finally(() => {
+        submitting.current = false;
+        setBusy(false);
+      });
       return;
     }
     window.setTimeout(() => {
