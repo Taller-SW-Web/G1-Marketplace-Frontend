@@ -58,6 +58,7 @@ export function CheckoutFlow() {
   const [orderSubmission, setOrderSubmission] = useState<"READY" | "UNCERTAIN" | "REJECTED">("READY");
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<{ quoteId: string; cartVersion: number; key: string } | null>(null);
+  const benefitRequest = useRef(0);
   const preparationAttempt = useRef(0);
   const contactRef = useRef<Contact | null>(null);
   const submitting = useRef(false);
@@ -77,7 +78,12 @@ export function CheckoutFlow() {
       setAddresses(items);
       setSelectedId(items[0]?.addressId ?? "");
     }).catch((error: unknown) => {
-      if (active) setNotice(checkoutErrorMessage(error, "No se pudieron cargar las direcciones."));
+      if (!active) return;
+      if (error instanceof CheckoutApiError && error.status === 401) {
+        setAddresses([]);
+        setSelectedId("");
+      }
+      setNotice(checkoutErrorMessage(error, "No se pudieron cargar las direcciones."));
     }).finally(() => { if (active) setAddressLoading(false); });
     return () => { active = false; };
   }, []);
@@ -130,6 +136,12 @@ export function CheckoutFlow() {
       setCouponMessage("");
       setStep("summary");
     } catch (error: unknown) {
+      if (error instanceof CheckoutApiError && error.status === 401) {
+        setAddresses([]);
+        setSelectedId("");
+        setQuote(null);
+        setOperationId("");
+      }
       setNotice(checkoutErrorMessage(error, "No se pudo calcular el envío."));
     } finally {
       setBusy(false);
@@ -181,18 +193,27 @@ export function CheckoutFlow() {
       setSelectedId(saved.addressId);
       setAddressError("");
       setAddingAddress(false);
-    }).catch((error: unknown) => setAddressError(checkoutErrorMessage(error, "No se pudo guardar la dirección."))).finally(() => setBusy(false));
+    }).catch((error: unknown) => {
+      if (error instanceof CheckoutApiError && error.status === 401) {
+        setAddresses([]);
+        setSelectedId("");
+      }
+      setAddressError(checkoutErrorMessage(error, "No se pudo guardar la dirección."));
+    }).finally(() => setBusy(false));
   }
 
   function applyCoupon(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!quote || quoteInvalid || expired) return;
     setBusy(true);
+    const requestId = ++benefitRequest.current;
+    const sourceQuoteId = quote.quoteId;
     const normalized = coupon.trim().toUpperCase();
     const apply = backendMockEnabled
       ? checkoutApi.applyBenefit(quote, normalized)
       : new Promise((resolve) => window.setTimeout(() => resolve(applyFixtureCoupon(quote, normalized)), 160));
     apply.then((next) => {
+      if (requestId !== benefitRequest.current || quote?.quoteId !== sourceQuoteId) return;
       if (next) {
         setQuote(next as CheckoutQuote);
         setQuoteInvalid(false);
@@ -201,11 +222,18 @@ export function CheckoutFlow() {
         setHasPreparationAttempt(false);
         setCouponMessage("Cupón aplicado.");
       } else setCouponMessage("Ese cupón no se puede aplicar a esta compra.");
-    }).catch((error: unknown) => setCouponMessage(checkoutErrorMessage(error, "No se pudo validar el cupón."))).finally(() => setBusy(false));
+    }).catch((error: unknown) => {
+      if (requestId === benefitRequest.current && quote?.quoteId === sourceQuoteId) {
+        setCouponMessage(checkoutErrorMessage(error, "No se pudo validar el cupón."));
+      }
+    }).finally(() => {
+      if (requestId === benefitRequest.current) setBusy(false);
+    });
   }
 
   function removeCoupon() {
     if (!quote || quoteInvalid) return;
+    benefitRequest.current += 1;
     if (backendMockEnabled) {
       setBusy(true);
       checkoutApi.removeBenefit(quote).then((next) => {
