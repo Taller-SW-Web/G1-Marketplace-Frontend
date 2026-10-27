@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CheckoutApiError } from "../../src/features/checkout/api";
+import type { CheckoutQuote } from "../../src/features/checkout/fixtures";
 
 const api = vi.hoisted(() => ({
   listAddresses: vi.fn(), getCurrentCart: vi.fn(), createQuote: vi.fn(),
@@ -10,7 +11,10 @@ const api = vi.hoisted(() => ({
 vi.mock("../../src/features/checkout/api", () => ({
   backendMockEnabled: true,
   checkoutApi: api,
-  checkoutErrorMessage: (_error: unknown, fallback: string) => fallback,
+  checkoutErrorMessage: (error: unknown, fallback: string) =>
+    error instanceof Error && "code" in error && error.code === "CART_CHANGED"
+      ? "Tu carrito cambió. Vuelve al carrito y actualiza el resumen."
+      : fallback,
   CheckoutApiError: class CheckoutApiError extends Error {
     constructor(readonly status: number, readonly code: string) { super(code); }
   },
@@ -81,5 +85,103 @@ describe("Checkout address and benefit acceptance", () => {
     expect((screen.getByLabelText("Dirección") as HTMLInputElement).value).toBe("Calle 1");
     expect(api.createAddress).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.getByRole("button", { name: "Guardar dirección" })).toBeDefined());
+  });
+
+  it("invalidates the quote when the buyer selects a different address", async () => {
+    api.listAddresses.mockResolvedValueOnce([address, {
+      ...address, addressId: "ADR-2", label: "Trabajo", street: "Jr. Comercio 450",
+    }]);
+    api.createQuote.mockResolvedValueOnce(quote).mockResolvedValueOnce({ ...quote, quoteId: "Q-2", addressId: "ADR-2" });
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
+    fireEvent.click(screen.getByRole("radio", { name: /Trabajo/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    expect(api.createQuote).toHaveBeenLastCalledWith("ADR-2", 7);
+    expect(screen.getByText("Trabajo: Jr. Comercio 450, Miraflores")).toBeDefined();
+  });
+
+  it("does not represent an unavailable quote service as free shipping", async () => {
+    api.createQuote.mockRejectedValueOnce(new CheckoutApiError(503, "QUOTE_UNAVAILABLE"));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await screen.findByText("No se pudo calcular el envío.");
+    expect(screen.queryByRole("heading", { name: "Resumen de envío" })).toBeNull();
+    expect(screen.queryByText(/Envío/)).toBeNull();
+  });
+
+  it("explains a changed cart and does not continue with an obsolete quote", async () => {
+    api.createQuote.mockRejectedValueOnce(new CheckoutApiError(409, "CART_CHANGED"));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await screen.findByText("Tu carrito cambió. Vuelve al carrito y actualiza el resumen.");
+    expect(screen.queryByRole("heading", { name: "Resumen de envío" })).toBeNull();
+  });
+
+  it("blocks continuation when the quote has expired", async () => {
+    api.createQuote.mockResolvedValueOnce({ ...quote, expiresAt: Date.now() - 10_000 });
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continuar al pago simulado" }).hasAttribute("disabled")).toBe(true), { timeout: 2500 });
+    expect(screen.getByRole("alert").textContent).toContain("La cotización venció");
+  });
+
+  it("removes a selected benefit by requesting a fresh quote", async () => {
+    const discountedQuote = {
+      ...quote,
+      quoteId: "Q-DISCOUNTED",
+      discount: 20,
+      total: 335,
+      selectedBenefit: { type: "COUPON", id: "SAVE20", discount: 20 },
+    };
+    api.applyBenefit.mockResolvedValueOnce(discountedQuote);
+    api.removeBenefit.mockResolvedValueOnce(quote);
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    await screen.findByText("Cupón aplicado: SAVE20");
+    fireEvent.click(screen.getByRole("button", { name: "Quitar beneficio" }));
+
+    await screen.findByText("Se actualizó el resumen sin el beneficio.");
+    expect(api.removeBenefit).toHaveBeenCalledWith(discountedQuote);
+    expect(screen.getByText(/Total estimado/).parentElement?.textContent).toContain("355");
+    expect(screen.getByLabelText("Código promocional")).toBeDefined();
+  });
+
+  it("ignores a delayed benefit response after the quote context changes", async () => {
+    let resolveBenefit!: (value: CheckoutQuote) => void;
+    api.listAddresses.mockResolvedValueOnce([address, {
+      ...address, addressId: "ADR-2", label: "Trabajo", street: "Jr. Comercio 450",
+    }]);
+    api.createQuote.mockResolvedValueOnce(quote).mockResolvedValueOnce({ ...quote, addressId: "ADR-2" });
+    api.applyBenefit.mockImplementationOnce(() => new Promise((resolve) => { resolveBenefit = resolve; }));
+    render(<CheckoutFlow />);
+    await screen.findByText(/Se encontraron 2 productos/);
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
+    fireEvent.click(screen.getByRole("radio", { name: /Trabajo/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await screen.findByText(/Jr\. Comercio 450/);
+    resolveBenefit({ ...quote, quoteId: "Q-LATE", total: 1, selectedBenefit: { type: "COUPON", id: "OLD", discount: 354 } });
+
+    await waitFor(() => expect(screen.queryByText("Cupón aplicado: OLD")).toBeNull());
+    expect(screen.getByText(/Total estimado/).parentElement?.textContent).toContain("355");
   });
 });

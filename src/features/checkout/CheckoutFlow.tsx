@@ -5,6 +5,13 @@ import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
 import {
+  AddressStepContainer,
+  CheckoutOrderSummary,
+  CheckoutQuoteContainer,
+  CouponForm,
+  SelectedBenefit,
+} from "./CheckoutSteps";
+import {
   applyFixtureCoupon,
   checkoutFixtureAddresses,
   checkoutFixtureCart,
@@ -45,6 +52,8 @@ export function CheckoutFlow() {
   const [addingAddress, setAddingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const quoteRef = useRef<CheckoutQuote | null>(null);
+  const quoteRequest = useRef(0);
   const [quoteInvalid, setQuoteInvalid] = useState(false);
   const [stockUnavailable, setStockUnavailable] = useState(false);
   const [coupon, setCoupon] = useState("");
@@ -104,10 +113,37 @@ export function CheckoutFlow() {
   const selectedAddress = addresses.find((address) => address.addressId === selectedId);
   const expired = quote !== null && now > 0 && quote.expiresAt <= now;
 
+  function replaceQuote(next: CheckoutQuote | null) {
+    quoteRef.current = next;
+    setQuote(next);
+  }
+
+  function invalidateQuote() {
+    quoteRequest.current += 1;
+    benefitRequest.current += 1;
+    replaceQuote(null);
+    setCouponMessage("");
+    setQuoteInvalid(false);
+    setStockUnavailable(false);
+    setOperationId("");
+    setConsented(false);
+    preparationKey.current = null;
+    setHasPreparationAttempt(false);
+    orderKey.current = null;
+    contactRef.current = null;
+  }
+
   function retryCartLoad() {
     setCartStatus("loading");
     setCartError("");
     setCartReloadKey((key) => key + 1);
+  }
+
+  function returnToAddress() {
+    quoteRequest.current += 1;
+    benefitRequest.current += 1;
+    setBusy(false);
+    setStep("address");
   }
 
   async function quoteCurrentCart(addressId: string): Promise<CheckoutQuote> {
@@ -126,9 +162,12 @@ export function CheckoutFlow() {
     if (!selectedAddress || busy || (backendMockEnabled && cartStatus !== "ready")) return;
     setBusy(true);
     setNotice("");
+    const requestId = ++quoteRequest.current;
+    const addressId = selectedAddress.addressId;
     try {
-      const nextQuote = await quoteCurrentCart(selectedAddress.addressId);
-      setQuote(nextQuote as CheckoutQuote);
+      const nextQuote = await quoteCurrentCart(addressId);
+      if (requestId !== quoteRequest.current || selectedId !== addressId) return;
+      replaceQuote(nextQuote as CheckoutQuote);
       setQuoteInvalid(false);
       setStockUnavailable(false);
       preparationKey.current = null;
@@ -139,8 +178,7 @@ export function CheckoutFlow() {
       if (error instanceof CheckoutApiError && error.status === 401) {
         setAddresses([]);
         setSelectedId("");
-        setQuote(null);
-        setOperationId("");
+        invalidateQuote();
       }
       setNotice(checkoutErrorMessage(error, "No se pudo calcular el envío."));
     } finally {
@@ -151,9 +189,13 @@ export function CheckoutFlow() {
   async function refreshQuote() {
     if (!selectedAddress || busy) return;
     setBusy(true);
+    const requestId = ++quoteRequest.current;
+    const addressId = selectedAddress.addressId;
+    benefitRequest.current += 1;
     try {
-      const next = await quoteCurrentCart(selectedAddress.addressId);
-      setQuote(next);
+      const next = await quoteCurrentCart(addressId);
+      if (requestId !== quoteRequest.current || selectedId !== addressId) return;
+      replaceQuote(next);
       setQuoteInvalid(false);
       setStockUnavailable(false);
       preparationKey.current = null;
@@ -185,10 +227,13 @@ export function CheckoutFlow() {
       reference: String(values.reference || ""), phone: String(values.phone),
     };
     setBusy(true);
+    const requestId = ++quoteRequest.current;
     const save = backendMockEnabled
       ? checkoutApi.createAddress(address)
       : Promise.resolve({ ...address, addressId: `ADR-MOCK-${String(addresses.length + 1).padStart(4, "0")}` });
     save.then((saved) => {
+      if (requestId !== quoteRequest.current) return;
+      invalidateQuote();
       setAddresses((current) => [...current, saved]);
       setSelectedId(saved.addressId);
       setAddressError("");
@@ -197,6 +242,7 @@ export function CheckoutFlow() {
       if (error instanceof CheckoutApiError && error.status === 401) {
         setAddresses([]);
         setSelectedId("");
+        invalidateQuote();
       }
       setAddressError(checkoutErrorMessage(error, "No se pudo guardar la dirección."));
     }).finally(() => setBusy(false));
@@ -207,15 +253,15 @@ export function CheckoutFlow() {
     if (!quote || quoteInvalid || expired) return;
     setBusy(true);
     const requestId = ++benefitRequest.current;
-    const sourceQuoteId = quote.quoteId;
+    const sourceQuote = quote;
     const normalized = coupon.trim().toUpperCase();
     const apply = backendMockEnabled
       ? checkoutApi.applyBenefit(quote, normalized)
       : new Promise((resolve) => window.setTimeout(() => resolve(applyFixtureCoupon(quote, normalized)), 160));
     apply.then((next) => {
-      if (requestId !== benefitRequest.current || quote?.quoteId !== sourceQuoteId) return;
+      if (requestId !== benefitRequest.current || quoteRef.current !== sourceQuote) return;
       if (next) {
-        setQuote(next as CheckoutQuote);
+        replaceQuote(next as CheckoutQuote);
         setQuoteInvalid(false);
         setStockUnavailable(false);
         preparationKey.current = null;
@@ -223,7 +269,7 @@ export function CheckoutFlow() {
         setCouponMessage("Cupón aplicado.");
       } else setCouponMessage("Ese cupón no se puede aplicar a esta compra.");
     }).catch((error: unknown) => {
-      if (requestId === benefitRequest.current && quote?.quoteId === sourceQuoteId) {
+      if (requestId === benefitRequest.current && quoteRef.current === sourceQuote) {
         setCouponMessage(checkoutErrorMessage(error, "No se pudo validar el cupón."));
       }
     }).finally(() => {
@@ -233,19 +279,25 @@ export function CheckoutFlow() {
 
   function removeCoupon() {
     if (!quote || quoteInvalid) return;
-    benefitRequest.current += 1;
+    const requestId = ++benefitRequest.current;
+    const sourceQuote = quote;
     if (backendMockEnabled) {
       setBusy(true);
       checkoutApi.removeBenefit(quote).then((next) => {
-        setQuote(next);
+        if (requestId !== benefitRequest.current || quoteRef.current !== sourceQuote) return;
+        replaceQuote(next);
         preparationKey.current = null;
         setHasPreparationAttempt(false);
-      }).then(() => { setCoupon(""); setCouponMessage("Se actualizó el resumen sin el beneficio."); })
-        .catch((error: unknown) => setCouponMessage(checkoutErrorMessage(error, "No se pudo quitar el cupón.")))
-        .finally(() => setBusy(false));
+        setCoupon("");
+        setCouponMessage("Se actualizó el resumen sin el beneficio.");
+      }).catch((error: unknown) => {
+        if (requestId === benefitRequest.current && quoteRef.current === sourceQuote) {
+          setCouponMessage(checkoutErrorMessage(error, "No se pudo quitar el cupón."));
+        }
+      }).finally(() => { if (requestId === benefitRequest.current) setBusy(false); });
       return;
     }
-    setQuote(removeFixtureCoupon(quote));
+    replaceQuote(removeFixtureCoupon(quote));
     preparationKey.current = null;
     setHasPreparationAttempt(false);
     setCoupon("");
@@ -436,46 +488,38 @@ export function CheckoutFlow() {
           return <span key={label} aria-current={current === index ? "step" : undefined} className={current >= index ? "is-active" : ""}>{index + 1}. {label}</span>;
         })}
       </nav>
-      {step === "address" && <section className="checkout-card" aria-labelledby="address-title">
-        <h2 id="address-title">Dirección de envío</h2>
-        {backendMockEnabled && cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
-        {backendMockEnabled && cartStatus === "ready" && <p className="checkout-muted">Se encontraron {cartSnapshot?.items.reduce((total, item) => total + item.quantity, 0) ?? 0} productos para esta compra.</p>}
-        {backendMockEnabled && cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. <Link href="/carrito">Volver al carrito</Link></p>}
-        {backendMockEnabled && cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={retryCartLoad}>Reintentar consulta del carrito</Button></div>}
-        {!addingAddress ? <>
-          {addressLoading ? <p role="status">Cargando tus direcciones…</p> : addresses.length === 0 ? <p>Aún no tienes direcciones guardadas.</p> : <fieldset className="checkout-addresses"><legend>Elige dónde recibir tu pedido</legend>{addresses.map((address) => <label className="checkout-address" key={address.addressId}><input type="radio" name="address" checked={selectedId === address.addressId} disabled={busy} onChange={() => { setSelectedId(address.addressId); setQuote(null); setOperationId(""); }} /><span><strong>{address.label}</strong><br />{address.street}, {address.district}, {address.province}<br /><small>Teléfono terminado en {address.phone.slice(-3)}</small></span></label>)}</fieldset>}
-          <div className="checkout-actions"><Button variant="secondary" disabled={busy || addressLoading} onClick={() => { setAddingAddress(true); setAddressError(""); }}>Agregar dirección</Button><Button onClick={continueToSummary} loading={busy} disabled={!selectedAddress || busy || addressLoading || (backendMockEnabled && cartStatus !== "ready")}>Continuar</Button></div>
-        </> : <form className="checkout-form" onSubmit={saveAddress}><h3>Nueva dirección</h3><TextField label="Etiqueta" name="label" required maxLength={80} /><TextField label="Dirección" name="street" required maxLength={180} /><TextField label="Departamento" name="department" required maxLength={100} /><TextField label="Provincia" name="province" required maxLength={100} /><TextField label="Distrito" name="district" required maxLength={100} /><TextField label="Referencia (opcional)" name="reference" maxLength={180} /><TextField label="Teléfono" name="phone" type="tel" required maxLength={40} />{addressError && <p role="alert" className="checkout-error">{addressError}</p>}<div className="checkout-actions"><Button variant="tertiary" onClick={() => setAddingAddress(false)}>Cancelar</Button><Button type="submit">Guardar dirección</Button></div></form>}
-       </section>}
-      {step === "summary" && quote && <section className="checkout-card" aria-labelledby="summary-title">
-        <h2 id="summary-title">Resumen de envío</h2>
-        <p>{selectedAddress?.label}: {selectedAddress?.street}, {selectedAddress?.district}</p>
-        <h3>Productos ({quote.lines.length})</h3>
-        <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
-        <dl className="checkout-totals">
-          <div><dt>Subtotal</dt><dd>{formatCheckoutMoney(quote.subtotal)}</dd></div>
-          <div><dt>Descuento</dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
-          <div><dt>Envío</dt><dd>{formatCheckoutMoney(quote.shipping)}</dd></div>
-          <div><dt>Plazo estimado de entrega</dt><dd>{quote.estimatedDays} días</dd></div>
-          <div className="checkout-total"><dt>Total estimado</dt><dd>{formatCheckoutMoney(quote.total)}</dd></div>
-        </dl>
-        {quote.selectedBenefit ? <div className="checkout-coupon">
-          <p>{quote.selectedBenefit.type === "COUPON" ? "Cupón" : quote.selectedBenefit.type === "PROMOTION" ? "Promoción" : "Beneficio"} aplicado: {quote.selectedBenefit.id}</p>
-          <Button variant="tertiary" onClick={removeCoupon} disabled={busy || quoteInvalid}>Quitar beneficio</Button>
-        </div> : <form className="checkout-coupon" onSubmit={applyCoupon}>
-          <TextField label="Código promocional" value={coupon} onChange={(event) => setCoupon(event.target.value)} hint={backendMockEnabled ? "Ingresa tu código promocional" : "Prueba SAVE20 o DEPORTE20"} />
-          <Button type="submit" variant="secondary" loading={busy} disabled={quoteInvalid}>Aplicar</Button>
-        </form>}
-        {couponMessage && <p role="status">{couponMessage}</p>}
-        {(expired || quoteInvalid) && <p role="alert" className="checkout-error">{stockUnavailable ? "La disponibilidad cambió. Revisa tu carrito o actualiza el resumen antes de continuar." : quoteInvalid ? "La cotización fue invalidada. Actualiza el resumen para continuar." : "La cotización venció. Actualiza el resumen para continuar."}</p>}
-        <p className="checkout-muted">Cotización {backendMockEnabled ? "Backend MOCK" : "de demostración"} · vence {new Date(quote.expiresAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}</p>
+      {step === "address" && <AddressStepContainer
+        backendMockEnabled={backendMockEnabled}
+        cartStatus={cartStatus}
+        cartCount={cartSnapshot?.items.reduce((total, item) => total + item.quantity, 0) ?? 0}
+        cartError={cartError}
+        addressLoading={addressLoading}
+        addresses={addresses}
+        selectedId={selectedId}
+        addingAddress={addingAddress}
+        addressError={addressError}
+        busy={busy}
+        onRetryCart={retryCartLoad}
+        onSelectAddress={(addressId) => { setSelectedId(addressId); invalidateQuote(); }}
+        onAddAddress={() => { setAddingAddress(true); setAddressError(""); }}
+        onCancelAddress={() => setAddingAddress(false)}
+        onSaveAddress={saveAddress}
+        onContinue={continueToSummary}
+      />}
+      {step === "summary" && quote && <CheckoutQuoteContainer quote={quote} backendMockEnabled={backendMockEnabled}
+        expired={expired} invalid={quoteInvalid} stockUnavailable={stockUnavailable}>
+        <CheckoutOrderSummary quote={quote} address={selectedAddress} />
+        {quote.selectedBenefit ? <SelectedBenefit benefit={quote.selectedBenefit} busy={busy} disabled={quoteInvalid}
+          message={couponMessage} onRemove={removeCoupon} /> : <CouponForm value={coupon} busy={busy}
+          disabled={quoteInvalid || expired} hint={backendMockEnabled ? "Ingresa tu código promocional" : "Prueba SAVE20 o DEPORTE20"}
+          message={couponMessage} onChange={setCoupon} onSubmit={applyCoupon} />}
         <div className="checkout-actions">
           {(expired || quoteInvalid) && <Button variant="secondary" onClick={refreshQuote} loading={busy}>Actualizar resumen</Button>}
           {stockUnavailable && <Link className="button button--secondary button--md" href="/carrito">Revisar carrito</Link>}
-          <Button variant="tertiary" onClick={() => setStep("address")}>Volver a dirección</Button>
+          <Button variant="tertiary" onClick={returnToAddress}>Volver a dirección</Button>
           <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || quoteInvalid || busy}>Continuar al pago simulado</Button>
         </div>
-      </section>}
+      </CheckoutQuoteContainer>}
        {step === "prepare" && quote && <section className="checkout-card" aria-labelledby="prepare-title"><h2 id="prepare-title">Pago simulado</h2><p>Al continuar, registraremos tu consentimiento. El pedido aún no existe y no se inicia un cobro real.</p><label className="checkout-consent"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />Entiendo que esta compra es una simulación y no habrá cobro real.</label><p>Total estimado: <strong>{formatCheckoutMoney(quote.total)}</strong></p><div className="checkout-actions"><Button variant="tertiary" onClick={returnToSummaryDuringPreparation}>Volver al resumen</Button><Button onClick={prepare} loading={busy} disabled={!consented || expired || quoteInvalid}>{hasPreparationAttempt ? "Reintentar misma preparación" : "Registrar consentimiento"}</Button></div></section>}
       {step === "order" && <section className="checkout-card" aria-labelledby="order-title"><h2 id="order-title">Confirma y crea tu pedido</h2><p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>{notice && orderSubmission !== "REJECTED" && <p role="status" className="checkout-notice">{notice}</p>}{orderSubmission === "UNCERTAIN" ? <div className="checkout-actions"><Button onClick={verifyOriginalOperation} loading={busy}>Verificar operación original</Button></div> : orderSubmission === "REJECTED" ? <><p role="alert" className="checkout-error">{notice || "La operación no se completó y no fue confirmada como pagada."}</p><div className="checkout-actions"><Button onClick={() => window.location.assign("/catalogo")}>Seguir comprando</Button></div></> : <form className="checkout-form" onSubmit={createOrder}><TextField label="Nombre completo" required minLength={2} maxLength={120} value={contact.fullName} onChange={(event) => setContact({ ...contact, fullName: event.target.value })} /><label className="checkout-label" htmlFor="documentType">Tipo de documento</label><select id="documentType" value={contact.documentType} onChange={(event) => setContact({ ...contact, documentType: event.target.value as Contact["documentType"] })}><option value="DNI">DNI</option><option value="RUC">RUC</option><option value="CE">CE</option><option value="PASAPORTE">Pasaporte</option></select><TextField label="Número de documento" required minLength={5} maxLength={24} hint="Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento." value={contact.documentNumber} onChange={(event) => setContact({ ...contact, documentNumber: event.target.value })} /><TextField label="Teléfono" type="tel" required minLength={5} maxLength={40} value={contact.phone} onChange={(event) => setContact({ ...contact, phone: event.target.value })} /><TextField label="Correo electrónico" type="email" required maxLength={254} value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /><div className="checkout-actions"><Button variant="tertiary" onClick={() => setStep("summary")}>Volver al resumen</Button><Button type="submit" loading={busy}>Crear pedido</Button></div></form>}</section>}
       {step === "confirmed" && <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">

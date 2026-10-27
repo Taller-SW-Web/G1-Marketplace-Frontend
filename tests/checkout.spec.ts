@@ -40,6 +40,19 @@ test("address form validates required fields and saves a local fixture address",
   await expect(page.getByText("Av. Prueba 10, Surco, Lima")).toBeVisible();
 });
 
+test("address and quote summary remain usable at mobile and desktop widths", async ({ page }) => {
+  test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
+  for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/checkout");
+    await expect(page.getByRole("heading", { name: "Dirección de envío" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continuar al pago simulado" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
+
 test("backend-mock quotes the persisted Cart snapshot and version", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE !== "backend-mock", "requires local Backend and mock auth");
   // Opt-in integration smoke; run only against the disposable local PostgreSQL database.
