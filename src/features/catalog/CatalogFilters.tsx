@@ -58,7 +58,15 @@ export function CatalogFilters(props: Props) {
       dialog.current?.showModal();
       title.current?.focus();
     }}>Filtros</Button>
-    <dialog className="catalog-filter-dialog" ref={dialog} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); dialog.current?.close(); }} onClose={() => trigger.current?.focus()}>
+    <dialog className="catalog-filter-dialog" ref={dialog} aria-labelledby={titleId} onKeyDown={event => {
+      if (event.key !== 'Tab') return;
+      const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]')).filter(element => element.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) { event.preventDefault(); title.current?.focus(); return; }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === title.current)) { event.preventDefault(); last.focus(); }
+    }} onCancel={event => { event.preventDefault(); dialog.current?.close(); }} onClose={() => trigger.current?.focus()}>
       <div className="catalog-filter-dialog-heading"><h2 id={titleId} tabIndex={-1} ref={title}>Filtros</h2><Button variant="secondary" onClick={() => dialog.current?.close()}>Cerrar</Button></div>
       <FilterForm key={`${version}-${props.query}`} {...props} onApply={url => { dialog.current?.close(); props.onApply(url); }} />
     </dialog>

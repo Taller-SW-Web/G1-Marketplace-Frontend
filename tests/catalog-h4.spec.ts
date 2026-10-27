@@ -44,6 +44,11 @@ test('H4 mobile modal traps focus, cancels its draft and applies only explicitly
   const dialog = page.getByRole('dialog', { name: 'Filtros', exact: true });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('heading')).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Aplicar filtros' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Aplicar filtros' }).focus();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Cerrar', exact: true })).toBeFocused();
+  await page.screenshot({ path: 'test-results/h4-filtros-mobile.png' });
   await dialog.getByLabel('Precio mínimo', { exact: true }).fill('99');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
