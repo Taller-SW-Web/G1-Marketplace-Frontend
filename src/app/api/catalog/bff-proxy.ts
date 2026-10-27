@@ -67,6 +67,16 @@ function resolveRequestId(request: Request): string {
   return SAFE_REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
 }
 
+// Server-only runtime budget. Keep the normal 8s limit unless explicitly set.
+function catalogBffTimeoutMs(): number {
+  const configured = process.env.CATALOG_BFF_TIMEOUT_MS ?? "";
+  if (!/^\d+$/.test(configured)) return 8000;
+  const timeout = Number(configured);
+  return Number.isSafeInteger(timeout) && timeout >= 1000 && timeout <= 30000
+    ? timeout
+    : 8000;
+}
+
 /** Reenvía la petición al BFF y normaliza la respuesta hacia el navegador. */
 export async function catalogProxyGet(
   request: Request,
@@ -92,7 +102,7 @@ export async function catalogProxyGet(
       cache: "no-store",
       redirect: "error",
       headers: { Accept: "application/json", "X-Request-Id": requestId },
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(catalogBffTimeoutMs())]),
     });
     const body = await response.text();
     JSON.parse(body); // Un cuerpo no-JSON del BFF es un fallo del proxy.

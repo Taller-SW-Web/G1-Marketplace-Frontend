@@ -47,3 +47,13 @@ npm run demo:catalogo:h4
 Compila ambos repos hermanos con dependencias previamente instaladas, arranca Next en `http://127.0.0.1:3500` y BFF MOCK en 10500, y comprueba home/maestros/búsqueda por el proxy. No usa Docker ni credenciales reales, no modifica `.env` y no escribe en BD. Informa puertos ocupados sin detener procesos ajenos. Ctrl+C cierra sus procesos. `/live` sólo acredita vida, no readiness de BD.
 
 `npm run demo:catalogo:h4 -- --check` ejecuta el smoke y sale; `--skip-build` permite reutilizar builds actuales. El smoke con builds actuales pasó. Esta demo sintética no acredita integración G6/G7 ni despliegue.
+
+## Catálogo completo de G6: presupuesto de espera de demo
+
+El 26/10/2026 se reprodujo un 503 al abrir `/catalogo` sin búsqueda en la demo REAL: G6 devolvió sus 15 productos directamente en aproximadamente 11,5 s, pero el adaptador de la demo vencía a los 7 s (`PROVIDER_TIMEOUT`). La búsqueda Nike devolvía cinco productos dentro de ese límite. El catálogo completo no estaba vacío.
+
+El proxy permite configurar `CATALOG_BFF_TIMEOUT_MS` en el servidor al ejecutar Next, entre 1000 y 30000 ms. Sin configuración o con valor inválido conserva 8000 ms. No es una variable `NEXT_PUBLIC_*` ni un parámetro del navegador. Se mantiene la cancelación de la petición y el error 503 si se agota el presupuesto.
+
+Para la demo local conectada se usa temporalmente `PRODUCTOS_TIMEOUT_MS=20000` en Backend y `CATALOG_BFF_TIMEOUT_MS=25000` en Next. Ambos procesos deben reiniciarse con esas variables; el proxy Next necesita este build. El comando `demo:catalogo:h4` sigue siendo MOCK. Esta configuración tolera la lentitud durante el ensayo; no demuestra cumplimiento de latencia de G6 ni resuelve el 503 independiente de marcas.
+
+Ocho casos nuevos comprueban el presupuesto por defecto, el valor de demo, los límites y la configuración inválida. La suite local de componentes/proxy suma 233 casos PASS y servidor mantiene 73 PASS; build/tipos y lint sin errores también pasaron.
