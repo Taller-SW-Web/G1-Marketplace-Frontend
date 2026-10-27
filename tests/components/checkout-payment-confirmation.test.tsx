@@ -80,6 +80,19 @@ describe("Checkout payment and confirmation acceptance", () => {
     expect(screen.queryByRole("heading", { name: "¡Pedido confirmado!" })).toBeNull();
   });
 
+  it("sends only one order request for rapid repeated submits", async () => {
+    let resolveOrder!: (value: { checkoutOperationId: string; state: string }) => void;
+    api.createOrder.mockImplementationOnce(() => new Promise((resolve) => { resolveOrder = resolve; }));
+    await reachOrderForm();
+    fillContact();
+    const submit = screen.getByRole("button", { name: "Crear pedido" });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+    resolveOrder({ checkoutOperationId: "op-1", state: "SUBMITTED" });
+    await screen.findByRole("button", { name: "Verificar operación original" });
+  });
+
   it("offers a manual copy fallback when clipboard access fails", async () => {
     api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-1", orderState: "PAGADO", orderTotal: 110, orderCreatedAt: "2026-10-27T10:00:00Z" });
     const testNavigator = Object.create(navigator) as Navigator;
@@ -98,5 +111,11 @@ describe("Checkout payment and confirmation acceptance", () => {
     expect(screen.queryByText("PAGADO")).toBeNull();
     expect(api.getOperation).toHaveBeenCalledWith("op-1");
     await waitFor(() => expect(screen.getByRole("alert")).toBeDefined());
+  });
+
+  it("does not query an operation when a deep link has no operation mapping", async () => {
+    render(<OrderConfirmationLookup orderId="PED-1" />);
+    await screen.findByRole("heading", { name: "No pudimos verificar el pedido" });
+    expect(api.getOperation).not.toHaveBeenCalled();
   });
 });
