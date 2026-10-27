@@ -54,6 +54,10 @@ async function forward(request: NextRequest, context: RouteContext) {
 
     const url = new URL(`/api/v1/checkout/${endpoint}`, api);
     const headers = new Headers({ Accept: "application/json", Authorization: `Bearer ${tokenPayload.access_token}` });
+    const cartSession = request.cookies.get("cart_session")?.value;
+    if (cartSession && /^[A-Za-z0-9_-]{16,128}$/.test(cartSession)) {
+      headers.set("Cookie", `cart_session=${cartSession}`);
+    }
     const idempotencyKey = request.headers.get("idempotency-key");
     if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
     let body: string | undefined;

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("checkout local fixtures cover coupon, consent, and clearly labeled paid fixture", async ({ page }) => {
+  test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
   await page.goto("/checkout");
   await expect(page.getByText("Fixtures locales")).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
@@ -25,6 +26,7 @@ test("checkout local fixtures cover coupon, consent, and clearly labeled paid fi
 });
 
 test("address form validates required fields and saves a local fixture address", async ({ page }) => {
+  test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
   await page.goto("/checkout");
   await page.getByRole("button", { name: "Agregar dirección" }).click();
   await page.getByLabel("Etiqueta").fill("Nueva casa");
@@ -40,26 +42,34 @@ test("address form validates required fields and saves a local fixture address",
 
 test("backend-mock quotes the persisted Cart snapshot and version", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE !== "backend-mock", "requires local Backend and mock auth");
-  // Opt-in local integration smoke writes a namespaced E2E-CART-* line to the persistent dev database.
-  const sku = `E2E-CART-${Date.now()}`;
-  const addResponse = await page.request.post("/api/cart/current/items", {
-    data: { sku, quantity: 1 },
-  });
-  expect(addResponse.ok()).toBeTruthy();
+  // Opt-in integration smoke; run only against the disposable local PostgreSQL database.
+  const sku = "SKU-MOCK-001";
+  const addResponsePromise = page.waitForResponse((response) =>
+    response.url().endsWith("/api/cart/current/items") && response.request().method() === "POST",
+  );
+  await page.goto("/productos/zapatillas-running-aero-x");
+  await page.getByRole("button", { name: "Agregar al carrito" }).click();
+  const addResponse = await addResponsePromise;
+  expect(addResponse.status()).toBe(201);
 
-  const cartResponse = await page.request.get("/api/cart/current");
-  expect(cartResponse.ok()).toBeTruthy();
-  const cart = (await cartResponse.json()).data as {
-    cartId: string;
-    version: number;
-    items: Array<{ sku: string; quantity: number }>;
-  };
+  const cart = await page.evaluate(async () => {
+    const response = await fetch("/api/cart/current", { cache: "no-store" });
+    if (!response.ok) throw new Error(`Cart request failed: ${response.status}`);
+    return (await response.json()).data as {
+      cartId: string;
+      version: number;
+      items: Array<{ sku: string; quantity: number }>;
+    };
+  });
   expect(cart.items).toEqual(expect.arrayContaining([expect.objectContaining({ sku, quantity: 1 })]));
   console.log("INITIAL_E2E_CART:", JSON.stringify(cart));
 
   page.on("console", (msg) => console.log("BROWSER_LOG:", msg.text()));
   page.on("pageerror", (err) => console.log("BROWSER_ERROR:", err.message));
 
+  const quoteResponsePromise = page.waitForResponse((response) =>
+    response.url().endsWith("/api/checkout/quotes") && response.request().method() === "POST",
+  );
   await page.goto("/checkout");
   await expect(page.getByText(/Se encontraron \d+ productos para esta compra/)).toBeVisible();
   await expect(page.getByRole("radio").first()).toBeChecked();
@@ -99,4 +109,16 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
     await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toHaveCount(0);
   }
+  await expect(page.getByText(/Se encontraron 1 productos para esta compra/)).toBeVisible();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  const quoteResponse = await quoteResponsePromise;
+  expect(quoteResponse.ok()).toBeTruthy();
+  const quote = (await quoteResponse.json()).data as {
+    cartVersion: number;
+    lines: Array<{ sku: string; quantity: number }>;
+  };
+  expect(quote.cartVersion).toBe(cart.version);
+  expect(quote.lines).toEqual([{ sku, quantity: 1 }]);
+  await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
+  await expect(page.getByText(`${sku} × 1`)).toBeVisible();
 });
