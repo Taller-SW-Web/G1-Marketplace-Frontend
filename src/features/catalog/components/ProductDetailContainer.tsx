@@ -6,9 +6,10 @@ import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 import { useProductDetail } from "../hooks/useProductDetail";
 import { sanitizeCatalogReturnTo, sanitizeReturnTo } from "../returnTo";
 import { GalleryViewer } from "./GalleryViewer";
+import { ProductCommerce } from "./ProductCommerce";
 import { ProductGallery } from "./ProductGallery";
+import { RelatedProductsRegion } from "./RelatedProductsRegion";
 import { TechnicalSpecifications } from "./TechnicalSpecifications";
-import { AddToCartAction } from "@/features/cart/AddToCartAction";
 import { AddedToCartFeedback } from "@/features/cart/AddedToCartFeedback";
 import { useAddCartItem } from "@/features/cart/useAddCartItem";
 
@@ -124,23 +125,21 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
         <div className="detail-summary">
           <p className="detail-brand">Marca: {product.brand.name}</p>
           <h1>{product.name}</h1>
-          {canAddToCart && (
-            <div className="detail-cart-action-wrapper" style={{ margin: "24px 0" }}>
-              <AddToCartAction
-                productId={product.productId}
-                availability="AVAILABLE"
-                priceReady={true}
-                busy={isBusy}
-                onAdd={addItem}
-              />
-            </div>
-          )}
+          <ProductCommerce
+            slug={slug}
+            productId={product.productId}
+            showCart={canAddToCart}
+            busy={isBusy}
+            onAdd={addItem}
+          />
           <TechnicalSpecifications
             specs={product.technicalSpecifications}
             description={product.description}
           />
         </div>
       </div>
+
+      <RelatedProductsRegion slug={slug} />
 
       <GalleryViewer
         opened={viewer.open}

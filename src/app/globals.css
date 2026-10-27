@@ -2890,3 +2890,66 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   .auth-card--wide { width: min(100%, 356px); padding: 32px; }
 }
 
+
+/* --- F-012…F-015 · Región comercial de la ficha --- */
+.product-commerce { display: flex; flex-direction: column; gap: var(--spacing-md); margin-block: var(--spacing-lg); }
+.detail-cart-action-wrapper { margin: 0; }
+
+/* F-012 — precio, oferta y descuento */
+.price-region { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.price-current { margin: 0; font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.price-offer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); margin: 0; }
+.price-badge { display: inline-flex; align-items: center; padding: 2px var(--spacing-sm); border-radius: var(--radius-full); background: var(--action-soft); color: var(--action-hover); font-size: .875rem; font-weight: 600; }
+.price-discount { font-weight: 700; }
+.price-reference { color: var(--text-secondary); }
+.price-reference s { text-decoration: line-through; }
+.price-validity, .price-note, .price-hint { margin: 0; font-size: .875rem; color: var(--text-secondary); }
+.price-unavailable { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); }
+.price-unavailable p { margin: 0; }
+.price-skeleton { display: flex; flex-direction: column; gap: 6px; }
+
+/* F-013 — atributos y variante */
+.variants-region { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.variant-selector { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.variant-group { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.variant-label { margin: 0; font-weight: 600; }
+.variant-values { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.variant-option { min-width: 44px; min-height: 44px; padding: 0 var(--spacing-md); border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface-cloud); color: var(--text-primary); font: inherit; cursor: pointer; }
+.variant-option[aria-pressed="true"] { border-color: var(--surface-ink); background: var(--surface-ink); color: var(--text-inverse); }
+.variant-option:disabled { opacity: .45; cursor: not-allowed; text-decoration: line-through; }
+.variant-option:focus-visible { outline: 3px solid var(--accent-signal); outline-offset: 3px; }
+.variant-hint { margin: 0; font-size: .8125rem; color: var(--text-secondary); }
+.selection-summary { margin: 0; font-size: .875rem; color: var(--text-secondary); }
+.variant-skeleton { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.skeleton-option { width: 96px; height: 44px; }
+
+/* F-014 — disponibilidad */
+.availability-region { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.availability-status { display: flex; align-items: center; gap: var(--spacing-xs); margin: 0; font-weight: 600; }
+.availability-hint { margin: 0; font-size: .875rem; color: var(--text-secondary); }
+.availability-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: .875rem; font-weight: 700; color: var(--text-inverse); }
+.availability-icon.availability-available { background: #2b8a3e; }
+.availability-icon.availability-low { background: var(--warning); }
+.availability-icon.availability-out { background: var(--error); }
+.availability-available { color: #2b8a3e; }
+.availability-low { color: var(--warning); }
+.availability-out, .availability-error { color: var(--error); }
+
+/* F-015 — productos relacionados */
+.related-products { margin-top: var(--spacing-xl); }
+.related-products h2 { margin: 0 0 var(--spacing-md); font-size: 1.25rem; }
+.related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--spacing-md); margin: 0; padding: 0; list-style: none; }
+.related-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-cloud); color: inherit; text-decoration: none; }
+.related-card:focus-visible { outline: 3px solid var(--accent-signal); outline-offset: 3px; }
+.related-media { aspect-ratio: 3 / 2; background: var(--surface-subtle); }
+.related-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.related-copy { display: flex; flex-direction: column; gap: var(--spacing-xs); padding: var(--spacing-sm) var(--spacing-md); }
+.related-name { margin: 0; font-weight: 600; }
+.related-price { margin: 0; font-weight: 700; }
+.related-card--skeleton { min-height: 220px; }
+.related-card--skeleton .related-copy { gap: var(--spacing-sm); }
+
+@media (max-width: 720px) {
+  .related-grid { grid-auto-flow: column; grid-auto-columns: 78%; grid-template-columns: none; overflow-x: auto; padding-bottom: var(--spacing-sm); scroll-snap-type: x proximity; }
+  .related-grid > li { scroll-snap-align: start; }
+}
