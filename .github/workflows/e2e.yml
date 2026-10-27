@@ -1,0 +1,89 @@
+name: Frontend E2E (Carrito y Checkout)
+
+on:
+  pull_request:
+    branches: [develop, main, test/*]
+  push:
+    branches: [main, develop]
+
+jobs:
+  e2e-cart-checkout:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: marketplace_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d marketplace_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Frontend
+        uses: actions/checkout@v4
+        with:
+          path: frontend
+
+      - name: Checkout Backend
+        uses: actions/checkout@v4
+        with:
+          repository: Taller-SW-Web/G1-Marketplace-Backend
+          ref: test/h3-cart-checkout-e2e
+          path: backend
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend
+          npx playwright install --with-deps msedge chromium
+
+      - name: Setup and Start Backend Services
+        env:
+          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/marketplace_db?schema=public
+          PORT: 10000
+          NODE_ENV: development
+          USE_MOCKS: 'true'
+          MOCK_SALES_OUTCOME: PAID
+          CORS_ORIGINS: http://127.0.0.1:3101,http://localhost:3101
+          AUTH_ISSUER: http://127.0.0.1:4010
+          AUTH_JWKS_URL: http://127.0.0.1:4010/jwks
+        run: |
+          cd backend
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run build
+          nohup node scripts/mock-auth-server.mjs > ../mock-auth.log 2>&1 &
+          nohup node dist/main.js > ../backend.log 2>&1 &
+          sleep 6
+          curl -s http://127.0.0.1:4010/jwks || (echo "Mock Auth not running" && cat ../mock-auth.log && exit 1)
+          curl -s http://127.0.0.1:10000/health || (echo "Backend not running" && cat ../backend.log && exit 1)
+
+      - name: Run Playwright E2E Tests
+        env:
+          CHECKOUT_MODE: backend-mock
+          NEXT_PUBLIC_CHECKOUT_MODE: backend-mock
+          MARKETPLACE_API_URL: http://127.0.0.1:10000
+          MOCK_AUTH_URL: http://127.0.0.1:4010
+          MOCK_SALES_OUTCOME: PAID
+        run: |
+          cd frontend
+          npm run test:cart-checkout:e2e || (echo "=== BACKEND LOGS ===" && cat ../backend.log && echo "=== MOCK AUTH LOGS ===" && cat ../mock-auth.log && exit 1)

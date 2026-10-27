@@ -62,11 +62,53 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
     };
   });
   expect(cart.items).toEqual(expect.arrayContaining([expect.objectContaining({ sku, quantity: 1 })]));
+  console.log("INITIAL_E2E_CART:", JSON.stringify(cart));
+
+  page.on("console", (msg) => console.log("BROWSER_LOG:", msg.text()));
+  page.on("pageerror", (err) => console.log("BROWSER_ERROR:", err.message));
 
   const quoteResponsePromise = page.waitForResponse((response) =>
     response.url().endsWith("/api/checkout/quotes") && response.request().method() === "POST",
   );
   await page.goto("/checkout");
+  await expect(page.getByText(/Se encontraron \d+ productos para esta compra/)).toBeVisible();
+  await expect(page.getByRole("radio").first()).toBeChecked();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  try {
+    await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible({ timeout: 15000 });
+  } catch (err) {
+    const alerts = await page.locator('[role="alert"], .checkout-error').allTextContents().catch(() => []);
+    console.log("CHECKOUT_PAGE_ALERTS:", alerts);
+    throw err;
+  }
+  await expect(page.getByText(`${sku} × 1`)).toBeVisible();
+  await page.getByRole("button", { name: "Continuar al pago simulado" }).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Registrar consentimiento" }).click();
+  await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
+  await page.getByLabel("Nombre completo").fill("Checkout E2E");
+  await page.getByLabel("Número de documento").fill("12345678");
+  await page.getByLabel("Teléfono").fill("999999999");
+  await page.getByLabel("Correo electrónico").fill("checkout-e2e@example.test");
+  await page.getByRole("button", { name: "Crear pedido" }).click();
+
+  if (process.env.MOCK_SALES_OUTCOME === "PAID") {
+    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeVisible({ timeout: 15000 });
+    const orderLink = page.getByRole("link", { name: "Ver mi pedido" });
+    await expect(orderLink).toHaveAttribute("href", /\/checkout\/confirmado\/PED-/);
+    await orderLink.click();
+    await expect(page.getByRole("heading", { name: "Estado del pedido" })).toBeVisible();
+    await expect(page.getByText("Estado verificado · SUCCEEDED/PAGADO")).toBeVisible();
+  } else if (process.env.MOCK_SALES_OUTCOME === "REJECTED") {
+    await expect(page.getByRole("alert")).toContainText("La operación fue rechazada o anulada. No se mostrará como pedido pagado.");
+    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toHaveCount(0);
+  } else {
+    await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
+    await expect(page.getByText(/resultado final verificado/)).toBeVisible();
+    await page.getByRole("button", { name: "Verificar operación original" }).click();
+    await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toHaveCount(0);
+  }
   await expect(page.getByText(/Se encontraron 1 productos para esta compra/)).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
   const quoteResponse = await quoteResponsePromise;
