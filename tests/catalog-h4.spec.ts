@@ -1,5 +1,57 @@
 import { test, expect } from '@playwright/test';
 
+test('H4 unavailable brands do not block category and price, then retry restores brands', async ({ page }) => {
+  let failed = true;
+  let homeRequests = 0;
+  page.on('request', request => { if (request.url().includes('/api/catalog/home')) homeRequests++; });
+  await page.route('**/api/catalog/filters', route => failed ? route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }) : route.continue());
+  await page.goto('/catalogo?q=running&sort=NAME_ASC&pageSize=4&page=1');
+  const form = page.locator('.catalog-filters-desktop form');
+  await expect(form.getByLabel('Marca', { exact: true })).toBeDisabled();
+  await expect(form.getByLabel('Categoría', { exact: true })).toBeEnabled();
+  await expect(form.getByLabel('Precio mínimo', { exact: true })).toBeEnabled();
+  // Header navigation also reads home; the failed masters add one recovery read.
+  expect(homeRequests).toBe(2);
+  await form.getByLabel('Categoría', { exact: true }).selectOption('running');
+  await form.getByLabel('Precio mínimo', { exact: true }).fill('10');
+  await form.getByLabel('Precio máximo', { exact: true }).fill('100');
+  expect(new URL(page.url()).searchParams.get('page')).toBe('1');
+  await form.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(page).toHaveURL(url => url.searchParams.get('categoryIds') === 'running' && !url.searchParams.has('page'));
+  await expect(page.locator('.product-card')).toHaveCount(2);
+  await expect(page.locator('.product-card h2')).toHaveText(['Short de running 04', 'Zapatillas de running 01']);
+  await expect(page.getByRole('button', { name: 'Quitar categoría Running' })).toBeVisible();
+  await form.getByLabel('Precio mínimo', { exact: true }).fill('15');
+  failed = false;
+  await form.getByRole('button', { name: 'Reintentar filtros' }).click();
+  await expect(form.getByLabel('Marca', { exact: true })).toBeEnabled();
+  await expect(form.getByLabel('Precio mínimo', { exact: true })).toHaveValue('15');
+  expect(homeRequests).toBe(2);
+});
+
+test('H4 mobile can apply price without either master and restores applied draft after cancel', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/catalog/filters', route => route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }));
+  await page.route('**/api/catalog/home', route => route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }));
+  await page.goto('/catalogo?q=running&pageSize=4');
+  const trigger = page.locator('.catalog-filters-trigger');
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: 'Filtros', exact: true });
+  await expect(dialog.getByLabel('Marca', { exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('Categoría', { exact: true })).toBeDisabled();
+  await dialog.getByLabel('Precio mínimo', { exact: true }).fill('10');
+  await dialog.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(page).toHaveURL(url => url.searchParams.get('minPrice') === '10');
+  await expect(page.locator('.product-card')).toHaveCount(4);
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await trigger.click();
+  await dialog.getByLabel('Precio mínimo', { exact: true }).fill('99');
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(dialog.getByLabel('Precio mínimo', { exact: true })).toHaveValue('10');
+});
+
 test('H4 filters apply combined criteria through Next and BFF, preserve URL and clear only filters', async ({ page }) => {
   await page.goto('/catalogo?q=running&sort=NAME_DESC&page=2&pageSize=4');
   const form = page.locator('.catalog-filters-desktop form');

@@ -1,31 +1,36 @@
 "use client";
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
-import type { CatalogFiltersDTO, QueryState } from './types';
+import type { CatalogFiltersDTO, HomeDTO, QueryState } from './types';
 import { catalogHref, filterDraft, filterKeys, priceError } from './criteria';
 
-type Props = { query: string; options: QueryState<CatalogFiltersDTO>; retry: () => void; onApply: (url: string) => void };
+type Props = { query: string; options: QueryState<CatalogFiltersDTO>; fallbackCategories?: QueryState<HomeDTO>; retryCategories?: () => void; retry: () => void; onApply: (url: string) => void };
 
-function FilterForm({ query, options, onApply, retry }: Props) {
+function FilterForm({ query, options, fallbackCategories, retryCategories, onApply, retry }: Props) {
   const [draft, setDraft] = useState(() => filterDraft(query));
   const id = useId();
   const error = priceError(draft);
+  const categoriesReady = options.status === 'ready' || fallbackCategories?.status === 'ready';
+  const categories = options.status === 'ready' ? options.data.categories : fallbackCategories?.status === 'ready' ? fallbackCategories.data.categories : [];
+  const brands = options.status === 'ready' ? options.data.brands : [];
   const update = (key: keyof typeof draft, value: string) => setDraft(previous => ({ ...previous, [key]: value }));
   return <form className="catalog-filter-form" onSubmit={event => {
     event.preventDefault();
-    if (!error && options.status === 'ready') onApply(catalogHref(query, draft));
+    if (!error) onApply(catalogHref(query, draft));
   }}>
-    <fieldset disabled={options.status !== 'ready'}>
+    <fieldset>
       <legend className="sr-only">Filtrar productos</legend>
       <label htmlFor={`${id}-category`}>Categoría</label>
-      <select id={`${id}-category`} value={draft.categoryIds} onChange={event => update('categoryIds', event.target.value)}>
+      <select id={`${id}-category`} disabled={!categoriesReady} value={draft.categoryIds} onChange={event => update('categoryIds', event.target.value)}>
         <option value="">Todas las categorías</option>
-        {options.status === 'ready' && options.data.categories.map(item => <option key={item.categoryId} value={item.categoryId}>{item.name}</option>)}
+        {draft.categoryIds && !categories.some(item => item.categoryId === draft.categoryIds) && <option value={draft.categoryIds}>Categoría aplicada: {draft.categoryIds}</option>}
+        {categories.map(item => <option key={item.categoryId} value={item.categoryId}>{item.name}</option>)}
       </select>
       <label htmlFor={`${id}-brand`}>Marca</label>
-      <select id={`${id}-brand`} value={draft.brandIds} onChange={event => update('brandIds', event.target.value)}>
+      <select id={`${id}-brand`} disabled={options.status !== 'ready'} value={draft.brandIds} onChange={event => update('brandIds', event.target.value)}>
         <option value="">Todas las marcas</option>
-        {options.status === 'ready' && options.data.brands.map(item => <option key={item.brandId} value={item.brandId}>{item.name}</option>)}
+        {draft.brandIds && !brands.some(item => item.brandId === draft.brandIds) && <option value={draft.brandIds}>Marca aplicada: {draft.brandIds}</option>}
+        {brands.map(item => <option key={item.brandId} value={item.brandId}>{item.name}</option>)}
       </select>
       <fieldset className="catalog-price-range">
         <legend>Precio en soles (S/)</legend>
@@ -37,10 +42,15 @@ function FilterForm({ query, options, onApply, retry }: Props) {
       </fieldset>
     </fieldset>
     {options.status === 'loading' && <p role="status">Cargando filtros…</p>}
-    {options.status === 'error' && <div><p role="alert">No pudimos cargar los filtros.</p><Button onClick={retry}>Reintentar filtros</Button></div>}
+    {options.status === 'error' && <div>
+      <p role="alert">No pudimos cargar las marcas de los filtros.</p>
+      <Button onClick={retry}>Reintentar filtros</Button>
+      {fallbackCategories?.status === 'loading' && <p role="status">Cargando categorías…</p>}
+      {fallbackCategories?.status === 'error' && <><p role="alert">No pudimos cargar las categorías.</p>{retryCategories && <Button onClick={retryCategories}>Reintentar categorías</Button>}</>}
+    </div>}
     <div className="catalog-filter-actions">
       <Button variant="secondary" disabled={!Object.values(draft).some(Boolean)} onClick={() => setDraft({ categoryIds: '', brandIds: '', minPrice: '', maxPrice: '' })}>Limpiar</Button>
-      <Button type="submit" disabled={Boolean(error) || options.status !== 'ready'}>Aplicar filtros</Button>
+      <Button type="submit" disabled={Boolean(error)}>Aplicar filtros</Button>
     </div>
   </form>;
 }
@@ -81,10 +91,11 @@ export function CatalogFilters(props: Props) {
   </aside>;
 }
 
-export function ActiveFilterChips({ query, options, onChange }: { query: string; options: QueryState<CatalogFiltersDTO>; onChange: (url: string) => void }) {
+export function ActiveFilterChips({ query, options, fallbackCategories, onChange }: { query: string; options: QueryState<CatalogFiltersDTO>; fallbackCategories?: QueryState<HomeDTO>; onChange: (url: string) => void }) {
   const draft = filterDraft(query);
+  const categories = options.status === 'ready' ? options.data.categories : fallbackCategories?.status === 'ready' ? fallbackCategories.data.categories : [];
   const labels: Record<string, string> = {
-    categoryIds: options.status === 'ready' ? options.data.categories.find(item => item.categoryId === draft.categoryIds)?.name ?? draft.categoryIds : draft.categoryIds,
+    categoryIds: categories.find(item => item.categoryId === draft.categoryIds)?.name ?? draft.categoryIds,
     brandIds: options.status === 'ready' ? options.data.brands.find(item => item.brandId === draft.brandIds)?.name ?? draft.brandIds : draft.brandIds,
     minPrice: `Desde S/ ${draft.minPrice}`, maxPrice: `Hasta S/ ${draft.maxPrice}`,
   };

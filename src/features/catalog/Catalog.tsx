@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { isCatalogPage, isCatalogFilters } from "./api";
+import { isCatalogPage, isCatalogFilters, isHome } from "./api";
 import { CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
 import { CatalogSortSelect } from "./CatalogSortSelect";
 import { CatalogPagination } from "./CatalogPagination";
@@ -60,6 +60,7 @@ function CatalogResults({
   );
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
+  const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -117,9 +118,9 @@ function CatalogResults({
 
         </div>
       )}
-      <ActiveFilterChips query={query} options={filters.state} onChange={applyCriteria} />
+      <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
       <div className="catalog-layout">
-        <CatalogFilters query={query} options={filters.state} retry={filters.retry} onApply={applyCriteria} />
+        <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
         <section className="catalog-results" aria-label="Productos del catálogo">
           <div className="catalog-result-toolbar">
           <p className="result-count" role="status" aria-live="polite">
