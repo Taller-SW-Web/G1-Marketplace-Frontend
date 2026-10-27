@@ -16,7 +16,7 @@ function FilterForm({ query, options, onApply, retry }: Props) {
     if (!error && options.status === 'ready') onApply(catalogHref(query, draft));
   }}>
     <fieldset disabled={options.status !== 'ready'}>
-      <legend>Filtrar productos</legend>
+      <legend className="sr-only">Filtrar productos</legend>
       <label htmlFor={`${id}-category`}>Categoría</label>
       <select id={`${id}-category`} value={draft.categoryIds} onChange={event => update('categoryIds', event.target.value)}>
         <option value="">Todas las categorías</option>
@@ -49,16 +49,20 @@ export function CatalogFilters(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
+  const closingAfterApply = useRef(false);
   const [version, setVersion] = useState(0);
   const titleId = useId();
+  const summaryId = useId();
+  const appliedCount = Object.values(filterDraft(props.query)).filter(Boolean).length;
   return <aside className="catalog-filters" aria-label="Filtros del catálogo">
     <div className="catalog-filters-desktop"><h2>Filtros</h2><FilterForm key={props.query} {...props} /></div>
-    <Button className="catalog-filters-trigger" ref={trigger} variant="secondary" onClick={() => {
+    <Button className="catalog-filters-trigger" ref={trigger} variant="secondary" aria-haspopup="dialog" aria-label={appliedCount ? `Filtros (${appliedCount})` : 'Filtros'} endIcon={<img src="/figma/catalog-filter-arrow-20.svg" alt="" width="20" height="20" />} onClick={() => {
+      closingAfterApply.current = false;
       setVersion(previous => previous + 1);
       dialog.current?.showModal();
       title.current?.focus();
-    }}>Filtros</Button>
-    <dialog className="catalog-filter-dialog" ref={dialog} aria-labelledby={titleId} onKeyDown={event => {
+    }}>Filtros{appliedCount > 0 && <span className="catalog-filter-count" aria-hidden="true">{appliedCount}</span>}</Button>
+    <dialog className="catalog-filter-dialog" ref={dialog} aria-labelledby={titleId} aria-describedby={summaryId} onKeyDown={event => {
       if (event.key !== 'Tab') return;
       const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]')).filter(element => element.getClientRects().length > 0);
       const first = controls[0];
@@ -66,9 +70,13 @@ export function CatalogFilters(props: Props) {
       if (!first || !last) { event.preventDefault(); title.current?.focus(); return; }
       if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
       if (event.shiftKey && (document.activeElement === first || document.activeElement === title.current)) { event.preventDefault(); last.focus(); }
-    }} onCancel={event => { event.preventDefault(); dialog.current?.close(); }} onClose={() => trigger.current?.focus()}>
+    }} onCancel={event => { event.preventDefault(); dialog.current?.close(); }} onClose={() => {
+      if (!closingAfterApply.current) trigger.current?.focus();
+      closingAfterApply.current = false;
+    }}>
       <div className="catalog-filter-dialog-heading"><h2 id={titleId} tabIndex={-1} ref={title}>Filtros</h2><Button variant="secondary" onClick={() => dialog.current?.close()}>Cerrar</Button></div>
-      <FilterForm key={`${version}-${props.query}`} {...props} onApply={url => { dialog.current?.close(); props.onApply(url); }} />
+      <p className="catalog-filter-summary" id={summaryId}>{appliedCount ? `${appliedCount} ${appliedCount === 1 ? 'filtro aplicado' : 'filtros aplicados'}` : 'Sin filtros aplicados'}</p>
+      <FilterForm key={`${version}-${props.query}`} {...props} onApply={url => { closingAfterApply.current = true; dialog.current?.close(); props.onApply(url); }} />
     </dialog>
   </aside>;
 }

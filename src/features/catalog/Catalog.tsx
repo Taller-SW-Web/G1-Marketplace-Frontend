@@ -31,7 +31,7 @@ export function Catalog() {
       <h1>{invalidQuery ? "Revisa tu búsqueda" : "Revisa los criterios del catálogo"}</h1>
       <p role="alert">{invalidQuery ? "Escribe entre 2 y 120 caracteres para buscar." : invalidCriteria}</p>
       <Link className="button" href="/catalogo">
-        Limpiar búsqueda
+        {invalidQuery ? "Limpiar búsqueda" : "Volver al catálogo"}
       </Link>
     </div>
   ) : (
@@ -62,7 +62,7 @@ function CatalogResults({
   const filters = useCatalog("filters", isCatalogFilters);
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
-    if(state.status === "ready" && focusAfterPage.current) {
+    if(state.status !== "loading" && focusAfterPage.current) {
       heading.current?.focus();
       focusAfterPage.current = false;
     }
@@ -73,11 +73,14 @@ function CatalogResults({
     navigate(`/catalogo?${params}`);
   }
   function clearSearch() {
-    params.delete("q");
-    params.delete("page");
-    navigate(`/catalogo${params.size ? `?${params}` : ""}`);
+    applyCriteria(catalogHref(query, { q: undefined }));
   }
   function applyCriteria(url: string) {
+    if (url === returnPath && state.status !== "loading") {
+      focusAfterPage.current = false;
+      heading.current?.focus();
+      return;
+    }
     focusAfterPage.current = true;
     navigate(url);
   }
@@ -118,7 +121,7 @@ function CatalogResults({
       <div className="catalog-layout">
         <CatalogFilters query={query} options={filters.state} retry={filters.retry} onApply={applyCriteria} />
         <section className="catalog-results" aria-label="Productos del catálogo">
-          <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
+          <div className="catalog-result-toolbar">
           <p className="result-count" role="status" aria-live="polite">
             {state.status === "ready"
               ? `${state.data.page.totalElements} productos`
@@ -126,6 +129,8 @@ function CatalogResults({
                 ? "Buscando productos…"
                 : ""}
           </p>
+          <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
+          </div>
           {state.status === "loading" && <ProductSkeletons />}
           {state.status === "error" && (
             <ErrorState message={state.message} onRetry={retry} />
