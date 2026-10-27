@@ -15,6 +15,7 @@ import {
   type CheckoutQuote,
 } from "./fixtures";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
+import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome } from "./CheckoutComponents";
 import "./checkout.css";
 
 type Step = "address" | "summary" | "prepare" | "order" | "confirmed";
@@ -59,6 +60,7 @@ export function CheckoutFlow() {
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<{ quoteId: string; cartVersion: number; key: string } | null>(null);
   const preparationAttempt = useRef(0);
+  const preparationSubmitting = useRef(false);
   const contactRef = useRef<Contact | null>(null);
   const submitting = useRef(false);
   const [contact, setContact] = useState<Contact>({ fullName: "", documentType: "DNI", documentNumber: "", phone: "", email: "" });
@@ -225,7 +227,8 @@ export function CheckoutFlow() {
   }
 
   function prepare() {
-    if (!quote || quoteInvalid || expired || !consented || busy) return;
+    if (!quote || quoteInvalid || expired || !consented || busy || preparationSubmitting.current) return;
+    preparationSubmitting.current = true;
     setBusy(true);
     setNotice("");
     const existingPreparation = preparationKey.current;
@@ -264,12 +267,16 @@ export function CheckoutFlow() {
       }
       setNotice(checkoutErrorMessage(error, "No se pudo preparar la compra. Intenta actualizar el resumen."));
     }).finally(() => {
-      if (attempt === preparationAttempt.current) setBusy(false);
+      if (attempt === preparationAttempt.current) {
+        preparationSubmitting.current = false;
+        setBusy(false);
+      }
     });
   }
 
   function returnToSummaryDuringPreparation() {
     preparationAttempt.current += 1;
+    preparationSubmitting.current = false;
     setBusy(false);
     setNotice("");
     setStep("summary");
@@ -337,9 +344,11 @@ export function CheckoutFlow() {
     setBusy(true);
     setNotice("Estamos registrando tu pedido. La simulación de pago ocurre después de crear el pedido; no habrá cobro real.");
     if (backendMockEnabled) {
-      submitting.current = false;
       setOrderSubmission("UNCERTAIN");
-      void submitBackendOrder().finally(() => setBusy(false));
+      void submitBackendOrder().finally(() => {
+        submitting.current = false;
+        setBusy(false);
+      });
       return;
     }
     window.setTimeout(() => {
@@ -448,30 +457,18 @@ export function CheckoutFlow() {
           <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || quoteInvalid || busy}>Continuar al pago simulado</Button>
         </div>
       </section>}
-       {step === "prepare" && quote && <section className="checkout-card" aria-labelledby="prepare-title"><h2 id="prepare-title">Pago simulado</h2><p>Al continuar, registraremos tu consentimiento. El pedido aún no existe y no se inicia un cobro real.</p><label className="checkout-consent"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />Entiendo que esta compra es una simulación y no habrá cobro real.</label><p>Total estimado: <strong>{formatCheckoutMoney(quote.total)}</strong></p><div className="checkout-actions"><Button variant="tertiary" onClick={returnToSummaryDuringPreparation}>Volver al resumen</Button><Button onClick={prepare} loading={busy} disabled={!consented || expired || quoteInvalid}>{hasPreparationAttempt ? "Reintentar misma preparación" : "Registrar consentimiento"}</Button></div></section>}
-      {step === "order" && <section className="checkout-card" aria-labelledby="order-title"><h2 id="order-title">Confirma y crea tu pedido</h2><p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>{notice && orderSubmission !== "REJECTED" && <p role="status" className="checkout-notice">{notice}</p>}{orderSubmission === "UNCERTAIN" ? <div className="checkout-actions"><Button onClick={verifyOriginalOperation} loading={busy}>Verificar operación original</Button></div> : orderSubmission === "REJECTED" ? <><p role="alert" className="checkout-error">{notice || "La operación no se completó y no fue confirmada como pagada."}</p><div className="checkout-actions"><Button onClick={() => window.location.assign("/catalogo")}>Seguir comprando</Button></div></> : <form className="checkout-form" onSubmit={createOrder}><TextField label="Nombre completo" required minLength={2} maxLength={120} value={contact.fullName} onChange={(event) => setContact({ ...contact, fullName: event.target.value })} /><label className="checkout-label" htmlFor="documentType">Tipo de documento</label><select id="documentType" value={contact.documentType} onChange={(event) => setContact({ ...contact, documentType: event.target.value as Contact["documentType"] })}><option value="DNI">DNI</option><option value="RUC">RUC</option><option value="CE">CE</option><option value="PASAPORTE">Pasaporte</option></select><TextField label="Número de documento" required minLength={5} maxLength={24} hint="Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento." value={contact.documentNumber} onChange={(event) => setContact({ ...contact, documentNumber: event.target.value })} /><TextField label="Teléfono" type="tel" required minLength={5} maxLength={40} value={contact.phone} onChange={(event) => setContact({ ...contact, phone: event.target.value })} /><TextField label="Correo electrónico" type="email" required maxLength={254} value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /><div className="checkout-actions"><Button variant="tertiary" onClick={() => setStep("summary")}>Volver al resumen</Button><Button type="submit" loading={busy}>Crear pedido</Button></div></form>}</section>}
-      {step === "confirmed" && <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">
-        <p className="checkout-success-tag">{backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
-        <h2 id="confirmed-title">¡Pedido confirmado!</h2>
-        <p>{backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
-        <dl className="checkout-totals">
-          <div><dt>Código de pedido</dt><dd><code>{orderId}</code></dd></div>
-          <div><dt>Estado</dt><dd>PAGADO{backendMockEnabled ? "" : " (fixture)"}</dd></div>
-          <div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(verifiedOrder?.orderTotal ?? quote?.total ?? 0)}</dd></div>
-          {verifiedOrder?.orderCreatedAt && <div><dt>Fecha del pedido</dt><dd>{new Date(verifiedOrder.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}
-        </dl>
-        <h3>Resumen de productos</h3>
-        <ul className="checkout-lines" aria-label="Productos del pedido">
-          {quote?.lines.map((line) => <li key={line.sku}>{line.sku} × {line.quantity}</li>)}
-        </ul>
-        <div className="checkout-actions">
-          <Button variant="secondary" onClick={copyOrderCode} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
-          {backendMockEnabled && verifiedOrder && <Link className="button button--secondary button--md" href={`/checkout/confirmado/${encodeURIComponent(orderId)}?operationId=${encodeURIComponent(operationId)}`}>Ver mi pedido</Link>}
-          <Button onClick={() => window.location.assign("/")}>Seguir comprando</Button>
-        </div>
-        {copyMessage && <p role="status" aria-live="polite">{copyMessage}</p>}
-        <p className="checkout-muted">Operación de prueba {operationId.slice(0, 8)}…</p>
+        {step === "prepare" && quote && <PreparationOutcome quote={quote} consented={consented} busy={busy} expired={expired} quoteInvalid={quoteInvalid} hasPreparationAttempt={hasPreparationAttempt} onConsentChange={setConsented} onSubmit={prepare} onBack={returnToSummaryDuringPreparation} />}
+      {step === "order" && <section className="checkout-card" aria-labelledby="order-title">
+        <h2 id="order-title">Confirma y crea tu pedido</h2>
+        <p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>
+        {orderSubmission === "UNCERTAIN" || orderSubmission === "REJECTED"
+          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
+          : <>
+            {notice && <p role="status" className="checkout-notice">{notice}</p>}
+            <OrderCreationForm contact={contact} busy={busy} onContactChange={setContact} onSubmit={createOrder} onBack={() => setStep("summary")} />
+          </>}
       </section>}
+      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
     </main>
   );
 }
