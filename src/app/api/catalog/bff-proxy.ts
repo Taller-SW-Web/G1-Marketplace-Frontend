@@ -16,16 +16,29 @@ import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 
 export const dynamic = "force-dynamic";
 
-// Rutas permitidas del proxy: home | products | products/{slug} (F-011).
+// Rutas permitidas del proxy:
+//   home | products | products/{slug}                       (F-011)
+//   products/{slug}/price | variants | availability | recommendations
+//                                                          (F-012…F-015)
 // El slug se valida con el patrón canónico del contrato antes de salir.
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const isAllowedPath = (path: string[]): boolean =>
-  path.length === 1
-    ? ["home", "products"].includes(path[0])
-    : path.length === 2 &&
-      path[0] === "products" &&
-      path[1].length <= 120 &&
-      SLUG_PATTERN.test(path[1]);
+const COMMERCE_SUBPATHS = [
+  "price",
+  "variants",
+  "availability",
+  "recommendations",
+] as const;
+const isProductSlug = (segment: string): boolean =>
+  segment.length <= 120 && SLUG_PATTERN.test(segment);
+const isAllowedPath = (path: string[]): boolean => {
+  if (path.length === 1) return ["home", "products"].includes(path[0]);
+  if (path[0] !== "products" || !isProductSlug(path[1] ?? "")) return false;
+  if (path.length === 2) return true;
+  return (
+    path.length === 3 &&
+    (COMMERCE_SUBPATHS as readonly string[]).includes(path[2])
+  );
+};
 
 /** Correlación (API-F011 §3): id opaco de 1–64 caracteres seguros. */
 const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/u;
