@@ -23,6 +23,8 @@ import { OrderConfirmationLookup } from "../../src/features/checkout/OrderConfir
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
   api.listAddresses.mockResolvedValue([{
     addressId: "ADR-1", label: "Casa", street: "Av. Lima 123", district: "Miraflores",
     province: "Lima", department: "Lima", phone: "999999999",
@@ -72,12 +74,23 @@ describe("Checkout payment and confirmation acceptance", () => {
   });
 
   it("does not create a paid confirmation from a 202 SUBMITTED response", async () => {
-    api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "SUBMITTED" });
+    api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "SUBMITTED", orderId: "PED-1", orderState: "CREADO" });
     await reachOrderForm();
     fillContact();
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
     expect(await screen.findByRole("button", { name: "Verificar operación original" })).toBeDefined();
     expect(screen.queryByRole("heading", { name: "¡Pedido confirmado!" })).toBeNull();
+  });
+
+  it("keeps contact transient in browser storage while creating the order", async () => {
+    api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "SUBMITTED" });
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    await screen.findByRole("button", { name: "Verificar operación original" });
+
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
   });
 
   it("sends only one order request for rapid repeated submits", async () => {

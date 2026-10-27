@@ -86,7 +86,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     fillContact();
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
 
-    expect((await screen.findByRole("status")).textContent).toContain("Revisa los datos de contacto");
+    expect(await screen.findByText("Revisa los datos de contacto e inténtalo de nuevo.")).toBeDefined();
     expect((screen.getByLabelText("Nombre completo") as HTMLInputElement).value).toBe("Ana Prueba");
     expect(screen.getByRole("button", { name: "Crear pedido" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "Verificar operación original" })).toBe(null);
