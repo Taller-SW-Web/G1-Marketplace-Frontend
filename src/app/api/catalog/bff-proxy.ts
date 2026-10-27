@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const isAllowedPath = (path: string[]): boolean =>
   path.length === 1
-    ? ["home", "products"].includes(path[0])
+    ? ["home", "products", "filters"].includes(path[0])
     : path.length === 2 &&
       path[0] === "products" &&
       path[1].length <= 120 &&

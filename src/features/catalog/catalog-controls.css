@@ -1,0 +1,26 @@
+.catalog-filters { min-width: 0; }
+.catalog-filters h2 { font-size: 20px; margin: 0 0 20px; }
+.catalog-filter-form { display: grid; gap: 20px; }
+.catalog-filter-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 8px; }
+.catalog-filter-form legend { font-weight: 600; margin-bottom: 12px; }
+.catalog-filter-form label { font-size: 14px; font-weight: 600; margin-top: 8px; }
+.catalog-filter-form select, .catalog-filter-form input, .catalog-sort select { min-height: 44px; width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: white; color: var(--text-primary); font: inherit; }
+.catalog-filter-form input[aria-invalid=true] { border-color: var(--error); }
+.catalog-filter-form .catalog-price-range { margin-top: 16px; }
+.catalog-filter-error { color: #b42318; font-size: 14px; margin: 4px 0; }
+.catalog-filter-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.catalog-sort { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 16px; }
+.catalog-sort label { flex-shrink: 0; font-size: 14px; }
+.catalog-sort select { width: min(100%, 230px); }
+.catalog-filters-trigger { display: none; }
+.catalog-filter-dialog { width: min(480px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; margin: auto; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-cloud); color: var(--text-primary); }
+.catalog-filter-dialog::backdrop { background: rgb(27 24 18 / .65); }
+.catalog-filter-dialog-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+.catalog-filter-dialog-heading h2 { margin: 0; }
+body:has(.catalog-filter-dialog[open]) { overflow: hidden; }
+@media (max-width: 767px) {
+  .catalog-layout { grid-template-columns: minmax(0, 1fr); }
+  .catalog-filters-desktop { display: none; }
+  .catalog-filters-trigger { display: inline-flex; }
+  .catalog-sort { flex-wrap: wrap; justify-content: flex-start; }
+}

@@ -12,6 +12,10 @@ export type HomeDTO = {
   categories: Category[];
   featuredProducts: ProductCardDTO[];
 };
+export type CatalogFiltersDTO = {
+  categories: Category[];
+  brands: { brandId: string; name: string }[];
+};
 export type PageMeta = {
   number: number;
   size: number;

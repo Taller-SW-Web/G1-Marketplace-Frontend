@@ -3,6 +3,7 @@ import type {
   HomeDTO,
   CatalogSource,
   ProductCardDTO,
+  CatalogFiltersDTO,
 } from "./types";
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -54,8 +55,18 @@ export function isCatalogPage(value: unknown): value is CatalogPageDTO {
     ) &&
     Number(page.size) >= 1 &&
     Number(page.size) <= 48 &&
-    value.data.length <= Number(page.size)
+    value.data.length <= Number(page.size) &&
+    page.totalPages === Math.ceil(Number(page.totalElements) / Number(page.size)) &&
+    value.data.length === Math.max(0, Math.min(Number(page.size), Number(page.totalElements) - Number(page.number) * Number(page.size))) &&
+    new Set(value.data.map(item => item.productId)).size === value.data.length
   );
+}
+export function isCatalogFilters(value: unknown): value is CatalogFiltersDTO {
+  return record(value) && Array.isArray(value.categories) && Array.isArray(value.brands) &&
+    value.categories.every(item => record(item) && text(item.categoryId) && text(item.name)) &&
+    value.brands.every(item => record(item) && text(item.brandId) && text(item.name)) &&
+    new Set(value.categories.map(item => item.categoryId)).size === value.categories.length &&
+    new Set(value.brands.map(item => item.brandId)).size === value.brands.length;
 }
 export class CatalogRequestError extends Error {
   constructor(
@@ -85,7 +96,7 @@ export async function readCatalog<T>(
         ? "Escribe entre 2 y 120 caracteres para buscar."
         : code === "INVALID_PAGE"
           ? "No encontramos esa página del catálogo. Vuelve a la primera página."
-          : ["INVALID_PARAMETERS", "INVALID_FILTER", "INVALID_SORT"].includes(
+          : ["INVALID_PARAMETERS", "INVALID_FILTER", "INVALID_SORT", "INVALID_PRICE_RANGE"].includes(
                 code,
               )
             ? "Revisa los criterios del enlace o vuelve al catálogo."
