@@ -20,7 +20,7 @@ Giuliano, 26/10/2026, rama `feat/giuliano-hito4`. F-006–F-010. Implementación
 | `npm run test:components -- --maxWorkers=2` | 225 pruebas PASS en 28 archivos |
 | `npm run test:server` | 73 pruebas PASS en 4 archivos |
 | `npm run build` | PASS, Next compilado |
-| `npx playwright test tests/catalog.spec.ts tests/catalog-h4.spec.ts` | 17 recorridos PASS contra Next y BFF locales en MOCK |
+| `npx playwright test tests/catalog.spec.ts tests/catalog-h4.spec.ts tests/catalog-visual-h4.spec.ts` | 21 recorridos PASS contra Next y BFF locales en MOCK; incluye revisión propia posterior |
 
 Los recorridos incluyen regresión H3, filtros combinados, conservación de búsqueda/orden, borrador móvil/Escape/foco, orden global entre páginas, recuperación de página y error/reintento de maestros. Los primeros intentos detectaron esperas de URL y selectores ambiguos en las pruebas nuevas; se corrigieron y el recorrido completo pasó. Las capturas se producen en `test-results`, fuera de Git.
 
@@ -29,3 +29,21 @@ Estas pruebas no acreditan integración REAL, credenciales técnicas, revisión 
 ## Verificación final de seguridad y CI
 
 El 26/10/2026 pasaron los controles existentes de Gitleaks 8.30.1 y Semgrep 1.181.0: detectores con controles positivos, fuente/historial/artefacto, cuatro reglas SAST y auditoría runtime/dev sin vulnerabilidades. Informes locales en `.local-security`. happy-dom se actualizó exactamente a 21.0.4 para corregir [GHSA-834v-8h66-3h79](https://github.com/advisories/GHSA-834v-8h66-3h79); componentes/tipos/lint/build y 17 recorridos de navegador pasaron tras el ajuste de foco. El workflow H4 valida esta rama al hacer push; no despliega. Su resultado remoto y el CD del corte aprobado deben verificarse aparte. [Evidencia SPECS](https://github.com/Taller-SW-Web/G1-Marketplace-SPECS/blob/feat/giuliano-hito4/plan/evidencias/H4-GIULIANO-2026-10-26.md).
+
+## Revisión propia posterior de UI y foco
+
+La revisión del 26/10 comparó inicio/catálogo desktop y mobile con los nodos Figma 274:111, 274:293, 339:881 y 339:1026 del archivo `k6JZRdgbO7YtZXeFqygE8p`. Se ajustaron marco/jerarquía del panel, barra de conteo/orden, ancho de controles mobile e iconos exactos de la referencia. El disparador de filtros queda sólo en mobile. El contador y resumen accesible reflejan criterios aplicados, incluido mínimo cero.
+
+Se corrigió la pérdida de foco al quitar búsqueda y al aplicar un borrador sin cambios. Los cuatro casos nuevos comprueban esos defectos, geometría responsive y estados error/vacío, junto a las regresiones existentes. Se ejecutaron nuevamente build y los 21 recorridos; componentes (225), tipos y lint pasaron en esta revisión. Las 73 pruebas de servidor corresponden al corte previo, sin cambios de servidor en esta revisión.
+
+Capturas sintéticas en `test-results/h4-visual-*.png`, ignoradas por Git y adjuntas al artefacto de CI. No constituyen comparación automática pixel a pixel ni aprobación humana. No se localizó un frame O-001 en las páginas de catálogo/overlays consultadas; su revisión de comportamiento usa la spec. No se habilitaron campos u órdenes sin soporte del contrato. Las aprobaciones de diseño, curaduría e integración REAL siguen pendientes.
+
+## Demo de catálogo reproducible
+
+```sh
+npm run demo:catalogo:h4
+```
+
+Compila ambos repos hermanos con dependencias previamente instaladas, arranca Next en `http://127.0.0.1:3500` y BFF MOCK en 10500, y comprueba home/maestros/búsqueda por el proxy. No usa Docker ni credenciales reales, no modifica `.env` y no escribe en BD. Informa puertos ocupados sin detener procesos ajenos. Ctrl+C cierra sus procesos. `/live` sólo acredita vida, no readiness de BD.
+
+`npm run demo:catalogo:h4 -- --check` ejecuta el smoke y sale; `--skip-build` permite reutilizar builds actuales. El smoke con builds actuales pasó. Esta demo sintética no acredita integración G6/G7 ni despliegue.
