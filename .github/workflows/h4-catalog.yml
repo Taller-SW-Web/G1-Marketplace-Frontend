@@ -1,0 +1,65 @@
+name: H4 Catalog Frontend
+on:
+  push:
+    branches: [feat/giuliano-hito4]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h4-catalog-frontend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: G1-Marketplace-Frontend
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: G1-Marketplace-Frontend
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Taller-SW-Web/G1-Marketplace-Backend
+          ref: feat/giuliano-hito4
+          path: G1-Marketplace-Backend
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.18.0
+          cache: npm
+          cache-dependency-path: |
+            G1-Marketplace-Frontend/package-lock.json
+            G1-Marketplace-Backend/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: npm --prefix ../G1-Marketplace-Backend ci
+      - run: npm run lint
+      - run: npm run test:components -- --maxWorkers=2
+      - run: npm run test:server
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/catalog.spec.ts tests/catalog-h4.spec.ts tests/catalog-visual-h4.spec.ts
+      - run: python -m pip install -r .security/requirements.txt
+      - run: python scripts/install-gitleaks.py
+      - run: python scripts/security-check.py --base e448a20 --artifact .next/static
+      - name: Synthetic browser and sanitized security evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: h4-catalog-frontend-evidence
+          retention-days: 7
+          include-hidden-files: true
+          path: |
+            G1-Marketplace-Frontend/playwright-report/
+            G1-Marketplace-Frontend/test-results/h4-visual-*.png
+            G1-Marketplace-Frontend/.local-security/summary.json

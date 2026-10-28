@@ -3,7 +3,31 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "../../src/app/api/catalog/[...path]/route";
 
-afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+describe("Catalog proxy runtime timeout budget", () => {
+  it.each([
+    { configured: undefined, expected: 8000 },
+    { configured: "25000", expected: 25000 },
+    { configured: "1000", expected: 1000 },
+    { configured: "30000", expected: 30000 },
+    { configured: "999", expected: 8000 },
+    { configured: "30001", expected: 8000 },
+    { configured: "25000oops", expected: 8000 },
+    { configured: "NaN", expected: 8000 },
+  ])("uses $expected ms for configured budget $configured", async ({ configured, expected }) => {
+    vi.stubEnv("MARKETPLACE_API_URL", "http://127.0.0.1:10400");
+    vi.stubEnv("CATALOG_BFF_TIMEOUT_MS", configured);
+    const timer = vi.spyOn(AbortSignal, "timeout");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ data: [] }, { headers: { "X-Catalog-Source": "REAL" } })));
+    const response = await GET(new NextRequest("http://localhost/api/catalog/products"), {
+      params: Promise.resolve({ path: ["products"] }),
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-catalog-source")).toBe("REAL");
+    expect(timer).toHaveBeenCalledWith(expected);
+  });
+});
 
 describe("Integrated collection/detail catalog proxy", () => {
   it.each([{ path: ["home"] }, { path: ["products"] }, { path: ["products", "producto-demostracion-5"] }])(

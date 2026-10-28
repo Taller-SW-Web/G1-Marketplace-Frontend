@@ -18,7 +18,8 @@
     "test:e2e:wishlist:production": "playwright test --config playwright.wishlist-production.config.ts",
     "demo:h3": "node scripts/h3-connected.mjs --demo",
     "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",
-    "demo:favoritos": "node scripts/favorites-demo.mjs"
+    "demo:favoritos": "node scripts/favorites-demo.mjs",
+    "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
@@ -37,7 +38,7 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "10.12.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "happy-dom": "21.0.1",
+    "happy-dom": "21.0.4",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
     "vitest": "5.0.4"

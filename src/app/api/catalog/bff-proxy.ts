@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const isAllowedPath = (path: string[]): boolean =>
   path.length === 1
-    ? ["home", "products"].includes(path[0])
+    ? ["home", "products", "filters"].includes(path[0])
     : path.length === 2 &&
       path[0] === "products" &&
       path[1].length <= 120 &&
@@ -67,6 +67,16 @@ function resolveRequestId(request: Request): string {
   return SAFE_REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
 }
 
+// Server-only runtime budget. Keep the normal 8s limit unless explicitly set.
+function catalogBffTimeoutMs(): number {
+  const configured = process.env.CATALOG_BFF_TIMEOUT_MS ?? "";
+  if (!/^\d+$/.test(configured)) return 8000;
+  const timeout = Number(configured);
+  return Number.isSafeInteger(timeout) && timeout >= 1000 && timeout <= 30000
+    ? timeout
+    : 8000;
+}
+
 /** Reenvía la petición al BFF y normaliza la respuesta hacia el navegador. */
 export async function catalogProxyGet(
   request: Request,
@@ -84,15 +94,17 @@ export async function catalogProxyGet(
       requestId,
     });
 
+  let timeoutSignal: AbortSignal | undefined;
   try {
     const base = marketplaceApiUrl();
     const url = new URL(`/api/v1/catalog/${path.join("/")}`, base);
     url.search = new URL(request.url).search;
+    timeoutSignal = AbortSignal.timeout(catalogBffTimeoutMs());
     const response = await fetch(url, {
       cache: "no-store",
       redirect: "error",
       headers: { Accept: "application/json", "X-Request-Id": requestId },
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
+      signal: AbortSignal.any([request.signal, timeoutSignal]),
     });
     const body = await response.text();
     JSON.parse(body); // Un cuerpo no-JSON del BFF es un fallo del proxy.
@@ -110,11 +122,13 @@ export async function catalogProxyGet(
         "X-Request-Id": response.headers.get("x-request-id") || requestId,
       },
     });
-  } catch {
+  } catch (error: unknown) {
+    const timedOut = !request.signal.aborted && (timeoutSignal?.aborted ||
+      (typeof error === "object" && error !== null && "name" in error && error.name === "TimeoutError"));
     return problemResponse({
       status: 503,
-      code: "CATALOG_UNAVAILABLE",
-      title: "No pudimos cargar el catálogo.",
+      code: timedOut ? "CATALOG_TIMEOUT" : "CATALOG_UNAVAILABLE",
+      title: timedOut ? "El catálogo tardó demasiado en responder." : "No pudimos cargar el catálogo.",
       instance,
       requestId,
     });
