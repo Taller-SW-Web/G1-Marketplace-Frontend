@@ -1,5 +1,34 @@
 import { test, expect } from '@playwright/test';
 
+test('H4 reviewer contract exposes delegated sort and keeps one category and one brand', async ({ page }) => {
+  const initial = page.waitForResponse(response => response.url().includes('/api/catalog/products?') && response.url().includes('sort=NAME_ASC'));
+  await page.goto('/catalogo?sort=NAME_ASC&pageSize=4');
+  expect((await (await initial).json()).sort).toBe('NAME_ASC');
+  const form = page.locator('.catalog-filters-desktop form');
+  await expect(form.getByLabel('Categoría', { exact: true })).toBeEnabled();
+  await expect(form.getByLabel('Marca', { exact: true })).toBeEnabled();
+  expect(await form.getByLabel('Categoría', { exact: true }).evaluate((element: HTMLSelectElement) => element.multiple)).toBe(false);
+  expect(await form.getByLabel('Marca', { exact: true }).evaluate((element: HTMLSelectElement) => element.multiple)).toBe(false);
+  const changed = page.waitForResponse(response => response.url().includes('/api/catalog/products?') && response.url().includes('sort=NAME_DESC'));
+  await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
+  expect((await (await changed).json()).sort).toBe('NAME_DESC');
+});
+
+test('H4 timeout is a recoverable error with distinct safe copy and preserved criteria', async ({ page }) => {
+  let timedOut = true;
+  await page.route('**/api/catalog/products?**', route => timedOut
+    ? route.fulfill({ status: 503, json: { code: 'CATALOG_TIMEOUT', title: 'private provider diagnostic' } })
+    : route.continue());
+  await page.goto('/catalogo?q=running&sort=NAME_ASC&pageSize=4');
+  await expect(page.locator('.catalog-results p[role="alert"]')).toContainText('tardó demasiado');
+  await expect(page.locator('body')).not.toContainText('private provider diagnostic');
+  expect(new URL(page.url()).searchParams.get('q')).toBe('running');
+  timedOut = false;
+  await page.getByRole('button', { name: 'Reintentar', exact: true }).click();
+  await expect(page.locator('.product-card')).toHaveCount(4);
+  expect(new URL(page.url()).searchParams.get('sort')).toBe('NAME_ASC');
+});
+
 test('H4 unavailable brands do not block category and price, then retry restores brands', async ({ page }) => {
   let failed = true;
   let homeRequests = 0;

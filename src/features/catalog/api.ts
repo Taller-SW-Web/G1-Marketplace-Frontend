@@ -48,6 +48,8 @@ export function isCatalogPage(value: unknown): value is CatalogPageDTO {
     !record(value.page)
   )
     return false;
+  // During the additive rollout, accept an older BFF without sort; validate it when present.
+  if (value.sort !== undefined && value.sort !== null && value.sort !== "NAME_ASC" && value.sort !== "NAME_DESC") return false;
   const page = value.page;
   return (
     ["number", "size", "totalElements", "totalPages"].every(
@@ -92,7 +94,9 @@ export async function readCatalog<T>(
         ? payload.code
         : "CATALOG_UNAVAILABLE";
     const message =
-      code === "INVALID_SEARCH_QUERY"
+      code === "CATALOG_TIMEOUT"
+        ? "El catálogo tardó demasiado en responder. Inténtalo nuevamente."
+        : code === "INVALID_SEARCH_QUERY"
         ? "Escribe entre 2 y 120 caracteres para buscar."
         : code === "INVALID_PAGE"
           ? "No encontramos esa página del catálogo. Vuelve a la primera página."

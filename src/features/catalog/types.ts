@@ -22,7 +22,7 @@ export type PageMeta = {
   totalElements: number;
   totalPages: number;
 };
-export type CatalogPageDTO = { data: ProductCardDTO[]; page: PageMeta };
+export type CatalogPageDTO = { data: ProductCardDTO[]; page: PageMeta; sort?: "NAME_ASC" | "NAME_DESC" | null };
 export type QueryState<T> =
   | { status: "loading" }
   | { status: "ready"; data: T; source: CatalogSource }

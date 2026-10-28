@@ -94,15 +94,17 @@ export async function catalogProxyGet(
       requestId,
     });
 
+  let timeoutSignal: AbortSignal | undefined;
   try {
     const base = marketplaceApiUrl();
     const url = new URL(`/api/v1/catalog/${path.join("/")}`, base);
     url.search = new URL(request.url).search;
+    timeoutSignal = AbortSignal.timeout(catalogBffTimeoutMs());
     const response = await fetch(url, {
       cache: "no-store",
       redirect: "error",
       headers: { Accept: "application/json", "X-Request-Id": requestId },
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(catalogBffTimeoutMs())]),
+      signal: AbortSignal.any([request.signal, timeoutSignal]),
     });
     const body = await response.text();
     JSON.parse(body); // Un cuerpo no-JSON del BFF es un fallo del proxy.
@@ -120,11 +122,13 @@ export async function catalogProxyGet(
         "X-Request-Id": response.headers.get("x-request-id") || requestId,
       },
     });
-  } catch {
+  } catch (error: unknown) {
+    const timedOut = !request.signal.aborted && (timeoutSignal?.aborted ||
+      (typeof error === "object" && error !== null && "name" in error && error.name === "TimeoutError"));
     return problemResponse({
       status: 503,
-      code: "CATALOG_UNAVAILABLE",
-      title: "No pudimos cargar el catálogo.",
+      code: timedOut ? "CATALOG_TIMEOUT" : "CATALOG_UNAVAILABLE",
+      title: timedOut ? "El catálogo tardó demasiado en responder." : "No pudimos cargar el catálogo.",
       instance,
       requestId,
     });
