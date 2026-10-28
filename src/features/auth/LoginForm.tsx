@@ -10,7 +10,7 @@ import { focusFirstInvalid } from "./form-focus";
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
 
-export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
+export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?: boolean; recoveryUrl?: string | null }) {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -217,9 +217,9 @@ export function LoginForm({ realAuth = false }: { realAuth?: boolean }) {
             }
           />
           <div className="auth-actions">
-            <Link className="auth-text-link" href="/recuperar-contrasena">
-              ¿Olvidaste tu contraseña?
-            </Link>
+            {recoveryUrl
+              ? <a className="auth-text-link" href={recoveryUrl} referrerPolicy="no-referrer">¿Olvidaste tu contraseña?</a>
+              : <Link className="auth-text-link" href="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link>}
             <Button type="submit" loading={busy} preserveFocusWhileLoading fullWidth>
               Iniciar sesión
             </Button>
