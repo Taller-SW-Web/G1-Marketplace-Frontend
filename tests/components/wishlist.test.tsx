@@ -137,3 +137,19 @@ it("has no sandbox controls when disabled", () => {
   render(<WishlistProvider enabled={false}><ProductCard returnPath="/catalogo" product={{ productId: "PRD-1", slug: "p", name: "P", categoryId: "c", brandId: "b", image: { url: "/test.png", alt: "P" } }} /></WishlistProvider>);
   expect(screen.queryByRole("button")).toBe(null);
 });
+
+// The auth endpoint is a double; this exercises the real provider's in-memory isolation.
+it("clears confirmed favorites when a real-auth identity changes even if its scope is reused", async () => {
+  let identity = "user-a";
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url === "/api/v1/auth/session"
+    ? Response.json({ authenticated: true, scope: "reused-scope", user: { id: identity } })
+    : Response.json({ productId: "PRD-1" }, { status: 201 })));
+  render(<WishlistProvider enabled realAuth><ProductCard returnPath="/catalogo" product={{ productId: "PRD-1", slug: "p", name: "P", categoryId: "c", brandId: "b", image: { url: "/test.png", alt: "P" } }} /></WishlistProvider>);
+  const button = await screen.findByRole("button", { name: "Guardar en favoritos" });
+  await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+  fireEvent.click(button);
+  await screen.findByRole("button", { name: "Quitar de favoritos" });
+  identity = "user-b";
+  fireEvent.focus(window);
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Quitar de favoritos" })).toBeNull());
+});

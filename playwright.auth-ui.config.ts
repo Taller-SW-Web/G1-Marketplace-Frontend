@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 // Keyboard/UI contract checks. No BFF, G7 account, token or database is used.
 export default defineConfig({
-  testDir: "./tests/auth", testMatch: "accessibility.spec.ts", workers: 1,
+  testDir: "./tests/auth", testMatch: ["accessibility.spec.ts", "logout-mock.spec.ts"], workers: 1,
   timeout: 30000, reporter: "list",
   use: { baseURL: "http://127.0.0.1:3002", browserName: "chromium", channel: process.env.CI ? undefined : "msedge", trace: "off" },
   webServer: {
