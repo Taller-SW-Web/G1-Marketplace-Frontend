@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LoginForm } from "../../src/features/auth/LoginForm";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -35,5 +35,18 @@ describe("G7 login and MFA states", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "PASSWORD_CADUCADA" }, { status: 403 })));
     render(<LoginForm realAuth />); fill();
     expect((await screen.findByRole("alert")).textContent).toContain("contraseña necesita actualizarse");
+  });
+  it("allows retry after the initial OTP delivery fails", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    const resend = screen.getByRole("button", { name: "Reenviar código" });
+    await waitFor(() => expect((resend as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(resend);
+    expect(await screen.findByText("Correo: a***@fixture.test")).toBeTruthy();
+    await waitFor(() => expect((screen.getByRole("button", { name: "Reenviar código" }) as HTMLButtonElement).disabled).toBe(true));
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 });

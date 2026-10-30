@@ -134,3 +134,25 @@ test("MFA expiry moves focus from the code to the expiry notice without announci
   await expect(page.getByRole("button", { name: "Verificar código" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Volver al inicio de sesión" })).toBeEnabled();
 });
+
+test("mock MFA challenge leaves favorites private until verification", async ({ page }) => {
+  await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { mfaRequerido: true, canal: "EMAIL", expiraEn: 300 } }));
+  await page.route("**/api/v1/auth/otp/solicitar", route => route.fulfill({ json: { canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 } }));
+  await page.goto("/login?returnTo=%2Ffavoritos");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill("a@fixture.test");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Only-fixture!123");
+  await page.getByRole("button", { name: "Iniciar sesión", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Verifica tu acceso" })).toBeVisible();
+  await page.goto("/favoritos");
+  await expect(page.getByRole("heading", { name: "Tus favoritos te esperan" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
+});
+
+test("mock authenticated login rejects an external return", async ({ page }) => {
+  await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { authenticated: true, scope: "fixture" } }));
+  await page.goto("/login?returnTo=https%3A%2F%2Fevil.test");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill("a@fixture.test");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Only-fixture!123");
+  await page.getByRole("button", { name: "Iniciar sesión", exact: true }).click();
+  await expect(page).toHaveURL("http://127.0.0.1:3002/");
+});
