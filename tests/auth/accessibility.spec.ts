@@ -53,6 +53,34 @@ test("registration focuses field errors and policy rejection, then the pending h
   await submit.click(); await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeFocused();
 });
 
+// Browser-only double: 409 represents an unavailable address but must not disclose that fact.
+test("registration 409 keeps a neutral message and entered values on desktop and mobile", async ({ page }) => {
+  let registrationCalls = 0;
+  await page.route("**/api/v1/auth/registro", async route => {
+    registrationCalls++;
+    await route.fulfill({ status: 409, json: { code: "CORREO_NO_DISPONIBLE", detail: "private fixture detail" } });
+  });
+
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/registro");
+    await registrationFields(page);
+    const email = page.getByLabel("Correo electrónico", { exact: true });
+    await email.fill("qa-f001@fixture.test");
+    await page.getByRole("button", { name: "Crear cuenta", exact: true }).click();
+
+    const alert = page.getByText("No pudimos completar el registro con esos datos. Revisa la información o intenta recuperar el acceso.", { exact: true });
+    await expect(alert).toBeFocused();
+    await expect(alert).toHaveText("No pudimos completar el registro con esos datos. Revisa la información o intenta recuperar el acceso.");
+    await expect(email).toHaveValue("qa-f001@fixture.test");
+    await expect(page.getByLabel("Contraseña", { exact: true })).toHaveValue("Valid-fixture!123");
+    await expect(page.getByRole("heading", { name: "Crea tu cuenta" })).toBeVisible();
+    expect(await page.locator("body").innerText()).not.toContain("qa-f001@fixture.test");
+    expect(await page.locator("body").innerText()).not.toContain("private fixture detail");
+    expect(registrationCalls).toBe(viewport.width === 1440 ? 1 : 2);
+  }
+});
+
 test("recovery focuses its invalid email and the neutral confirmation", async ({ page }) => {
   await page.route("**/api/v1/password/recuperar", route => route.fulfill({ status: 202, json: { accepted: true } }));
   await page.goto("/recuperar-contrasena"); await expect(page).toHaveTitle(/Recupera tu contraseña/);
