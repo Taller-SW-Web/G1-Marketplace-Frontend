@@ -132,6 +132,24 @@ describe("checkout Backend MOCK adapter", () => {
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ "Idempotency-Key": "stable-key" });
   });
 
+  it("retains only bounded, syntactically safe validation field names from a 400", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "CONTACT_VALIDATION_ERROR",
+      fields: ["email", "contact", "email", "not a field", 7, "privateNote"],
+    } }), { status: 400 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkoutApi.createOrder(
+      "op-1",
+      { fullName: "Test Person", documentType: "DNI", documentNumber: "12345678", phone: "999999999", email: "test@example.test" },
+      "stable-key",
+    )).rejects.toMatchObject({
+      status: 400,
+      code: "CONTACT_VALIDATION_ERROR",
+      fields: ["email", "contact", "privateNote"],
+    });
+  });
+
   it("normalizes the flat F-026 result and retains Ventas-authoritative fields", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-2026-00012", orderState: "PAGADO",

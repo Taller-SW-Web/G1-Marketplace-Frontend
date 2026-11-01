@@ -1,4 +1,4 @@
-import type { ChangeEvent, FormEvent } from "react";
+import { useEffect, useRef, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
@@ -35,21 +35,46 @@ export function PreparationOutcome({ quote, consented, busy, expired, quoteInval
 
 type OrderCreationFormProps = {
   contact: Contact;
+  errors: ContactFieldErrors;
   busy: boolean;
-  onContactChange: (contact: Contact) => void;
+  focusErrorRequest: number;
+  onContactChange: (contact: Contact, changedField: ContactField) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onBack: () => void;
 };
 
-export function OrderCreationForm({ contact, busy, onContactChange, onSubmit, onBack }: OrderCreationFormProps) {
-  const change = (field: keyof Contact) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onContactChange({ ...contact, [field]: event.target.value } as Contact);
-  return <form className="checkout-form" onSubmit={onSubmit}>
-    <TextField label="Nombre completo" required minLength={2} maxLength={120} value={contact.fullName} onChange={change("fullName")} />
+export type ContactField = keyof Contact;
+export type ContactFieldErrors = Partial<Record<ContactField, string>>;
+
+export function OrderCreationForm({ contact, errors, busy, focusErrorRequest, onContactChange, onSubmit, onBack }: OrderCreationFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (focusErrorRequest === 0) return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [focusErrorRequest]);
+
+  const change = (field: ContactField) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    onContactChange({ ...contact, [field]: event.target.value } as Contact, field);
+  const documentTypeErrorId = "documentType-error";
+
+  return <form ref={formRef} className="checkout-form" onSubmit={onSubmit}>
+    <TextField label="Nombre completo" required minLength={2} maxLength={120} value={contact.fullName}
+      error={errors.fullName} onChange={change("fullName")} />
     <label className="checkout-label" htmlFor="documentType">Tipo de documento</label>
-    <select id="documentType" value={contact.documentType} onChange={change("documentType")}><option value="DNI">DNI</option><option value="RUC">RUC</option><option value="CE">CE</option><option value="PASAPORTE">Pasaporte</option></select>
-    <TextField label="Número de documento" required minLength={5} maxLength={24} hint="Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento." value={contact.documentNumber} onChange={change("documentNumber")} />
-    <TextField label="Teléfono" type="tel" required minLength={5} maxLength={40} value={contact.phone} onChange={change("phone")} />
-    <TextField label="Correo electrónico" type="email" required maxLength={254} value={contact.email} onChange={change("email")} />
+    <select id="documentType" value={contact.documentType} onChange={change("documentType")}
+      aria-invalid={errors.documentType ? true : undefined}
+      aria-describedby={errors.documentType ? documentTypeErrorId : undefined}
+      aria-errormessage={errors.documentType ? documentTypeErrorId : undefined}>
+      <option value="DNI">DNI</option><option value="RUC">RUC</option><option value="CE">CE</option><option value="PASAPORTE">Pasaporte</option>
+    </select>
+    {errors.documentType && <p id={documentTypeErrorId} className="field-error" role="alert">{errors.documentType}</p>}
+    <TextField label="Número de documento" required minLength={5} maxLength={24}
+      hint="Ingresa entre 5 y 24 caracteres. La misma longitud aplica a todos los tipos de documento."
+      value={contact.documentNumber} error={errors.documentNumber} onChange={change("documentNumber")} />
+    <TextField label="Teléfono" type="tel" required minLength={5} maxLength={40} value={contact.phone}
+      error={errors.phone} onChange={change("phone")} />
+    <TextField label="Correo electrónico" type="email" required maxLength={254} value={contact.email}
+      error={errors.email} onChange={change("email")} />
     <div className="checkout-actions"><Button variant="tertiary" onClick={onBack}>Volver al resumen</Button><Button type="submit" loading={busy}>Crear pedido</Button></div>
   </form>;
 }

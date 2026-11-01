@@ -25,7 +25,7 @@ vi.mock("../../src/features/checkout/api", () => ({
     return fallback;
   },
   CheckoutApiError: class CheckoutApiError extends Error {
-    constructor(readonly status: number, readonly code: string) { super(code); }
+    constructor(readonly status: number, readonly code: string, readonly fields?: string[]) { super(code); }
   },
   isVerifiedPaidOperation: (operation: { state: string }) => operation.state === "SUCCEEDED",
 }));
@@ -80,22 +80,80 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("CheckoutFlow recovery in Backend MOCK mode", () => {
-  it("restores editable contact form after a 400 and retries with the same order key", async () => {
-    api.createOrder.mockRejectedValueOnce(new CheckoutApiError(400, "CONTACT_VALIDATION_ERROR"));
+  it("maps only editable contact fields, preserves values, and retries with the same order key", async () => {
+    api.createOrder.mockRejectedValueOnce(new CheckoutApiError(400, "CONTACT_VALIDATION_ERROR", [
+      "contact", "documentNumber", "email", "internalNote",
+    ]));
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    await screen.findAllByText("Revisa este campo.");
+    const documentNumber = screen.getByLabelText("Número de documento") as HTMLInputElement;
+    const email = screen.getByLabelText("Correo electrónico") as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(documentNumber));
+    expect(documentNumber.getAttribute("aria-invalid")).toBe("true");
+    expect(email.getAttribute("aria-invalid")).toBe("true");
+    const emailErrorId = email.getAttribute("aria-errormessage");
+    expect(emailErrorId).toBeTruthy();
+    expect(email.getAttribute("aria-describedby")).toContain(emailErrorId);
+    expect(document.getElementById(emailErrorId ?? "")?.textContent).toBe("Revisa este campo.");
+    expect(screen.getByLabelText("Nombre completo")).toHaveProperty("value", "Ana Prueba");
+    expect(screen.getByLabelText("Tipo de documento")).toHaveProperty("value", "DNI");
+    expect(screen.getByLabelText("Teléfono")).toHaveProperty("value", "999999999");
+    expect(email.value).toBe("ana@example.test");
+    expect(screen.queryByText("Revisa los datos de contacto e inténtalo de nuevo.")).toBe(null);
+    expect(screen.getByRole("button", { name: "Crear pedido" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Verificar operación original" })).toBe(null);
+
+    fireEvent.change(email, { target: { value: "ana.corregida@example.test" } });
+    expect(email.getAttribute("aria-invalid")).toBe(null);
+    expect(documentNumber.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.change(documentNumber, { target: { value: "87654321" } });
+    expect(documentNumber.getAttribute("aria-invalid")).toBe(null);
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
+    expect(api.createOrder.mock.calls[0]?.[2]).toBe(api.createOrder.mock.calls[1]?.[2]);
+    expect(api.createOrder.mock.calls[1]?.[1]).toMatchObject({
+      fullName: "Ana Prueba", documentType: "DNI", documentNumber: "87654321",
+      phone: "999999999", email: "ana.corregida@example.test",
+    });
+  });
+
+  it("associates document-type validation accessibly and ignores the contact container", async () => {
+    api.createOrder.mockRejectedValueOnce(new CheckoutApiError(400, "CONTACT_VALIDATION_ERROR", [
+      "contact", "documentType", "adminNote",
+    ]));
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    const error = await screen.findByText("Revisa este campo.");
+    const documentType = screen.getByLabelText("Tipo de documento") as HTMLSelectElement;
+    await waitFor(() => expect(document.activeElement).toBe(documentType));
+    expect(documentType.getAttribute("aria-invalid")).toBe("true");
+    expect(documentType.getAttribute("aria-describedby")).toBe(error.id);
+    expect(documentType.getAttribute("aria-errormessage")).toBe(error.id);
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+
+    fireEvent.change(documentType, { target: { value: "RUC" } });
+    expect(documentType.getAttribute("aria-invalid")).toBe(null);
+    expect(screen.queryByText("Revisa este campo.")).toBe(null);
+  });
+
+  it("keeps a safe general message when validation fields do not match editable contact controls", async () => {
+    api.createOrder.mockRejectedValueOnce(new CheckoutApiError(400, "CONTACT_VALIDATION_ERROR", [
+      "contact", "internalNote",
+    ]));
     await reachOrderForm();
     fillContact();
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
 
     expect(await screen.findByText("Revisa los datos de contacto e inténtalo de nuevo.")).toBeDefined();
+    expect(screen.getByRole("status").textContent).toBe("Revisa los datos de contacto e inténtalo de nuevo.");
+    expect(screen.getByLabelText("Correo electrónico").getAttribute("aria-invalid")).toBe(null);
+    expect(screen.getByLabelText("Tipo de documento").getAttribute("aria-invalid")).toBe(null);
     expect((screen.getByLabelText("Nombre completo") as HTMLInputElement).value).toBe("Ana Prueba");
-    expect(screen.getByRole("button", { name: "Crear pedido" })).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Verificar operación original" })).toBe(null);
-
-    fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Ana Corregida" } });
-    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
-    await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
-    expect(api.createOrder.mock.calls[0]?.[2]).toBe(api.createOrder.mock.calls[1]?.[2]);
-    expect(api.createOrder.mock.calls[1]?.[1]).toMatchObject({ fullName: "Ana Corregida" });
   });
 
   it("restores the contact form when verification finds the operation still PREPARED", async () => {

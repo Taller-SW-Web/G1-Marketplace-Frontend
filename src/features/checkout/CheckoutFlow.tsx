@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
-import { TextField } from "../../shared/ui/TextField";
 import {
   AddressStepContainer,
   CheckoutOrderSummary,
@@ -18,13 +17,12 @@ import {
   checkoutFixtureAddresses,
   checkoutFixtureCart,
   createFixtureQuote,
-  formatCheckoutMoney,
   removeFixtureCoupon,
   type CheckoutAddress,
   type CheckoutQuote,
 } from "./fixtures";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
-import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome } from "./CheckoutComponents";
+import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome, type ContactField, type ContactFieldErrors } from "./CheckoutComponents";
 import "./checkout.css";
 
 type Step = "address" | "summary" | "prepare" | "order" | "confirmed";
@@ -41,12 +39,25 @@ const contextFailureCodes = new Set([
 const addressFormFields = new Set<DeliveryAddressField>([
   "label", "street", "district", "province", "department", "reference", "phone",
 ]);
+const contactFormFields = new Set<ContactField>([
+  "fullName", "documentType", "documentNumber", "phone", "email",
+]);
 
 function mapAddressFieldErrors(fields: string[] | undefined): DeliveryAddressFieldErrors {
   const errors: DeliveryAddressFieldErrors = {};
   for (const field of fields ?? []) {
     if (addressFormFields.has(field as DeliveryAddressField)) {
       errors[field as DeliveryAddressField] = "Revisa este campo.";
+    }
+  }
+  return errors;
+}
+
+function mapContactFieldErrors(fields: string[] | undefined): ContactFieldErrors {
+  const errors: ContactFieldErrors = {};
+  for (const field of fields ?? []) {
+    if (contactFormFields.has(field as ContactField)) {
+      errors[field as ContactField] = "Revisa este campo.";
     }
   }
   return errors;
@@ -94,6 +105,8 @@ export function CheckoutFlow() {
   const contactRef = useRef<Contact | null>(null);
   const submitting = useRef(false);
   const [contact, setContact] = useState<Contact>({ fullName: "", documentType: "DNI", documentNumber: "", phone: "", email: "" });
+  const [contactFieldErrors, setContactFieldErrors] = useState<ContactFieldErrors>({});
+  const [contactErrorFocusRequest, setContactErrorFocusRequest] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [now, setNow] = useState(0);
@@ -403,6 +416,8 @@ export function CheckoutFlow() {
       orderKey.current = null;
       setOrderSubmission("READY");
       setNotice("");
+      setContactFieldErrors({});
+      setContactErrorFocusRequest(0);
       setStep("order");
     }).catch((error: unknown) => {
       if (attempt !== preparationAttempt.current) return;
@@ -479,12 +494,29 @@ export function CheckoutFlow() {
       .catch((error: unknown) => {
         if (error instanceof CheckoutApiError && error.status === 400 && error.code === "CONTACT_VALIDATION_ERROR") {
           setOrderSubmission("READY");
-          setNotice(checkoutErrorMessage(error, "Revisa los datos de contacto e inténtalo de nuevo."));
+          const fieldErrors = mapContactFieldErrors(error.fields);
+          setContactFieldErrors(fieldErrors);
+          if (Object.keys(fieldErrors).length > 0) {
+            setContactErrorFocusRequest((request) => request + 1);
+            setNotice("");
+          } else {
+            setNotice(checkoutErrorMessage(error, "Revisa los datos de contacto e inténtalo de nuevo."));
+          }
           return;
         }
         setOrderSubmission("UNCERTAIN");
         setNotice(checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave."));
       });
+  }
+
+  function updateContact(nextContact: Contact, changedField: ContactField) {
+    setContact(nextContact);
+    setContactFieldErrors((current) => {
+      if (!current[changedField]) return current;
+      const nextErrors = { ...current };
+      delete nextErrors[changedField];
+      return nextErrors;
+    });
   }
 
   function createOrder(event: FormEvent<HTMLFormElement>) {
@@ -625,7 +657,9 @@ export function CheckoutFlow() {
           ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
           : <>
             {notice && <p role="status" className="checkout-notice">{notice}</p>}
-            <OrderCreationForm contact={contact} busy={busy} onContactChange={setContact} onSubmit={createOrder} onBack={() => setStep("summary")} />
+            <OrderCreationForm contact={contact} errors={contactFieldErrors} busy={busy}
+              focusErrorRequest={contactErrorFocusRequest} onContactChange={updateContact}
+              onSubmit={createOrder} onBack={() => setStep("summary")} />
           </>}
       </section>}
       {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
