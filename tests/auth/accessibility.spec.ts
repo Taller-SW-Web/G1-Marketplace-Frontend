@@ -57,6 +57,22 @@ test("recovery fallback is accessible when the G7 URL is not configured", async 
   await expect(page.getByLabel("Correo electrónico")).toHaveCount(0);
 });
 
+test("Enter opens the G1 recovery fallback without calling G1 password APIs", async ({ page }) => {
+  const passwordCalls: string[] = [];
+  page.on("request", request => {
+    const path = new URL(request.url()).pathname;
+    if (/^\/api\/v1\/password\//.test(path)) passwordCalls.push(path);
+  });
+  await page.goto("/login");
+  const entry = page.getByRole("link", { name: "¿Olvidaste tu contraseña?" });
+  await entry.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("http://127.0.0.1:3002/recuperar-contrasena");
+  await expect(page.getByRole("heading", { name: "Recuperación no disponible" })).toBeFocused();
+  await expect(page.getByRole("link", { name: "Volver a iniciar sesión" })).toHaveAttribute("href", "/login");
+  expect(passwordCalls).toEqual([]);
+});
+
 test("legacy reset link clears its parameters and offers a safe exit", async ({ page }) => {
   const first = await page.request.get("/restablecer-contrasena?token=only-ui-fixture", { maxRedirects: 0 });
   expect(first.status()).toBe(307);
