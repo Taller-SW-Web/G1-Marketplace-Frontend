@@ -56,6 +56,19 @@ describe("checkout Backend MOCK adapter", () => {
     await expect(checkoutApi.createQuote("address-1", 1)).rejects.toEqual(expect.objectContaining<Partial<CheckoutApiError>>({ status: 409, code: "CART_NOT_FOUND" }));
   });
 
+  it("keeps only safe validation field identifiers from an API error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "ADDRESS_VALIDATION_ERROR",
+      fields: ["street", "customerId", "bad field", 4, { message: "private detail" }, "x".repeat(65)],
+    } }), { status: 400 })));
+
+    await expect(checkoutApi.listAddresses()).rejects.toMatchObject({
+      status: 400,
+      code: "ADDRESS_VALIDATION_ERROR",
+      fields: ["street", "customerId"],
+    });
+  });
+
   it("merges a partial benefit response into the current quote without recalculating base amounts", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       quoteId: "quote-with-coupon", selectedBenefit: { type: "COUPON", id: "COUPON-1", discount: { amount: 20, currency: "PEN" } },

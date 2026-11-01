@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
@@ -10,6 +10,8 @@ import {
   CheckoutQuoteContainer,
   CouponForm,
   SelectedBenefit,
+  type DeliveryAddressField,
+  type DeliveryAddressFieldErrors,
 } from "./CheckoutSteps";
 import {
   applyFixtureCoupon,
@@ -35,6 +37,19 @@ const contextFailureCodes = new Set([
   "PREPARATION_CONTEXT_UNAVAILABLE",
   "PREPARATION_FAILED",
 ]);
+const addressFormFields = new Set<DeliveryAddressField>([
+  "label", "street", "district", "province", "department", "reference", "phone",
+]);
+
+function mapAddressFieldErrors(fields: string[] | undefined): DeliveryAddressFieldErrors {
+  const errors: DeliveryAddressFieldErrors = {};
+  for (const field of fields ?? []) {
+    if (addressFormFields.has(field as DeliveryAddressField)) {
+      errors[field as DeliveryAddressField] = "Revisa este campo.";
+    }
+  }
+  return errors;
+}
 
 export function CheckoutFlow() {
   const [step, setStep] = useState<Step>("address");
@@ -49,8 +64,13 @@ export function CheckoutFlow() {
   const [cartStatus, setCartStatus] = useState<"loading" | "ready" | "empty" | "error">(backendMockEnabled ? "loading" : "ready");
   const [cartError, setCartError] = useState("");
   const [cartReloadKey, setCartReloadKey] = useState(0);
+  const [addressReloadKey, setAddressReloadKey] = useState(0);
+  const [addressLoadError, setAddressLoadError] = useState("");
+  const [addressRequiresAuthentication, setAddressRequiresAuthentication] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
+  const [addressFieldErrors, setAddressFieldErrors] = useState<DeliveryAddressFieldErrors>({});
+  const [addressStatusMessage, setAddressStatusMessage] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const quoteRef = useRef<CheckoutQuote | null>(null);
   const quoteRequest = useRef(0);
@@ -79,6 +99,33 @@ export function CheckoutFlow() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  const invalidateQuote = useCallback(() => {
+    quoteRequest.current += 1;
+    benefitRequest.current += 1;
+    quoteRef.current = null;
+    setQuote(null);
+    setCouponMessage("");
+    setQuoteInvalid(false);
+    setStockUnavailable(false);
+    setOperationId("");
+    setConsented(false);
+    preparationKey.current = null;
+    setHasPreparationAttempt(false);
+    orderKey.current = null;
+    contactRef.current = null;
+  }, []);
+  const requireAddressAuthentication = useCallback((error: unknown) => {
+    setAddresses([]);
+    setSelectedId("");
+    setAddingAddress(false);
+    setAddressError("");
+    setAddressFieldErrors({});
+    setAddressStatusMessage("");
+    setAddressLoadError(checkoutErrorMessage(error, "Tu sesión venció. Inicia sesión para continuar con tu compra."));
+    setAddressRequiresAuthentication(true);
+    invalidateQuote();
+    setStep("address");
+  }, [invalidateQuote]);
   useEffect(() => {
     if (!backendMockEnabled) return;
     let active = true;
@@ -86,16 +133,21 @@ export function CheckoutFlow() {
       if (!active) return;
       setAddresses(items);
       setSelectedId(items[0]?.addressId ?? "");
+      setAddingAddress(items.length === 0);
+      setAddressError("");
+      setAddressFieldErrors({});
+      setAddressLoadError("");
+      setAddressRequiresAuthentication(false);
     }).catch((error: unknown) => {
       if (!active) return;
       if (error instanceof CheckoutApiError && error.status === 401) {
-        setAddresses([]);
-        setSelectedId("");
+        requireAddressAuthentication(error);
+      } else {
+        setAddressLoadError(checkoutErrorMessage(error, "No se pudieron cargar las direcciones."));
       }
-      setNotice(checkoutErrorMessage(error, "No se pudieron cargar las direcciones."));
     }).finally(() => { if (active) setAddressLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [addressReloadKey, requireAddressAuthentication]);
   useEffect(() => {
     if (!backendMockEnabled) return;
     let active = true;
@@ -118,25 +170,26 @@ export function CheckoutFlow() {
     setQuote(next);
   }
 
-  function invalidateQuote() {
-    quoteRequest.current += 1;
-    benefitRequest.current += 1;
-    replaceQuote(null);
-    setCouponMessage("");
-    setQuoteInvalid(false);
-    setStockUnavailable(false);
-    setOperationId("");
-    setConsented(false);
-    preparationKey.current = null;
-    setHasPreparationAttempt(false);
-    orderKey.current = null;
-    contactRef.current = null;
-  }
-
   function retryCartLoad() {
     setCartStatus("loading");
     setCartError("");
     setCartReloadKey((key) => key + 1);
+  }
+
+  function retryAddressLoad() {
+    setAddressLoading(true);
+    setAddressLoadError("");
+    setAddressRequiresAuthentication(false);
+    setAddressReloadKey((key) => key + 1);
+  }
+
+  function clearAddressFieldError(field: DeliveryAddressField) {
+    setAddressFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
   }
 
   function returnToAddress() {
@@ -176,9 +229,8 @@ export function CheckoutFlow() {
       setStep("summary");
     } catch (error: unknown) {
       if (error instanceof CheckoutApiError && error.status === 401) {
-        setAddresses([]);
-        setSelectedId("");
-        invalidateQuote();
+        requireAddressAuthentication(error);
+        return;
       }
       setNotice(checkoutErrorMessage(error, "No se pudo calcular el envío."));
     } finally {
@@ -206,6 +258,10 @@ export function CheckoutFlow() {
       contactRef.current = null;
       setCouponMessage("La cotización se actualizó.");
     } catch (error: unknown) {
+      if (error instanceof CheckoutApiError && error.status === 401) {
+        requireAddressAuthentication(error);
+        return;
+      }
       setCouponMessage(checkoutErrorMessage(error, "No se pudo actualizar la cotización."));
     } finally {
       setBusy(false);
@@ -214,11 +270,20 @@ export function CheckoutFlow() {
 
   function saveAddress(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setAddressError("");
+    setAddressStatusMessage("");
     const data = new FormData(event.currentTarget);
     const values = Object.fromEntries(data.entries());
     const fields = ["label", "street", "district", "province", "department", "phone"];
-    if (fields.some((key) => !String(values[key] ?? "").trim())) {
-      setAddressError("Completa los campos obligatorios.");
+    const missingFields = fields.filter((key) => !String(values[key] ?? "").trim());
+    if (missingFields.length > 0) {
+      const fieldErrors: DeliveryAddressFieldErrors = {};
+      for (const field of missingFields) {
+        if (addressFormFields.has(field as DeliveryAddressField)) {
+          fieldErrors[field as DeliveryAddressField] = "Completa este campo.";
+        }
+      }
+      setAddressFieldErrors(fieldErrors);
       return;
     }
     const address = {
@@ -237,14 +302,21 @@ export function CheckoutFlow() {
       setAddresses((current) => [...current, saved]);
       setSelectedId(saved.addressId);
       setAddressError("");
+      setAddressFieldErrors({});
+      setAddressStatusMessage("La dirección se guardó y quedó seleccionada.");
       setAddingAddress(false);
     }).catch((error: unknown) => {
       if (error instanceof CheckoutApiError && error.status === 401) {
-        setAddresses([]);
-        setSelectedId("");
-        invalidateQuote();
+        requireAddressAuthentication(error);
+        return;
       }
-      setAddressError(checkoutErrorMessage(error, "No se pudo guardar la dirección."));
+      const fieldErrors = error instanceof CheckoutApiError && error.status === 400
+        ? mapAddressFieldErrors(error.fields)
+        : {};
+      setAddressFieldErrors(fieldErrors);
+      setAddressError(Object.keys(fieldErrors).length > 0
+        ? ""
+        : checkoutErrorMessage(error, "No se pudo guardar la dirección."));
     }).finally(() => setBusy(false));
   }
 
@@ -494,15 +566,31 @@ export function CheckoutFlow() {
         cartCount={cartSnapshot?.items.reduce((total, item) => total + item.quantity, 0) ?? 0}
         cartError={cartError}
         addressLoading={addressLoading}
+        addressLoadError={addressLoadError}
+        addressRequiresAuthentication={addressRequiresAuthentication}
         addresses={addresses}
         selectedId={selectedId}
         addingAddress={addingAddress}
         addressError={addressError}
+        addressFieldErrors={addressFieldErrors}
+        addressStatusMessage={addressStatusMessage}
         busy={busy}
         onRetryCart={retryCartLoad}
+        onRetryAddresses={retryAddressLoad}
         onSelectAddress={(addressId) => { setSelectedId(addressId); invalidateQuote(); }}
-        onAddAddress={() => { setAddingAddress(true); setAddressError(""); }}
-        onCancelAddress={() => setAddingAddress(false)}
+        onAddressFieldChange={clearAddressFieldError}
+        onAddAddress={() => {
+          setAddingAddress(true);
+          setAddressError("");
+          setAddressFieldErrors({});
+          setAddressStatusMessage("");
+        }}
+        onCancelAddress={() => {
+          setAddingAddress(false);
+          setAddressError("");
+          setAddressFieldErrors({});
+          setAddressStatusMessage("");
+        }}
         onSaveAddress={saveAddress}
         onContinue={continueToSummary}
       />}

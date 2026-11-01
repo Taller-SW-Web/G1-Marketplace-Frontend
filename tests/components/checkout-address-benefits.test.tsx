@@ -16,7 +16,7 @@ vi.mock("../../src/features/checkout/api", () => ({
       ? "Tu carrito cambió. Vuelve al carrito y actualiza el resumen."
       : fallback,
   CheckoutApiError: class CheckoutApiError extends Error {
-    constructor(readonly status: number, readonly code: string) { super(code); }
+    constructor(readonly status: number, readonly code: string, readonly fields?: string[]) { super(code); }
   },
   isVerifiedPaidOperation: () => false,
 }));
@@ -47,9 +47,44 @@ describe("Checkout address and benefit acceptance", () => {
     await screen.findByText(/Se encontraron 2 productos/);
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
-    await screen.findByText("No se pudo calcular el envío.");
+    await screen.findByRole("link", { name: "Iniciar sesión" });
     expect(screen.queryByText("Casa")).toBeNull();
-    expect(screen.getByText("Aún no tienes direcciones guardadas.")).toBeDefined();
+    expect(screen.queryByText("Aún no tienes direcciones guardadas.")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Nueva dirección" })).toBeNull();
+  });
+
+  it("opens and focuses the first-address form only after a successful empty response", async () => {
+    api.listAddresses.mockResolvedValueOnce([]);
+    render(<CheckoutFlow />);
+
+    const heading = await screen.findByRole("heading", { name: "Nueva dirección" });
+    expect(heading.textContent).toBe("Nueva dirección");
+    expect(document.activeElement).toBe(heading);
+    expect(screen.getByText("Aún no tienes direcciones guardadas. Registra una para continuar con tu compra.")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Agregar dirección" })).toBeNull();
+  });
+
+  it("does not treat an unauthenticated address load as an empty address list", async () => {
+    api.listAddresses.mockRejectedValueOnce(new CheckoutApiError(401, "UNAUTHENTICATED"));
+    render(<CheckoutFlow />);
+
+    await screen.findByRole("link", { name: "Iniciar sesión" });
+    expect(screen.queryByRole("heading", { name: "Nueva dirección" })).toBeNull();
+    expect(screen.queryByText("Aún no tienes direcciones guardadas.")).toBeNull();
+  });
+
+  it("keeps a failed address load distinct from empty and allows a manual retry", async () => {
+    api.listAddresses.mockRejectedValueOnce(new CheckoutApiError(503, "ADDRESS_SERVICE_UNAVAILABLE"))
+      .mockResolvedValueOnce([]);
+    render(<CheckoutFlow />);
+
+    const retry = await screen.findByRole("button", { name: "Reintentar carga de direcciones" });
+    expect(screen.queryByText("Aún no tienes direcciones guardadas.")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Nueva dirección" })).toBeNull();
+    fireEvent.click(retry);
+
+    expect(await screen.findByRole("heading", { name: "Nueva dirección" })).toBeDefined();
+    expect(api.listAddresses).toHaveBeenCalledTimes(2);
   });
 
   it("preserves the valid quote when benefit application returns 422", async () => {
@@ -69,7 +104,7 @@ describe("Checkout address and benefit acceptance", () => {
   });
 
   it("retains address fields after a rejected create request", async () => {
-    api.createAddress.mockRejectedValueOnce(new CheckoutApiError(400, "ADDRESS_VALIDATION_ERROR"));
+    api.createAddress.mockRejectedValueOnce(new CheckoutApiError(400, "ADDRESS_VALIDATION_ERROR", ["street", "customerId", "unknown"]));
     render(<CheckoutFlow />);
     fireEvent.click(await screen.findByRole("button", { name: "Agregar dirección" }));
     fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
@@ -80,11 +115,47 @@ describe("Checkout address and benefit acceptance", () => {
     fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar dirección" }));
 
-    await screen.findByText("No se pudo guardar la dirección.");
+    const fieldError = await screen.findByText("Revisa este campo.");
     expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
     expect((screen.getByLabelText("Dirección") as HTMLInputElement).value).toBe("Calle 1");
+    const street = screen.getByLabelText("Dirección") as HTMLInputElement;
+    expect(street.getAttribute("aria-invalid")).toBe("true");
+    expect(street.getAttribute("aria-describedby")?.split(" ")).toContain(fieldError.id);
+    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).getAttribute("aria-invalid")).not.toBe("true");
     expect(api.createAddress).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.getByRole("button", { name: "Guardar dirección" })).toBeDefined());
+
+    fireEvent.change(street, { target: { value: "Calle corregida" } });
+    expect(street.getAttribute("aria-invalid")).not.toBe("true");
+    expect(screen.queryByText("Revisa este campo.")).toBeNull();
+    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
+  });
+
+  it("returns focus to the add-address action after cancelling the form", async () => {
+    render(<CheckoutFlow />);
+    const addButton = await screen.findByRole("button", { name: "Agregar dirección" });
+    fireEvent.click(addButton);
+    await screen.findByRole("heading", { name: "Nueva dirección" });
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Agregar dirección" }));
+  });
+
+  it("announces a created address and selects the confirmed response", async () => {
+    const createdAddress = { ...address, addressId: "ADR-2", label: "Casa nueva", street: "Calle 1" };
+    api.createAddress.mockResolvedValueOnce(createdAddress);
+    render(<CheckoutFlow />);
+    fireEvent.click(await screen.findByRole("button", { name: "Agregar dirección" }));
+    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
+    fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
+    fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
+    fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
+    fireEvent.change(screen.getByLabelText("Distrito"), { target: { value: "Miraflores" } });
+    fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar dirección" }));
+
+    expect(await screen.findByText("La dirección se guardó y quedó seleccionada.")).toBeDefined();
+    expect((screen.getByRole("radio", { name: /Casa nueva/ }) as HTMLInputElement).checked).toBe(true);
   });
 
   it("invalidates the quote when the buyer selects a different address", async () => {
