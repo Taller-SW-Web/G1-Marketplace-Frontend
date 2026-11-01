@@ -11,7 +11,9 @@ interface BffErrorResponse {
   error?: {
     code?: string;
     message?: string;
-  };
+  } | string;
+  code?: string;
+  message?: string;
 }
 
 interface BffSuccessResponse {
@@ -210,16 +212,17 @@ export async function updateCartItemQuantityApi(
       };
     }
 
-    // Límite de stock simulado: si el SKU contiene 'LIMITED', max 3, de lo contrario max 10
-    const stockLimit = sku.includes('LIMITED') ? 3 : 10;
-    if (quantity > stockLimit) {
-      mockCart.items[existingIndex].quantity = stockLimit;
+    // Fixture sintético MOCK para pruebas locales (SPEC React §8, RC-F-017-03):
+    // No representa stock real ni consulta a G6 (gate G-QUANTITY / X-P0-03 bloqueado).
+    const isMockFixture = sku.includes('LIMITED') || sku.includes('FIXTURE-STOCK-3');
+    if (isMockFixture && quantity > 3) {
+      mockCart.items[existingIndex].quantity = 3;
       mockCart.version += 1;
       return {
         success: false,
         status: 409,
         code: 'STOCK_LIMIT_REACHED',
-        message: `Stock insuficiente. Cantidad ajustada al máximo disponible (${stockLimit}).`,
+        message: 'Stock insuficiente para este fixture. Cantidad ajustada al límite (3 unidades).',
         item: { ...mockCart.items[existingIndex] },
         cart: { ...mockCart },
       };
@@ -258,11 +261,25 @@ export async function updateCartItemQuantityApi(
     const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
 
     if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al actualizar la cantidad.'
+      );
+
       return {
         success: false,
         status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
-        code: (json.error?.code as CartMutationCode) || 'ERROR',
-        message: json.error?.message || 'Error al actualizar la cantidad.',
+        code: errCode,
+        message: errMessage,
       };
     }
 
