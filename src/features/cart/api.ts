@@ -11,7 +11,9 @@ interface BffErrorResponse {
   error?: {
     code?: string;
     message?: string;
-  };
+  } | string;
+  code?: string;
+  message?: string;
 }
 
 interface BffSuccessResponse {
@@ -108,11 +110,25 @@ export async function addCartItemApi(
     const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
 
     if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al agregar el producto al carrito.'
+      );
+
       return {
         success: false,
         status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
-        code: (json.error?.code as CartMutationCode) || 'ERROR',
-        message: json.error?.message || 'Error al agregar el producto al carrito.',
+        code: errCode,
+        message: errMessage,
       };
     }
 
@@ -171,12 +187,146 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
 }
 
 /**
+ * Actualizar cantidad de un ítem en el carrito (F-017)
+ */
+export async function updateCartItemQuantityApi(
+  sku: string,
+  quantity: number,
+  expectedVersion?: number,
+  useMock: boolean = true
+): Promise<CartMutationResult> {
+  if (quantity < 1 || quantity > 99) {
+    return {
+      success: false,
+      status: 400,
+      code: 'INVALID_QUANTITY',
+      message: 'La cantidad debe ser un entero entre 1 y 99.',
+    };
+  }
+
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const existingIndex = mockCart.items.findIndex((it) => it.sku === sku);
+    if (existingIndex < 0) {
+      return {
+        success: false,
+        status: 404,
+        code: 'SKU_NOT_AVAILABLE',
+        message: 'El ítem no existe en el carrito.',
+      };
+    }
+
+    if (expectedVersion !== undefined && expectedVersion !== mockCart.version) {
+      return {
+        success: false,
+        status: 409,
+        code: 'CART_CONFLICT',
+        message: 'El carrito ha sido modificado concurrentemente.',
+        cart: { ...mockCart },
+      };
+    }
+
+    // Fixture sintético MOCK para pruebas locales (SPEC React §8, RC-F-017-03):
+    // No representa stock real ni consulta a G6 (gate G-QUANTITY / X-P0-03 bloqueado).
+    const isMockFixture = sku.includes('LIMITED') || sku.includes('FIXTURE-STOCK-3');
+    if (isMockFixture && quantity > 3) {
+      mockCart.items[existingIndex].quantity = 3;
+      mockCart.version += 1;
+      return {
+        success: false,
+        status: 409,
+        code: 'STOCK_LIMIT_REACHED',
+        message: 'Stock insuficiente para este fixture. Cantidad ajustada al límite (3 unidades).',
+        item: { ...mockCart.items[existingIndex] },
+        cart: { ...mockCart },
+      };
+    }
+
+    mockCart.items[existingIndex].quantity = quantity;
+    mockCart.version += 1;
+
+    return {
+      success: true,
+      status: 200,
+      code: 'QUANTITY_UPDATED',
+      message: 'Cantidad actualizada correctamente.',
+      item: { ...mockCart.items[existingIndex] },
+      cart: { ...mockCart },
+    };
+  }
+
+  // Llamada real al BFF de Next.js
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (expectedVersion !== undefined) {
+      headers['If-Match'] = String(expectedVersion);
+    }
+
+    const res = await fetch(`/api/cart/current/items/${encodeURIComponent(sku)}`, {
+      method: 'PATCH',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ quantity }),
+    });
+
+    const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
+
+    if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al actualizar la cantidad.'
+      );
+
+      return {
+        success: false,
+        status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
+        code: errCode,
+        message: errMessage,
+      };
+    }
+
+    const cartData = json.data as CartSnapshot | undefined;
+    const items = cartData?.items ?? [];
+    return {
+      success: true,
+      status: 200,
+      code: 'QUANTITY_UPDATED',
+      message: 'Cantidad actualizada correctamente.',
+      item: items.find((i) => i.sku === sku),
+      cart: cartData,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor backend.';
+    return {
+      success: false,
+      status: 503,
+      code: 'COMMERCE_DATA_UNAVAILABLE',
+      message,
+    };
+  }
+}
+
+/**
  * Reiniciar mock para pruebas unitarias
  */
-export function resetMockCart() {
+export function resetMockCart(initialCart?: Partial<CartSnapshot>) {
   mockCart = {
     cartId: 'MOCK-CART-001',
     version: 1,
     items: [],
+    ...initialCart,
   };
 }
