@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { CartItemDTO } from './types';
 import { Button } from '@/shared/ui/Button';
 
@@ -24,6 +25,14 @@ export function CartLine({
   onRemove,
   onMoveToWishlist,
 }: CartLineProps) {
+  const [prevQuantity, setPrevQuantity] = useState(line.quantity);
+  const [draftQuantity, setDraftQuantity] = useState(String(line.quantity));
+
+  if (line.quantity !== prevQuantity) {
+    setPrevQuantity(line.quantity);
+    setDraftQuantity(String(line.quantity));
+  }
+
   const priceFormatted = line.unitPrice
     ? "S/ " + line.unitPrice.amount.toFixed(2) + " " + line.unitPrice.currency
     : 'Precio pendiente';
