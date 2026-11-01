@@ -109,11 +109,25 @@ export async function addCartItemApi(
     const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
 
     if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al agregar el producto al carrito.'
+      );
+
       return {
         success: false,
         status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
-        code: (json.error?.code as CartMutationCode) || 'ERROR',
-        message: json.error?.message || 'Error al agregar el producto al carrito.',
+        code: errCode,
+        message: errMessage,
       };
     }
 
