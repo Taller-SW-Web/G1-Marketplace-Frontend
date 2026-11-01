@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { CartItemDTO } from './types';
 import { Button } from '@/shared/ui/Button';
 
@@ -12,9 +13,10 @@ export interface CartLineProps {
 }
 
 /**
- * CMP-F019-002 · CartLine
+ * CMP-F019-002 / CMP-F017-001 · CartLine & QuantityStepper
  * Línea de producto dentro del carrito (V-008).
- * Compone visualmente cantidad, precio unitario y acciones sin cálculos externos.
+ * Mantiene draftQuantity local para edición numérica y envía la mutación
+ * al presionar Enter o perder el foco (blur) con validación estricta de enteros 1-99.
  */
 export function CartLine({
   line,
@@ -23,23 +25,54 @@ export function CartLine({
   onRemove,
   onMoveToWishlist,
 }: CartLineProps) {
+  const [prevQuantity, setPrevQuantity] = useState(line.quantity);
+  const [draftQuantity, setDraftQuantity] = useState(String(line.quantity));
+
+  if (line.quantity !== prevQuantity) {
+    setPrevQuantity(line.quantity);
+    setDraftQuantity(String(line.quantity));
+  }
+
   const priceFormatted = line.unitPrice
-    ? `S/ ${line.unitPrice.amount.toFixed(2)} ${line.unitPrice.currency}`
+    ? "S/ " + line.unitPrice.amount.toFixed(2) + " " + line.unitPrice.currency
     : 'Precio pendiente';
 
   const lineTotal = line.unitPrice
-    ? `S/ ${(line.unitPrice.amount * line.quantity).toFixed(2)}`
+    ? "S/ " + (line.unitPrice.amount * line.quantity).toFixed(2)
     : 'Pendiente';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val) && val >= 1 && val <= 99) {
+    setDraftQuantity(e.target.value);
+  };
+
+  const commitDraft = () => {
+    const trimmed = draftQuantity.trim();
+    // Validación estricta: solo enteros positivos sin decimales ni ceros
+    if (!/^[1-9]\d*$/.test(trimmed)) {
+      setDraftQuantity(String(line.quantity));
+      return;
+    }
+    const val = Number(trimmed);
+    if (!Number.isInteger(val) || val < 1 || val > 99) {
+      setDraftQuantity(String(line.quantity));
+      return;
+    }
+    if (val !== line.quantity) {
       onQuantityChange?.(line.sku, val);
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+      commitDraft();
+    } else if (e.key === 'Escape') {
+      setDraftQuantity(String(line.quantity));
+    }
+  };
+
   return (
-    <article className="cart-line-item" aria-label={`Producto ${line.name || line.sku}`}>
+    <article className="cart-line-item" aria-label={"Producto " + (line.name || line.sku)}>
       <div className="cart-line-details">
         <div className="cart-line-header">
           <h3 className="cart-line-title">{line.name || line.sku}</h3>
@@ -70,11 +103,13 @@ export function CartLine({
             type="number"
             min={1}
             max={99}
-            value={line.quantity}
+            value={draftQuantity}
             onChange={handleInputChange}
+            onBlur={commitDraft}
+            onKeyDown={handleKeyDown}
             disabled={busy}
             className="cart-quantity-input"
-            aria-label={`Cantidad de ${line.name || line.sku}`}
+            aria-label={"Cantidad de " + (line.name || line.sku)}
           />
           <Button
             type="button"
