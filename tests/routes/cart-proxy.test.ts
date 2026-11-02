@@ -84,4 +84,55 @@ describe("cart proxy with the shared Backend", () => {
     expect(upstream.mock.calls[0][1].headers.get("If-Match")).toBe("1");
     expect(upstream.mock.calls[0][1].body).toBe(body);
   });
+
+  it('forwards GET /api/cart/current and returns enriched snapshot with subtotal and X-Cart-Version (F-019)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const mockSnapshot = {
+      cartId: 'cart-f019-1',
+      version: 3,
+      items: [
+        {
+          sku: 'INKA-PRO-M',
+          quantity: 2,
+          unitPrice: { amount: 50.0, currency: 'PEN', version: 1 },
+          availability: 'AVAILABLE',
+          attention: null,
+        },
+      ],
+      subtotal: { amount: 100.0, currency: 'PEN' },
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: mockSnapshot }, {
+        status: 200,
+        headers: { 'X-Cart-Version': '3' },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(new NextRequest('https://web.example/api/cart/current', {
+      headers: { Cookie: 'cart_session=session-xyz' },
+    }), { params: Promise.resolve({ path: ['current'] }) });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('X-Cart-Version')).toBe('3');
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const json = await response.json();
+    expect(json.data.subtotal).toEqual({ amount: 100.0, currency: 'PEN' });
+    expect(json.data.items[0].sku).toBe('INKA-PRO-M');
+  });
+
+  it('maps upstream network failure or timeout to 503 CART_BACKEND_UNAVAILABLE (F-019)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const upstream = vi.fn().mockRejectedValue(new Error('Connection timeout / network failure'));
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(new NextRequest('https://web.example/api/cart/current'), {
+      params: Promise.resolve({ path: ['current'] }),
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const json = await response.json();
+    expect(json.error.code).toBe('CART_BACKEND_UNAVAILABLE');
+  });
 });

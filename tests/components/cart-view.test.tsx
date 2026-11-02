@@ -5,7 +5,34 @@ import { CartSubtotal } from '../../src/features/cart/CartSubtotal';
 import { CartLine } from '../../src/features/cart/CartLine';
 import type { CartSnapshot } from '../../src/features/cart/types';
 
-describe('TASK-F019-FE-001 / CMP-F019-001: CartPageContainer', () => {
+describe('TASK-F019-FE-001 / TASK-F019-QA-001 / CMP-F019-001: CartPageContainer', () => {
+  it('renderiza estado de carga (loading) con indicador accesible y aria-busy', () => {
+    render(<CartPageContainer cart={null} status="loading" />);
+
+    const main = screen.getByRole('main');
+    expect(main.getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByText('Cargando productos de tu carrito…')).toBeDefined();
+  });
+
+  it('renderiza estado de error (error) y permite reintentar con onRetry', () => {
+    const onRetry = vi.fn();
+    render(
+      <CartPageContainer
+        cart={null}
+        status="error"
+        errorMessage="Fallo de conexión temporal."
+        onRetry={onRetry}
+      />
+    );
+
+    expect(screen.getByRole('alert')).toBeDefined();
+    expect(screen.getByText('Fallo de conexión temporal.')).toBeDefined();
+
+    const retryBtn = screen.getByRole('button', { name: 'Reintentar carga' });
+    fireEvent.click(retryBtn);
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it('RC-F-019-01: carrito vacío NO renderiza resumen ni CTA de checkout', () => {
     const emptyCart: CartSnapshot = {
       cartId: 'MOCK-1',
@@ -53,8 +80,96 @@ describe('TASK-F019-FE-001 / CMP-F019-001: CartPageContainer', () => {
     expect(screen.getByText('Camiseta Deportiva Inka Pro')).toBeDefined();
     expect(screen.getByText('Resumen de tu pedido')).toBeDefined();
     // Subtotal: 2 x 50 = S/ 100.00
-    expect(screen.getByText(/S\/ 100.00 PEN/i)).toBeDefined();
+    expect(screen.getByText(/S\/ 100\.00 PEN/i)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Iniciar Checkout' })).toBeDefined();
+  });
+
+  it('RC-F-019-03: línea sin precio mantiene la línea visible ("Precio pendiente") y bloquea checkout', () => {
+    const cartPendingPrice: CartSnapshot = {
+      cartId: 'MOCK-1',
+      version: 3,
+      items: [
+        {
+          sku: 'INKA-PEND-L',
+          name: 'Pantalón Inka Runner',
+          quantity: 1,
+          unitPrice: undefined, // precio pendiente
+        },
+      ],
+    };
+
+    render(
+      <CartPageContainer
+        cart={cartPendingPrice}
+        status="ready"
+      />
+    );
+
+    // La línea permanece visible sin borrarse por inferencia
+    expect(screen.getByText('Pantalón Inka Runner')).toBeDefined();
+    expect(screen.getByText('Precio pendiente')).toBeDefined();
+
+    // El subtotal indica "Calculando importe…" y el botón de checkout está deshabilitado
+    expect(screen.getByText(/Calculando importe…/i)).toBeDefined();
+    const checkoutBtn = screen.getByRole('button', { name: 'Iniciar Checkout' });
+    expect((checkoutBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('RC-F-019-03: línea con badge de atención renderiza la advertencia y bloquea checkout', () => {
+    const cartAttention: CartSnapshot = {
+      cartId: 'MOCK-1',
+      version: 4,
+      items: [
+        {
+          sku: 'INKA-ATTN-1',
+          name: 'Zapatillas Aero X',
+          quantity: 1,
+          unitPrice: { amount: 150.0, currency: 'PEN' },
+          attention: 'Stock limitado: última unidad',
+        },
+      ],
+    };
+
+    render(
+      <CartPageContainer
+        cart={cartAttention}
+        status="ready"
+      />
+    );
+
+    expect(screen.getByText('Stock limitado: última unidad')).toBeDefined();
+    const checkoutBtn = screen.getByRole('button', { name: 'Iniciar Checkout' });
+    expect((checkoutBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('RC-F-019-04: al pulsar checkout con líneas válidas se delega el avance a la acción onCheckout', () => {
+    const onCheckout = vi.fn();
+    const cartValid: CartSnapshot = {
+      cartId: 'MOCK-AUTH-1',
+      version: 5,
+      items: [
+        {
+          sku: 'INKA-PRO-M',
+          name: 'Camiseta Deportiva Inka Pro',
+          quantity: 1,
+          unitPrice: { amount: 50.0, currency: 'PEN' },
+        },
+      ],
+    };
+
+    render(
+      <CartPageContainer
+        cart={cartValid}
+        status="ready"
+        onCheckout={onCheckout}
+      />
+    );
+
+    const checkoutBtn = screen.getByRole('button', { name: 'Iniciar Checkout' });
+    expect((checkoutBtn as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(checkoutBtn);
+    expect(onCheckout).toHaveBeenCalledTimes(1);
   });
 });
 

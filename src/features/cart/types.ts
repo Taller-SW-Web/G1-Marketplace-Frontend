@@ -18,12 +18,18 @@ export interface CartItemDTO {
   unitPrice?: CartUnitPrice;
   imageUrl?: string;
   variantName?: string;
+  availability?: AvailabilityState;
+  attention?: string | null;
 }
 
 export interface CartSnapshot {
-  cartId: string;
+  cartId: string | null;
   version: number;
   items: CartItemDTO[];
+  subtotal?: {
+    amount: number;
+    currency: string;
+  } | null;
 }
 
 export type CartMutationCode =

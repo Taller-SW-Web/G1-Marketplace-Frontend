@@ -3001,3 +3001,14 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.1) !important;
 }
+
+.cart-line-attention {
+  margin-top: 4px;
+  padding: 3px 8px;
+  background-color: #fff8e1;
+  color: #b78103;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
