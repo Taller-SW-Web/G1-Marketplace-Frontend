@@ -58,9 +58,10 @@ describe("G7 BFF web boundary", () => {
     expect(response.status).toBe(401); expect(await response.json()).toEqual({ code: "CODIGO_INVALIDO" });
   });
   it("reports local logout separately from remote revocation", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ authenticated: false, remoteRevocationPending: true, refreshToken: "secret" })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ authenticated: false, remoteRevocationPending: true, refreshToken: "secret" }, { headers: { "Set-Cookie": "g1_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" } })));
     const response = await proxyAuth(req("logout", {}), "logout");
     expect(await response.json()).toEqual({ authenticated: false, remoteRevocationPending: true });
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });
   it("does not forward an arbitrary upstream cookie or a non-customer session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...session, user: { ...user, roles: ["VENDEDOR"] } }, {
