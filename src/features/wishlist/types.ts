@@ -25,6 +25,12 @@ export function isProductId(value: unknown): value is string {
 }
 
 export const publicErrors: Record<string, string> = {
+  AUTH_UNAVAILABLE: "No pudimos comprobar tu sesión.",
+  CART_CONFLICT: "El carrito está ocupado o el favorito ya no está disponible.",
+  STOCK_LIMIT_REACHED: "No hay existencias suficientes.",
+  COMMERCE_DATA_UNAVAILABLE: "Las condiciones de compra no están disponibles.",
+  VARIANT_SELECTION_REQUIRED: "Selecciona una variante en la ficha del producto.",
+  CART_RESULT_UNCERTAIN: "Revisa tu carrito antes de volver a agregar este producto.",
   INVALID_REQUEST: "La solicitud no es válida.",
   INVALID_PRODUCT_ID: "El identificador del producto no es válido.",
   UNAUTHORIZED: "Tu sesión terminó. Vuelve a iniciar sesión para continuar.",
