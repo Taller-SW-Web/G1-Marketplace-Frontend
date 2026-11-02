@@ -56,6 +56,19 @@ describe("checkout Backend MOCK adapter", () => {
     await expect(checkoutApi.createQuote("address-1", 1)).rejects.toEqual(expect.objectContaining<Partial<CheckoutApiError>>({ status: 409, code: "CART_NOT_FOUND" }));
   });
 
+  it("keeps only safe validation field identifiers from an API error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "ADDRESS_VALIDATION_ERROR",
+      fields: ["street", "customerId", "bad field", 4, { message: "private detail" }, "x".repeat(65)],
+    } }), { status: 400 })));
+
+    await expect(checkoutApi.listAddresses()).rejects.toMatchObject({
+      status: 400,
+      code: "ADDRESS_VALIDATION_ERROR",
+      fields: ["street", "customerId"],
+    });
+  });
+
   it("merges a partial benefit response into the current quote without recalculating base amounts", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       quoteId: "quote-with-coupon", selectedBenefit: { type: "COUPON", id: "COUPON-1", discount: { amount: 20, currency: "PEN" } },
@@ -117,6 +130,24 @@ describe("checkout Backend MOCK adapter", () => {
     vi.stubGlobal("fetch", fetchMock);
     await checkoutApi.createOrder("op-1", { fullName: "Test Person", documentType: "DNI", documentNumber: "12345678", phone: "999999999", email: "test@example.test" }, "stable-key");
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ "Idempotency-Key": "stable-key" });
+  });
+
+  it("retains only bounded, syntactically safe validation field names from a 400", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "CONTACT_VALIDATION_ERROR",
+      fields: ["email", "contact", "email", "not a field", 7, "privateNote"],
+    } }), { status: 400 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkoutApi.createOrder(
+      "op-1",
+      { fullName: "Test Person", documentType: "DNI", documentNumber: "12345678", phone: "999999999", email: "test@example.test" },
+      "stable-key",
+    )).rejects.toMatchObject({
+      status: 400,
+      code: "CONTACT_VALIDATION_ERROR",
+      fields: ["email", "contact", "privateNote"],
+    });
   });
 
   it("normalizes the flat F-026 result and retains Ventas-authoritative fields", async () => {

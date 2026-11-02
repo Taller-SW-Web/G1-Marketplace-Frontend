@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { GET, POST } from "../../src/app/api/cart/[...path]/route";
+import { GET, POST, PATCH } from "../../src/app/api/cart/[...path]/route";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
@@ -61,5 +61,27 @@ describe("cart proxy with the shared Backend", () => {
     });
     expect(response.status).toBe(404);
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("forwards PATCH requests to current/items/:sku preserving If-Match header and payload (F-017)", async () => {
+    vi.stubEnv("MARKETPLACE_API_URL", "https://marketplace.example");
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ data: { cartId: "c1", version: 2, items: [] } }, { status: 200 })
+    );
+    vi.stubGlobal("fetch", upstream);
+    const body = JSON.stringify({ quantity: 5 });
+    const response = await PATCH(
+      new NextRequest("https://web.example/api/cart/current/items/INKA-PRO-M", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "If-Match": "1" },
+        body,
+      }),
+      { params: Promise.resolve({ path: ["current", "items", "INKA-PRO-M"] }) }
+    );
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe("https://marketplace.example/api/v1/carts/current/items/INKA-PRO-M");
+    expect(upstream.mock.calls[0][1].headers.get("If-Match")).toBe("1");
+    expect(upstream.mock.calls[0][1].body).toBe(body);
   });
 });

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Skeleton, LoadingState } from "@/shared/ui/Skeleton";
@@ -244,7 +244,10 @@ export function OrdersHistory({ initialPage }: { initialPage: number }) {
     return () => controller.abort();
   }, [initialPage, key]);
 
-  const state = result.key === key ? result.state : { status: "loading" as const };
+  const state = useMemo(
+    () => (result.key === key ? result.state : { status: "loading" as const }),
+    [result.key, key, result.state]
+  );
 
   useEffect(() => {
     if (state.status !== "ready") return;
