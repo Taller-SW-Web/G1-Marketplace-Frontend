@@ -143,6 +143,7 @@ export function CartLine({
               disabled={busy}
               onClick={() => onRemove(line.sku)}
               className="cart-remove-btn"
+              aria-label={"Quitar " + (line.name || line.sku) + " del carrito"}
             >
               Eliminar
             </Button>

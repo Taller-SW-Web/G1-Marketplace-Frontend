@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { CartSnapshot } from './types';
-import { getCartApi, updateCartItemQuantityApi } from './api';
+import { getCartApi, updateCartItemQuantityApi, removeCartItemApi } from './api';
+import type { CartItemDTO } from './types';
 
 function mergeCartWithPresentation(incomingCart: CartSnapshot, previousCart: CartSnapshot | null): CartSnapshot {
   return {

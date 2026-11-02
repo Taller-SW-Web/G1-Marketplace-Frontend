@@ -30,6 +30,7 @@ export type CartMutationCode =
   | 'ITEM_CREATED'
   | 'ITEM_INCREMENTED'
   | 'QUANTITY_UPDATED'
+  | 'ITEM_REMOVED'
   | 'STOCK_LIMIT_REACHED'
   | 'INVALID_QUANTITY'
   | 'SKU_NOT_AVAILABLE'
@@ -78,3 +79,12 @@ export type AddCartFlowState =
   | 'ADDED'
   | 'ADJUSTED'
   | 'ERROR';
+
+export interface UndoRemovalFeedbackProps {
+  label: string;
+  canUndo?: boolean;
+  remainingSeconds?: number;
+  busy?: boolean;
+  onUndo: () => void;
+  onDismiss: () => void;
+}
