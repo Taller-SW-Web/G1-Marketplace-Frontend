@@ -27,7 +27,10 @@ async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const endpoint = allowedEndpoint(path, request.method);
   if (!endpoint) return Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
-  if (process.env.CHECKOUT_MODE !== "backend-mock") {
+  const isBackendMock =
+    process.env.CHECKOUT_MODE === "backend-mock" ||
+    process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock";
+  if (!isBackendMock) {
     return Response.json({ error: { code: "CHECKOUT_BACKEND_MODE_DISABLED" } }, { status: 503 });
   }
 
@@ -41,7 +44,7 @@ async function forward(request: NextRequest, context: RouteContext) {
     const tokenResponse = await fetch(new URL("/token?user=default", auth), {
       cache: "no-store",
       redirect: "error",
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!tokenResponse.ok) throw new Error("Mock identity unavailable");
     const tokenPayload: unknown = await tokenResponse.json();
