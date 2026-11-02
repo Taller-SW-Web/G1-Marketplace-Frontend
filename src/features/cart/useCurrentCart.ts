@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { CartSnapshot } from './types';
-import { getCartApi, updateCartItemQuantityApi } from './api';
+import { getCartApi, updateCartItemQuantityApi, removeCartItemApi } from './api';
 
 function mergeCartWithPresentation(incomingCart: CartSnapshot, previousCart: CartSnapshot | null): CartSnapshot {
   return {
@@ -109,6 +109,7 @@ export function useCurrentCart(useMock: boolean = true) {
     async (sku: string) => {
       setIsBusy(true);
       try {
+        await removeCartItemApi(sku, cart?.version, useMock);
         setCart((prev) => {
           if (!prev) return prev;
           const updatedItems = prev.items.filter((it) => it.sku !== sku);
@@ -122,11 +123,13 @@ export function useCurrentCart(useMock: boolean = true) {
           }
           return newCart;
         });
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Error al eliminar el producto.');
       } finally {
         setIsBusy(false);
       }
     },
-    []
+    [cart, useMock]
   );
 
   return {

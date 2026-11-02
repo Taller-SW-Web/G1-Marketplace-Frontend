@@ -78,13 +78,15 @@ async function forward(request: NextRequest, context: RouteContext) {
     });
 
     const responseBody = await upstream.text();
-    try {
-      JSON.parse(responseBody);
-    } catch {
-      return Response.json(
-        { error: { code: "INVALID_BACKEND_RESPONSE" } },
-        { status: 502, headers: { "Cache-Control": "no-store" } },
-      );
+    if (upstream.status !== 204 && responseBody.trim().length > 0) {
+      try {
+        JSON.parse(responseBody);
+      } catch {
+        return Response.json(
+          { error: { code: "INVALID_BACKEND_RESPONSE" } },
+          { status: 502, headers: { "Cache-Control": "no-store" } },
+        );
+      }
     }
 
     const responseHeaders = new Headers({
@@ -95,6 +97,10 @@ async function forward(request: NextRequest, context: RouteContext) {
     const setCookie = upstream.headers.get("set-cookie");
     if (setCookie) {
       responseHeaders.set("Set-Cookie", setCookie);
+    }
+    const xCartVersion = upstream.headers.get("x-cart-version");
+    if (xCartVersion) {
+      responseHeaders.set("X-Cart-Version", xCartVersion);
     }
 
     return new Response(responseBody, {
@@ -112,3 +118,4 @@ async function forward(request: NextRequest, context: RouteContext) {
 export const GET = forward;
 export const POST = forward;
 export const PATCH = forward;
+export const DELETE = forward;

@@ -319,6 +319,112 @@ export async function updateCartItemQuantityApi(
   }
 }
 
+
+/**
+ * TASK-F018-FE-001: Quitar un ítem del carrito (DELETE)
+ */
+export async function removeCartItemApi(
+  sku: string,
+  expectedVersion?: number,
+  useMock: boolean = true
+): Promise<CartMutationResult> {
+  const trimmed = sku.trim();
+  if (!trimmed) {
+    return {
+      success: false,
+      status: 400,
+      code: 'SKU_NOT_AVAILABLE',
+      message: 'El parámetro SKU es requerido.',
+    };
+  }
+
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    if (expectedVersion !== undefined && expectedVersion !== mockCart.version) {
+      return {
+        success: false,
+        status: 409,
+        code: 'CART_CONFLICT',
+        message: 'El carrito ha sido modificado concurrentemente.',
+        cart: { ...mockCart },
+      };
+    }
+
+    const removedItem = mockCart.items.find((it) => it.sku === trimmed);
+    mockCart.items = mockCart.items.filter((it) => it.sku !== trimmed);
+    if (removedItem) {
+      mockCart.version += 1;
+    }
+
+    return {
+      success: true,
+      status: 200,
+      code: 'ITEM_REMOVED',
+      message: 'Ítem eliminado correctamente del carrito.',
+      item: removedItem,
+      cart: { ...mockCart },
+    };
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    if (expectedVersion !== undefined) {
+      headers['If-Match'] = String(expectedVersion);
+    }
+
+    const res = await fetch(`/api/cart/current/items/${encodeURIComponent(trimmed)}`, {
+      method: 'DELETE',
+      headers,
+      credentials: 'include',
+    });
+
+    if (res.status === 204 || res.ok) {
+      const rawVersion = res.headers.get('x-cart-version');
+      const newVersion = rawVersion ? parseInt(rawVersion, 10) : undefined;
+      return {
+        success: true,
+        status: 200,
+        code: 'ITEM_REMOVED',
+        message: 'Ítem eliminado correctamente.',
+        cart: newVersion ? { cartId: '', version: newVersion, items: [] } : undefined,
+      };
+    }
+
+    const json = (await res.json().catch(() => ({}))) as BffErrorResponse;
+    const errCode = (
+      json.code ??
+      (typeof json.error === 'object' ? json.error?.code : undefined) ??
+      (typeof json.error === 'string' ? json.error : undefined) ??
+      'ERROR'
+    ) as CartMutationCode;
+
+    const errMessage = (
+      json.message ??
+      (typeof json.error === 'object' ? json.error?.message : undefined) ??
+      (typeof json.error === 'string' ? json.error : undefined) ??
+      'Error al eliminar el ítem del carrito.'
+    );
+
+    return {
+      success: false,
+      status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
+      code: errCode,
+      message: errMessage,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor backend.';
+    return {
+      success: false,
+      status: 503,
+      code: 'COMMERCE_DATA_UNAVAILABLE',
+      message,
+    };
+  }
+}
+
 /**
  * Reiniciar mock para pruebas unitarias
  */
