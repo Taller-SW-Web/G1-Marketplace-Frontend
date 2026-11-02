@@ -57,6 +57,22 @@ test("recovery fallback is accessible when the G7 URL is not configured", async 
   await expect(page.getByLabel("Correo electrónico")).toHaveCount(0);
 });
 
+test("Enter opens the G1 recovery fallback without calling G1 password APIs", async ({ page }) => {
+  const passwordCalls: string[] = [];
+  page.on("request", request => {
+    const path = new URL(request.url()).pathname;
+    if (/^\/api\/v1\/password\//.test(path)) passwordCalls.push(path);
+  });
+  await page.goto("/login");
+  const entry = page.getByRole("link", { name: "¿Olvidaste tu contraseña?" });
+  await entry.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("http://127.0.0.1:3002/recuperar-contrasena");
+  await expect(page.getByRole("heading", { name: "Recuperación no disponible" })).toBeFocused();
+  await expect(page.getByRole("link", { name: "Volver a iniciar sesión" })).toHaveAttribute("href", "/login");
+  expect(passwordCalls).toEqual([]);
+});
+
 test("registration 409 keeps a neutral message and entered values on desktop and mobile", async ({ page }) => {
   let registrationCalls = 0;
   await page.route("**/api/v1/auth/registro", async route => {
