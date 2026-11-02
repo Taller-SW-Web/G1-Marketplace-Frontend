@@ -61,6 +61,8 @@ jobs:
           PORT: 10000
           NODE_ENV: development
           USE_MOCKS: 'true'
+          CATALOG_SOURCE: mock
+          BFF_MODE: mock
           MOCK_SALES_OUTCOME: PAID
           CORS_ORIGINS: http://127.0.0.1:3101,http://localhost:3101
           AUTH_ISSUER: http://127.0.0.1:4010
