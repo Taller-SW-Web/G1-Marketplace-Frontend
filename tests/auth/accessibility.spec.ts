@@ -73,6 +73,33 @@ test("Enter opens the G1 recovery fallback without calling G1 password APIs", as
   expect(passwordCalls).toEqual([]);
 });
 
+test("registration 409 keeps a neutral message and entered values on desktop and mobile", async ({ page }) => {
+  let registrationCalls = 0;
+  await page.route("**/api/v1/auth/registro", async route => {
+    registrationCalls++;
+    await route.fulfill({ status: 409, json: { code: "CORREO_NO_DISPONIBLE", detail: "private fixture detail" } });
+  });
+
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/registro");
+    await registrationFields(page);
+    const email = page.getByLabel("Correo electrónico", { exact: true });
+    await email.fill("qa-f001@fixture.test");
+    await page.getByRole("button", { name: "Crear cuenta", exact: true }).click();
+
+    const alert = page.getByText("No pudimos completar el registro con esos datos. Revisa la información o intenta recuperar el acceso.", { exact: true });
+    await expect(alert).toBeFocused();
+    await expect(alert).toHaveText("No pudimos completar el registro con esos datos. Revisa la información o intenta recuperar el acceso.");
+    await expect(email).toHaveValue("qa-f001@fixture.test");
+    await expect(page.getByLabel("Contraseña", { exact: true })).toHaveValue("Valid-fixture!123");
+    await expect(page.getByRole("heading", { name: "Crea tu cuenta" })).toBeVisible();
+    expect(await page.locator("body").innerText()).not.toContain("qa-f001@fixture.test");
+    expect(await page.locator("body").innerText()).not.toContain("private fixture detail");
+    expect(registrationCalls).toBe(viewport.width === 1440 ? 1 : 2);
+  }
+});
+
 test("legacy reset link clears its parameters and offers a safe exit", async ({ page }) => {
   const first = await page.request.get("/restablecer-contrasena?token=only-ui-fixture", { maxRedirects: 0 });
   expect(first.status()).toBe(307);
@@ -116,4 +143,26 @@ test("MFA expiry moves focus from the code to the expiry notice without announci
   await expect(page.getByRole("status").filter({ hasText: "El desafío venció" })).toBeFocused();
   await expect(page.getByRole("button", { name: "Verificar código" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Volver al inicio de sesión" })).toBeEnabled();
+});
+
+test("mock MFA challenge leaves favorites private until verification", async ({ page }) => {
+  await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { mfaRequerido: true, canal: "EMAIL", expiraEn: 300 } }));
+  await page.route("**/api/v1/auth/otp/solicitar", route => route.fulfill({ json: { canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 } }));
+  await page.goto("/login?returnTo=%2Ffavoritos");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill("a@fixture.test");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Only-fixture!123");
+  await page.getByRole("button", { name: "Iniciar sesión", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Verifica tu acceso" })).toBeVisible();
+  await page.goto("/favoritos");
+  await expect(page.getByRole("heading", { name: "Tus favoritos te esperan" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
+});
+
+test("mock authenticated login rejects an external return", async ({ page }) => {
+  await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { authenticated: true, scope: "fixture" } }));
+  await page.goto("/login?returnTo=https%3A%2F%2Fevil.test");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill("a@fixture.test");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Only-fixture!123");
+  await page.getByRole("button", { name: "Iniciar sesión", exact: true }).click();
+  await expect(page).toHaveURL("http://127.0.0.1:3002/");
 });

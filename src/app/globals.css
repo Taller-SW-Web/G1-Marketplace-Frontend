@@ -2632,6 +2632,31 @@ body:has(.viewer-backdrop) {
   font-size: 14px;
 }
 
+.cart-quantity-input {
+  width: 44px;
+  height: 32px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--surface-card, #ffffff);
+  color: var(--text-primary, #0f172a);
+  padding: 0 4px;
+  -moz-appearance: textfield;
+}
+
+.cart-quantity-input::-webkit-inner-spin-button,
+.cart-quantity-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cart-quantity-input:focus {
+  outline: 2px solid var(--primary, #2563eb);
+  outline-offset: -1px;
+}
+
 .cart-line-actions {
   display: flex;
   gap: var(--spacing-xs);

@@ -29,6 +29,7 @@ export interface CartSnapshot {
 export type CartMutationCode =
   | 'ITEM_CREATED'
   | 'ITEM_INCREMENTED'
+  | 'QUANTITY_UPDATED'
   | 'STOCK_LIMIT_REACHED'
   | 'INVALID_QUANTITY'
   | 'SKU_NOT_AVAILABLE'
