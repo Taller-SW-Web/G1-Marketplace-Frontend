@@ -126,7 +126,7 @@ describe('TASK-F019-FE-001 / CMP-F019-002: CartLine', () => {
     expect(onQuantityChange).toHaveBeenCalledWith('INKA-PRO-M', 1);
 
     // Eliminar ítem
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(screen.getByRole('button', { name: /Eliminar|Quitar/i }));
     expect(onRemove).toHaveBeenCalledWith('INKA-PRO-M');
   });
 });

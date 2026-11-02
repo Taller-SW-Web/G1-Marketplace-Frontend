@@ -4,8 +4,6 @@ import Link from 'next/link';
 import type { CartSnapshot } from './types';
 import { CartLine } from './CartLine';
 import { CartSubtotal } from './CartSubtotal';
-import { UndoRemovalFeedback } from './UndoRemovalFeedback';
-import type { CartItemDTO } from './types';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Button } from '@/shared/ui/Button';
 

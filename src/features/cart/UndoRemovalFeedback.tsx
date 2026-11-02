@@ -23,30 +23,27 @@ export function UndoRemovalFeedback({
   onDismiss,
 }: UndoRemovalFeedbackProps) {
   const [secondsLeft, setSecondsLeft] = useState(remainingSeconds);
+  const [prevRemainingSeconds, setPrevRemainingSeconds] = useState(remainingSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const onDismissRef = useRef(onDismiss);
-  const dismissedRef = useRef(false);
+
+  if (prevRemainingSeconds !== remainingSeconds) {
+    setPrevRemainingSeconds(remainingSeconds);
+    setSecondsLeft(remainingSeconds);
+  }
 
   useEffect(() => {
     onDismissRef.current = onDismiss;
   }, [onDismiss]);
 
   useEffect(() => {
-    setSecondsLeft(remainingSeconds);
-    dismissedRef.current = false;
-  }, [remainingSeconds]);
-
-  useEffect(() => {
-    if (isPaused || busy || dismissedRef.current) return;
+    if (isPaused || busy) return;
 
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          if (!dismissedRef.current) {
-            dismissedRef.current = true;
-            onDismissRef.current();
-          }
+          onDismissRef.current();
           return 0;
         }
         return prev - 1;
