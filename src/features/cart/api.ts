@@ -1,4 +1,4 @@
-import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot, CartMergeResult, MergeAdjustment } from './types';
+import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot, CartMergeResult, MergeAdjustment, MoveToWishlistResult } from './types';
 
 // Almacén en memoria para simular persistencia MOCK en Hito 3 si el backend no está disponible
 let mockCart: CartSnapshot = {
@@ -501,5 +501,47 @@ export async function mergeAnonymousCartApi(useMock: boolean = true): Promise<Ca
     version: data?.version ?? 0,
     merged: Boolean(data?.merged),
     adjustments: data?.adjustments ?? [],
+  };
+}
+
+
+/**
+ * Mover un ítem del carrito a favoritos (F-021)
+ */
+export async function moveCartItemToWishlistApi(
+  sku: string,
+  useMock: boolean = true
+): Promise<MoveToWishlistResult> {
+  if (useMock) {
+    const itemIndex = mockCart.items.findIndex((it) => it.sku === sku);
+    if (itemIndex === -1) {
+      throw new Error(`Error 404: CART_ITEM_NOT_FOUND`);
+    }
+    mockCart.items.splice(itemIndex, 1);
+    mockCart.version += 1;
+    return {
+      cartId: mockCart.cartId ?? 'MOCK-CART-001',
+      version: mockCart.version,
+      productId: sku.replace(/^SKU-/, 'PRD-'),
+      wishlistCreated: true,
+    };
+  }
+
+  const res = await fetch(`/api/cart/current/items/${encodeURIComponent(sku)}/move-to-wishlist`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: no se pudo mover el producto a favoritos`);
+  }
+
+  const json = await res.json();
+  const data = json.data;
+  return {
+    cartId: data?.cartId ?? '',
+    version: data?.version ?? 0,
+    productId: data?.productId ?? '',
+    wishlistCreated: Boolean(data?.wishlistCreated),
   };
 }

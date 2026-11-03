@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { CartItemDTO } from './types';
 import { Button } from '@/shared/ui/Button';
+import { MoveCartToWishlistAction } from './MoveCartToWishlistAction';
 
 export interface CartLineProps {
   line: CartItemDTO;
@@ -131,15 +132,11 @@ export function CartLine({
 
         <div className="cart-line-actions">
           {onMoveToWishlist && (
-            <Button
-              type="button"
-              variant="tertiary"
-              size="sm"
-              disabled={busy}
-              onClick={() => onMoveToWishlist(line.sku)}
-            >
-              Guardar para después
-            </Button>
+            <MoveCartToWishlistAction
+              sku={line.sku}
+              busy={busy}
+              onMove={onMoveToWishlist}
+            />
           )}
           {onRemove && (
             <Button

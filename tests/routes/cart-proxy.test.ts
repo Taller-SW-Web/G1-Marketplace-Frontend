@@ -173,4 +173,37 @@ describe("cart proxy with the shared Backend", () => {
     expect(upstream.mock.calls[0][1].headers.get('Cookie')).toBe('cart_session=anon-to-merge');
     expect(response.headers.get('Set-Cookie')).toContain('cart_session=');
   });
+
+  it('forwards bodyless POST /api/cart/current/items/:sku/move-to-wishlist preserving Authorization (F-021)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const moveResponse = {
+      cartId: 'cart-123',
+      version: 5,
+      productId: 'PRD-100',
+      wishlistCreated: true,
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: moveResponse }, {
+        status: 200,
+        headers: { 'X-Cart-Version': '5' },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await POST(
+      new NextRequest('https://web.example/api/cart/current/items/INKA-PRO-M/move-to-wishlist', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-jwt-token',
+        },
+      }),
+      { params: Promise.resolve({ path: ['current', 'items', 'INKA-PRO-M', 'move-to-wishlist'] }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe('https://marketplace.example/api/v1/carts/current/items/INKA-PRO-M/move-to-wishlist');
+    expect(upstream.mock.calls[0][1].headers.get('Authorization')).toBe('Bearer test-jwt-token');
+    expect(response.headers.get('X-Cart-Version')).toBe('5');
+  });
 });
