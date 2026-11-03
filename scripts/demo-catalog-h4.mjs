@@ -8,16 +8,23 @@ const frontend = fileURLToPath(new URL('../', import.meta.url));
 const backend = fileURLToPath(new URL('../../G1-Marketplace-Backend/', import.meta.url));
 const npmCli = process.env.npm_execpath;
 const args = process.argv.slice(2);
-if (!npmCli || args.some(arg => !['--check', '--skip-build', '--featured', '--matrix', '--integration-budget'].includes(arg))) {
-  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build --featured --matrix --integration-budget]');
+if (!npmCli || args.some(arg => !['--check', '--skip-build', '--featured', '--matrix', '--integration-budget', '--best-sellers', '--cold-start'].includes(arg))) {
+  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build --featured|--best-sellers|--cold-start --matrix --integration-budget]');
   process.exit(1);
 }
+const selectionFlags = ['--featured', '--best-sellers', '--cold-start'].filter(flag => args.includes(flag));
+if (selectionFlags.length > 1) {
+  console.error('Selecciona un solo escenario: --featured, --best-sellers o --cold-start.'); process.exit(1);
+}
+const automatic = args.includes('--best-sellers') || args.includes('--cold-start');
 const { catalogTimings } = await import(pathToFileURL(backend + 'scripts/catalog-h4/timings.mjs').href);
 const timings = catalogTimings(args.includes('--integration-budget') ? 'integration' : 'standard');
 const children = [];
 const bffEnv = { ...process.env, NODE_ENV: 'test', PORT: '10500', CATALOG_SOURCE: 'mock',
   PRODUCTOS_TIMEOUT_MS: String(timings.providerMs),
-  CATALOG_FEATURED_ENABLED: args.includes('--featured') ? 'true' : 'false',
+  CATALOG_FEATURED_ENABLED: selectionFlags.length ? 'true' : 'false',
+  CATALOG_HOME_FALLBACK_ENABLED: automatic ? 'true' : 'false',
+  CATALOG_MOCK_SALES_IDS: args.includes('--best-sellers') ? 'mock-product-7,mock-product-3' : '',
   CATALOG_FEATURED_APPROVED: 'false',
   CATALOG_FEATURED_IDS: args.includes('--featured') ? 'mock-product-3,mock-product-1' : '',
   BFF_MODE: 'mock', USE_MOCKS: 'true', ORDERS_SOURCE: 'unconfigured', G1_AUTH_ENABLED: 'false',
@@ -78,7 +85,15 @@ try {
   if (args.includes('--featured')) {
     const home = await (await fetch('http://127.0.0.1:3500/api/catalog/home')).json();
     assert.deepEqual(home.featuredProducts.map(product => product.productId), ['mock-product-3', 'mock-product-1']);
-    console.log('PASS: seleccion editorial sintetica, orden y tarjetas mediante Next -> BFF [MOCK]. Seleccion real pendiente del grupo.');
+    console.log('PASS: destacados definidos sinteticos; prioridad confirmada, integracion real pendiente.');
+  }
+  if (automatic) {
+    const home = await (await fetch('http://127.0.0.1:3500/api/catalog/home')).json();
+    const ids = home.featuredProducts.map(product => product.productId);
+    if (args.includes('--best-sellers')) assert.deepEqual(ids, ['mock-product-7', 'mock-product-3']);
+    else { assert.equal(ids.length, 8); assert.equal(new Set(ids).size, 8); }
+    console.log('PASS: ' + (args.includes('--best-sellers') ? 'ranking sintetico' : 'inicio sin historial, muestra aleatoria') +
+      ' mediante Next -> BFF [MOCK]. No acredita ventas ni adaptador REAL.');
   }
   if (args.includes('--matrix')) {
     const { checkCatalogH4 } = await import(pathToFileURL(backend + 'scripts/catalog-h4/check.mjs').href);
