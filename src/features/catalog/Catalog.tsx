@@ -6,7 +6,7 @@ import { isCatalogPage, isCatalogFilters, isHome } from "./api";
 import { CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
 import { CatalogSortSelect } from "./CatalogSortSelect";
 import { CatalogPagination } from "./CatalogPagination";
-import { catalogHref, criteriaError } from "./criteria";
+import { catalogHref, criteriaError, recoverCatalogHref } from "./criteria";
 import { useCatalog } from "./useCatalog";
 import { ProductCard } from "./ProductCard";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
@@ -30,7 +30,7 @@ export function Catalog() {
       </Link>
       <h1>{invalidQuery ? "Revisa tu búsqueda" : "Revisa los criterios del catálogo"}</h1>
       <p role="alert">{invalidQuery ? "Escribe entre 2 y 120 caracteres para buscar." : invalidCriteria}</p>
-      <Link className="button" href="/catalogo">
+      <Link className="button" href={recoverCatalogHref(query)}>
         {invalidQuery ? "Limpiar búsqueda" : "Volver al catálogo"}
       </Link>
     </div>

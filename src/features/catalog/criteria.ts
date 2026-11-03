@@ -49,3 +49,23 @@ export function criteriaError(query: string): string {
   if (['minPrice', 'maxPrice'].some(key => params.has(key) && params.get(key) === '')) return 'Revisa el rango de precios en soles.';
   return priceError(filterDraft(query));
 }
+
+/** Explicit recovery: discard invalid criteria only, never silently request them. */
+export function recoverCatalogHref(query: string): string {
+  const original = new URLSearchParams(query);
+  const valid = new URLSearchParams();
+  for (const key of ['q', 'pageSize', 'sort', ...filterKeys]) {
+    if (original.getAll(key).length !== 1) continue;
+    const value = original.get(key)!;
+    if (key === 'q') {
+      const q = value.trim().replace(/\s+/gu, ' ');
+      if (q && (Array.from(q).length < 2 || Array.from(q).length > 120)) continue;
+    }
+    if (!criteriaError(new URLSearchParams({ [key]: value }).toString())) valid.set(key, value);
+  }
+  if (priceError(filterDraft(valid.toString()))) {
+    valid.delete('minPrice');
+    valid.delete('maxPrice');
+  }
+  return catalogHref(valid.toString(), {});
+}
