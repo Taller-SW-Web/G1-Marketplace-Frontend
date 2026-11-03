@@ -37,7 +37,9 @@ export function isHome(value: unknown): value is HomeDTO {
       (item) => record(item) && text(item.categoryId) && text(item.name),
     ) &&
     Array.isArray(value.featuredProducts) &&
-    value.featuredProducts.every(product)
+    value.featuredProducts.every(product) &&
+    new Set(value.categories.map(item => item.categoryId)).size === value.categories.length &&
+    new Set(value.featuredProducts.map(item => item.productId)).size === value.featuredProducts.length
   );
 }
 export function isCatalogPage(value: unknown): value is CatalogPageDTO {
