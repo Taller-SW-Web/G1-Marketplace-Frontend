@@ -49,7 +49,11 @@ function FilterForm({ query, options, fallbackCategories, retryCategories, onApp
       {fallbackCategories?.status === 'error' && <><p role="alert">No pudimos cargar las categorías.</p>{retryCategories && <Button onClick={retryCategories}>Reintentar categorías</Button>}</>}
     </div>}
     <div className="catalog-filter-actions">
-      <Button variant="secondary" disabled={!Object.values(draft).some(Boolean)} onClick={() => setDraft({ categoryIds: '', brandIds: '', minPrice: '', maxPrice: '' })}>Limpiar</Button>
+      <Button variant="secondary" disabled={!Object.values(draft).some(Boolean) && !Object.values(filterDraft(query)).some(Boolean)} onClick={() => {
+        const empty = { categoryIds: '', brandIds: '', minPrice: '', maxPrice: '' };
+        setDraft(empty);
+        onApply(catalogHref(query, empty));
+      }}>Limpiar</Button>
       <Button type="submit" disabled={Boolean(error)}>Aplicar filtros</Button>
     </div>
   </form>;
