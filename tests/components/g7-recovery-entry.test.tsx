@@ -9,7 +9,7 @@ afterEach(() => { window.history.replaceState(null, "", "/"); });
 describe("G7 recovery entry", () => {
   it("accepts only a fixed recovery page without user data or callback parameters", () => {
     const target = "https://g7.example.test/recuperar-contrasena";
-    expect(g7RecoveryUrl(target, "production")).toBe(target);
+    expect(g7RecoveryUrl(target, "production")).toBe(`${target}?canal=MARKETPLACE`);
     for (const unsafe of [
       "https://g7.example.test/recuperar-contrasena?token=fixture",
       "https://g7.example.test/recuperar-contrasena#fragment",
@@ -19,14 +19,14 @@ describe("G7 recovery entry", () => {
       "//g7.example.test/recuperar-contrasena",
     ]) expect(g7RecoveryUrl(unsafe, "production")).toBeNull();
     expect(g7RecoveryUrl("http://127.0.0.1:4000/recuperar-contrasena", "test"))
-      .toBe("http://127.0.0.1:4000/recuperar-contrasena");
+      .toBe("http://127.0.0.1:4000/recuperar-contrasena?canal=MARKETPLACE");
   });
 
   it("links directly to the G7 recovery page without copying login fields", () => {
     const target = "https://g7.example.test/recuperar-contrasena";
-    render(<LoginForm realAuth recoveryUrl={target} />);
+    render(<LoginForm realAuth recoveryUrl={g7RecoveryUrl(target, "production")} />);
     const link = screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" });
-    expect(link.getAttribute("href")).toBe(target);
+    expect(link.getAttribute("href")).toBe(`${target}?canal=MARKETPLACE`);
     expect(link.getAttribute("referrerpolicy")).toBe("no-referrer");
   });
 
