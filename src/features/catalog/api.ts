@@ -89,12 +89,22 @@ export async function readCatalog<T>(
     signal,
     cache: "no-store",
   });
-  const payload: unknown = await response.json();
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    // A cancelled body belongs to the old request, never to a new catalog error.
+    signal.throwIfAborted();
+    if (response.ok) throw new CatalogRequestError(
+      "INVALID_RESPONSE", "No pudimos cargar el catálogo. Inténtalo nuevamente.",
+    );
+    payload = null;
+  }
   if (!response.ok) {
     const code =
       record(payload) && typeof payload.code === "string"
         ? payload.code
-        : "CATALOG_UNAVAILABLE";
+        : response.status === 504 ? "CATALOG_TIMEOUT" : "CATALOG_UNAVAILABLE";
     const message =
       code === "CATALOG_TIMEOUT"
         ? "El catálogo tardó demasiado en responder. Inténtalo nuevamente."
