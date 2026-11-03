@@ -15,6 +15,14 @@ function setup(overrides: Partial<FavoritesTransport> = {}) {
 }
 
 describe("favorites collection state machine", () => {
+  it("preserves the last confirmed list when a later catalog read fails", async () => {
+    const list = vi.fn().mockResolvedValueOnce(products).mockRejectedValueOnce(new WishlistError("CATALOG_UNAVAILABLE", 503));
+    const { controller } = setup({ list });
+    await controller.load(); await controller.load();
+    expect(controller.getSnapshot().items).toEqual(products);
+    expect(controller.getSnapshot().status).toBe("error");
+    expect(controller.getSnapshot().queryError).toBeTruthy();
+  });
   it.each(["__proto__", "constructor"])("supports contractual product ID %s without prototype collisions", async id => {
     const { controller, transport } = setup({ list: async () => [{ ...products[0], productId: id }] });
     await controller.load(); await controller.remove(id);

@@ -6,26 +6,30 @@ import { errorResponse, invalidateSession, mutationGuard, privateHeaders, sessio
 import { isProductId } from "./types";
 import { record } from "./contract";
 import { parseCartAddition, variantPath } from "./cart-contract";
+import { authRequestGuard, authWebEnabled, bffFetch } from "@/features/auth/server";
 
 export function wishlistCartEnabled() {
-  return sandboxEnabled() && process.env.H3_WISHLIST_CART_ENABLED === "true";
+  // Keep the existing explicit opt-in: enabling login does not approve cart integration.
+  return process.env.H3_WISHLIST_CART_ENABLED === "true"
+    && (authWebEnabled() ? process.env.H3_FRONTEND_SANDBOX_ENABLED !== "true" : sandboxEnabled());
 }
 
 export async function addFavoriteToCart(request: NextRequest, productId: string) {
-  const rejected = mutationGuard(request);
+  const real = authWebEnabled();
+  const rejected = real ? authRequestGuard(request, true) : mutationGuard(request);
   if (rejected) return rejected;
-  // Audit opt-in only; does not claim shared login/cart identity support.
   if (!wishlistCartEnabled()) return errorResponse("SANDBOX_DISABLED", 404);
   const session = sessionEntry(request);
   const token = session && process.env[`H3_SANDBOX_TOKEN_${session.identity}`];
-  if (!token) return errorResponse("UNAUTHORIZED", 401);
+  if (!real && !token) return errorResponse("UNAUTHORIZED", 401);
   if (!isProductId(productId) || [".", ".."].includes(productId)) return errorResponse("INVALID_PRODUCT_ID", 400);
   if (request.headers.has("idempotency-key") || await request.text()) return errorResponse("INVALID_REQUEST", 400);
   let destination: URL;
   try { destination = new URL(`/api/v1/wishlist/items/${encodeURIComponent(productId)}/add-to-cart`, marketplaceApiUrl()); }
   catch { return errorResponse("INTERNAL_ERROR", 500); }
   try {
-    const response = await fetch(destination, { method: "POST", redirect: "error", cache: "no-store",
+    // Same opaque G1 session as save/list and the ordinary cart; never accept browser bearer tokens.
+    const response = real ? await bffFetch(request, destination.pathname, "POST") : await fetch(destination, { method: "POST", redirect: "error", cache: "no-store",
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]) });
     if (response.status === 401) { invalidateSession(request); return errorResponse("UNAUTHORIZED", 401); }
