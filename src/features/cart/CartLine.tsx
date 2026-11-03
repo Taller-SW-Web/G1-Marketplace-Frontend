@@ -85,6 +85,12 @@ export function CartLine({
             <span className="cart-line-total">Total línea: {lineTotal}</span>
           )}
         </div>
+
+        {line.attention && (
+          <div className="cart-line-attention" role="status">
+            <span>{line.attention === 'PRECIO_PENDIENTE' ? 'Precio pendiente de confirmación' : line.attention}</span>
+          </div>
+        )}
       </div>
 
       <div className="cart-line-controls">

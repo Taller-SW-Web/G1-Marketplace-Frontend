@@ -158,7 +158,23 @@ export async function addCartItemApi(
  */
 export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot> {
   if (useMock) {
-    return { ...mockCart };
+    const hasIncompletePrices = mockCart.items.some((it) => !it.unitPrice);
+    const subtotal = (mockCart.items.length > 0 && !hasIncompletePrices)
+      ? {
+          amount: Number(
+            mockCart.items.reduce(
+              (acc, it) => acc + (it.unitPrice?.amount ?? 0) * it.quantity,
+              0
+            ).toFixed(2)
+          ),
+          currency: mockCart.items[0]?.unitPrice?.currency || 'PEN',
+        }
+      : null;
+
+    return {
+      ...mockCart,
+      subtotal,
+    };
   }
   const res = await fetch('/api/cart/current', {
     credentials: 'include',
@@ -173,7 +189,7 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
     version: data?.version ?? 0,
     items: (data?.items ?? []).map((it: CartItemDTO) => ({
       sku: it.sku,
-      name: it.sku.replace('INKA-', '').replace(/-/g, ' '),
+      name: it.name || it.sku.replace('INKA-', '').replace(/-/g, ' '),
       quantity: it.quantity,
       unitPrice: it.unitPrice
         ? {
@@ -182,7 +198,10 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
             version: it.unitPrice.version || 1,
           }
         : undefined,
+      availability: it.availability || 'AVAILABLE',
+      attention: it.attention ?? null,
     })),
+    subtotal: data?.subtotal ?? null,
   };
 }
 
