@@ -290,7 +290,7 @@ h3 {
   gap: 32px;
 }
 
-.footer-links button {
+.footer-links button, .footer-links a {
   padding: 0;
   border: 0;
   background: transparent;
@@ -298,6 +298,22 @@ h3 {
   font-size: 14px;
   line-height: 20px;
 }
+
+.footer-links a:hover { text-decoration: underline; }
+
+.legal-page { width: 100%; padding: clamp(24px, 5vw, 64px) 16px 80px; }
+.legal-document { width: min(100%, 820px); margin: 0 auto; padding: clamp(24px, 5vw, 56px); border: 1px solid var(--border); border-radius: var(--radius-lg); background: white; }
+.legal-nav, .legal-bottom-nav { display: flex; flex-wrap: wrap; gap: 16px; }
+.legal-nav { margin-bottom: 32px; }
+.legal-nav a, .legal-bottom-nav a, .legal-sections a { color: var(--action-hover); text-decoration: underline; text-underline-offset: 3px; }
+.legal-eyebrow { color: var(--action-hover); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.legal-document h1 { margin: 8px 0; }
+.legal-version { color: var(--text-secondary); font-size: 14px; }
+.legal-lead { margin-top: 24px; font-size: 18px; line-height: 1.6; }
+.legal-sections { display: grid; gap: 28px; margin-top: 40px; }
+.legal-sections h2 { margin-bottom: 10px; font-size: 22px; line-height: 1.3; text-transform: none; }
+.legal-sections p { line-height: 1.7; }
+.legal-bottom-nav { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); }
 
 .footer-copyright {
   max-width: 1376px;
@@ -2633,6 +2649,31 @@ body:has(.viewer-backdrop) {
   font-size: 14px;
 }
 
+.cart-quantity-input {
+  width: 44px;
+  height: 32px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--surface-card, #ffffff);
+  color: var(--text-primary, #0f172a);
+  padding: 0 4px;
+  -moz-appearance: textfield;
+}
+
+.cart-quantity-input::-webkit-inner-spin-button,
+.cart-quantity-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cart-quantity-input:focus {
+  outline: 2px solid var(--primary, #2563eb);
+  outline-offset: -1px;
+}
+
 .cart-line-actions {
   display: flex;
   gap: var(--spacing-xs);
@@ -2891,3 +2932,84 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   .auth-card--wide { width: min(100%, 356px); padding: 32px; }
 }
 
+
+
+/* O-006: Undo Removal Toast */
+.undo-removal-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  max-width: 450px;
+  width: calc(100% - 32px);
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+@keyframes toastSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.undo-removal-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm, 12px);
+  padding: 12px 16px;
+}
+
+.undo-removal-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #f1f5f9;
+}
+
+.undo-removal-message strong {
+  color: #ffffff;
+}
+
+.undo-removal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.undo-removal-progress-bar {
+  height: 3px;
+  background: var(--primary, #2563eb);
+}
+
+.undo-dismiss-btn {
+  color: #94a3b8 !important;
+  padding: 4px 8px !important;
+  font-size: 14px !important;
+}
+
+.undo-dismiss-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.cart-line-attention {
+  margin-top: 4px;
+  padding: 3px 8px;
+  background-color: #fff8e1;
+  color: #b78103;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}

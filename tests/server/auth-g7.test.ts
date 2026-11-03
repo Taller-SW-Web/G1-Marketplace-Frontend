@@ -22,6 +22,29 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("G7 BFF web boundary", () => {
+  it.each(["CREDENCIALES_INVALIDAS", "PASSWORD_CADUCADA", "UNAUTHORIZED", "unknown"])("normalizes login 401 (%s)", async code => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code, detail: "private" }, { status: 401 })));
+    const response = await proxyAuth(req("login", { correo: "a@fixture.test", contrasena: "fixture" }), "login");
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ code: "CREDENCIALES_INVALIDAS" });
+  });
+  it("does not install a session cookie from a pending MFA response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ mfaRequerido: true, expiraEn: 300 }, {
+      headers: { "Set-Cookie": `g1_session=${opaque}; Path=/; HttpOnly; SameSite=Lax` },
+    })));
+    const response = await proxyAuth(req("login", { correo: "a@fixture.test", contrasena: "fixture" }), "login");
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(await response.json()).toEqual({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 });
+  });
+  it("forwards a challenge alone to the private wishlist and preserves its denial", async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ code: "UNAUTHORIZED" }, { status: 401 }));
+    vi.stubGlobal("fetch", fetcher);
+    const response = await readWishlist(new NextRequest(`${origin}/api/wishlist`, {
+      headers: { Cookie: `g1_challenge=${opaque}` },
+    }));
+    expect(response.status).toBe(401);
+    expect(fetcher.mock.calls[0][1].headers.Cookie).toBe(`g1_challenge=${opaque}`);
+  });
   it("whitelists the public response and forwards only opaque G1 cookies", async () => {
     const fetcher = vi.fn().mockResolvedValue(Response.json({ ...session, accessToken: "must-never-reach-browser", refreshToken: "secret" }, {
       headers: { "Set-Cookie": `g1_session=${opaque}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800` },
@@ -58,9 +81,10 @@ describe("G7 BFF web boundary", () => {
     expect(response.status).toBe(401); expect(await response.json()).toEqual({ code: "CODIGO_INVALIDO" });
   });
   it("reports local logout separately from remote revocation", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ authenticated: false, remoteRevocationPending: true, refreshToken: "secret" })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ authenticated: false, remoteRevocationPending: true, refreshToken: "secret" }, { headers: { "Set-Cookie": "g1_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" } })));
     const response = await proxyAuth(req("logout", {}), "logout");
     expect(await response.json()).toEqual({ authenticated: false, remoteRevocationPending: true });
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });
   it("does not forward an arbitrary upstream cookie or a non-customer session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...session, user: { ...user, roles: ["VENDEDOR"] } }, {
@@ -85,7 +109,7 @@ describe("G7 BFF web boundary", () => {
   });
 });
 describe("safe login return", () => {
-  it.each(["https://evil.test", "//evil.test", "/\\evil.test", "/api/auth", "/login?returnTo=/login", "/\nevil", null])("rejects %s", value => {
+  it.each(["https://evil.test", "//evil.test", "/\\evil.test", "/%2f%2fevil.test", "/%5cevil.test", "/api/auth", "/login?returnTo=/login", "/\nevil", null])("rejects %s", value => {
     expect(safeReturn(value)).toBe("/");
   });
   it("retains a local shopping destination", () => expect(safeReturn("/favoritos?origen=login")).toBe("/favoritos?origen=login"));

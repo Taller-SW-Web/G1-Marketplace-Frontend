@@ -18,17 +18,25 @@ export interface CartItemDTO {
   unitPrice?: CartUnitPrice;
   imageUrl?: string;
   variantName?: string;
+  availability?: AvailabilityState;
+  attention?: string | null;
 }
 
 export interface CartSnapshot {
-  cartId: string;
+  cartId: string | null;
   version: number;
   items: CartItemDTO[];
+  subtotal?: {
+    amount: number;
+    currency: string;
+  } | null;
 }
 
 export type CartMutationCode =
   | 'ITEM_CREATED'
   | 'ITEM_INCREMENTED'
+  | 'QUANTITY_UPDATED'
+  | 'ITEM_REMOVED'
   | 'STOCK_LIMIT_REACHED'
   | 'INVALID_QUANTITY'
   | 'SKU_NOT_AVAILABLE'
@@ -77,3 +85,69 @@ export type AddCartFlowState =
   | 'ADDED'
   | 'ADJUSTED'
   | 'ERROR';
+
+export interface UndoRemovalFeedbackProps {
+  label: string;
+  canUndo?: boolean;
+  remainingSeconds?: number;
+  busy?: boolean;
+  onUndo: () => void;
+  onDismiss: () => void;
+}
+
+export interface MergeAdjustment {
+  sku: string;
+  requestedQuantity: number;
+  confirmedQuantity: number;
+  reason: 'STOCK_LIMIT' | 'COMMERCE_POLICY' | string;
+}
+
+export interface CartMergeResult {
+  cartId: string;
+  version: number;
+  merged: boolean;
+  adjustments: MergeAdjustment[];
+}
+
+export type MergeStatus = 'IDLE' | 'MERGING' | 'MERGED' | 'NO_SOURCE' | 'FAILED' | 'DEFERRED';
+
+export interface CartMergeCoordinatorProps {
+  sessionReady: boolean;
+  returnPath?: string;
+  onMerged?: (result: CartMergeResult) => void;
+  onFailed?: () => void;
+}
+
+export interface MergeFailureNoticeProps {
+  busy?: boolean;
+  canRetry?: boolean;
+  onRetry: () => void;
+  onContinueWithoutMerge: () => void;
+}
+
+export interface MergeAdjustmentsDialogProps {
+  adjustments: MergeAdjustment[];
+  opened: boolean;
+  onViewCart?: () => void;
+  onClose: () => void;
+}
+
+
+// --- F-021: Mover ítem del carrito a favoritos (Wishlist) ---
+
+export interface MoveToWishlistResult {
+  cartId: string;
+  version: number;
+  productId: string;
+  wishlistCreated: boolean;
+}
+
+export type MoveToWishlistStatus = 'READY' | 'AUTH_REQUIRED' | 'MOVING' | 'MOVED' | 'ALREADY_FAVORITE' | 'ERROR';
+
+export interface MoveCartToWishlistActionProps {
+  sku: string;
+  authenticated?: boolean;
+  busy?: boolean;
+  onMove?: (sku: string) => Promise<void> | void;
+  onRequireAuth?: (returnPath: string) => void;
+}

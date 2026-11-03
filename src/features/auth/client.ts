@@ -5,8 +5,8 @@ const messages: Record<string, string> = {
   CREDENCIALES_INVALIDAS: "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.",
   PASSWORD_CADUCADA: "Tu contraseña necesita actualizarse. Solicita su recuperación para continuar.",
   CODIGO_INVALIDO: "El código no es válido. Revísalo e inténtalo de nuevo.",
-  OTP_EXPIRADO: "El código o el desafío venció. Vuelve a iniciar sesión.",
-  OTP_INTENTOS_AGOTADOS: "Se agotaron los intentos. Vuelve a iniciar sesión.",
+  OTP_EXPIRADO: "El código venció. Solicita uno nuevo si el desafío sigue activo.",
+  OTP_INTENTOS_AGOTADOS: "Se agotaron los intentos. Solicita un código nuevo.",
   TOKEN_INVALIDO: "El desafío ya no es válido. Vuelve a iniciar sesión.",
   RATE_LIMITED: "Has realizado varios intentos. Espera antes de volver a intentarlo.",
 };
