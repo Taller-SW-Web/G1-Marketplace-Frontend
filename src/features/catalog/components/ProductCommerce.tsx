@@ -102,6 +102,8 @@ export function toCartAvailability(
 ): AvailabilityState | null {
   if (state.kind === "waiting_for_sku") return "UNSELECTED";
   if (state.kind !== "ready") return null;
+  // Indeterminado no es agotado: su región ofrece reintento, sin CTA de compra.
+  if (state.availability === "UNDETERMINED") return null;
   if (state.availability === "AVAILABLE") return "AVAILABLE";
   if (state.availability === "STOCK_LOW") return "STOCK_LOW";
   return "UNAVAILABLE";

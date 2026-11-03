@@ -12,9 +12,9 @@ import {
  * Adaptador tipado F-014.
  *
  * Consume `/api/catalog/products/{slug}/availability?sku=...`. Sólo acepta los
- * tres estados comerciales homologados: un estado externo desconocido (por
- * ejemplo `INDETERMINADO`, pendiente de G-G6-COMPAT) no se publica como si
- * fuera uno de ellos.
+ * cuatro estados públicos de M01. `UNDETERMINED` es una respuesta comercial
+ * válida; errores técnicos y estados desconocidos siguen siendo errores.
+ * Los nombres de G6 (como `INDETERMINADO`) se traducen en el BFF.
  */
 export const PRODUCT_AVAILABILITY_PATH = "availability";
 
@@ -71,14 +71,9 @@ function isValidAvailability(
   }
   if (!isCommercialAvailability(value.availability)) return false;
   if (!isIsoDate(value.checkedAt)) return false;
-  if (
-    "quantity" in value ||
-    "onHand" in value ||
-    "reserved" in value ||
-    "locationId" in value
-  ) {
-    return false;
-  }
+  const keys = ["productId", "sku", "availability", "checkedAt"];
+  if (Object.keys(value).length !== keys.length ||
+      !keys.every((key) => Object.prototype.hasOwnProperty.call(value, key))) return false;
   return true;
 }
 
@@ -120,7 +115,7 @@ export async function fetchProductAvailability(
   }
 
   const body = json as ProductAvailabilityResponseDTO;
-  if (!isValidAvailability(body?.data)) {
+  if (!isValidAvailability(body?.data) || (trimmedSku && body.data.sku !== trimmedSku)) {
     throw new ProductAvailabilityError("INVENTORY_INVALID_RESPONSE", 502);
   }
   return body;

@@ -4,6 +4,7 @@ export const COMMERCIAL_AVAILABILITY = [
   "AVAILABLE",
   "STOCK_LOW",
   "OUT_OF_STOCK",
+  "UNDETERMINED",
 ] as const;
 
 export type CommercialAvailability = (typeof COMMERCIAL_AVAILABILITY)[number];
@@ -30,7 +31,7 @@ export type AvailabilityErrorCode =
 
 /**
  * Estados de la región F-014:
- *   WAITING_FOR_SKU → LOADING → AVAILABLE | STOCK_LOW | OUT_OF_STOCK | ERROR
+ *   WAITING_FOR_SKU → LOADING → AVAILABLE | STOCK_LOW | OUT_OF_STOCK | UNDETERMINED | ERROR
  *
  * Un error de inventario nunca se degrada a `OUT_OF_STOCK` (RC-F-014-01).
  */
