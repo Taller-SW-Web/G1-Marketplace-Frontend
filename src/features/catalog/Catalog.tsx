@@ -125,7 +125,10 @@ function CatalogResults({
           <div className="catalog-result-toolbar">
           <p className="result-count" role="status" aria-live="polite">
             {state.status === "ready"
-              ? `${state.data.page.totalElements} productos`
+              ? `${state.data.page.totalElements} productos${
+                  params.get("sort") === "NAME_ASC" ? " · Nombre: A a Z" :
+                  params.get("sort") === "NAME_DESC" ? " · Nombre: Z a A" : ""
+                }`
               : state.status === "loading"
                 ? "Buscando productos…"
                 : ""}
