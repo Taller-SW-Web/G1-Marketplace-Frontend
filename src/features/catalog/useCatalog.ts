@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { CatalogRequestError, readCatalog } from "./api";
 import type { QueryState } from "./types";
+import { readHomeShared } from "./readHomeShared";
 
 export function useCatalog<T>(
   path: string | null,
@@ -16,7 +17,7 @@ export function useCatalog<T>(
   useEffect(() => {
     if (path === null) return;
     const controller = new AbortController();
-    readCatalog(path, validate, controller.signal)
+    (path === "home" ? readHomeShared(validate, controller.signal) : readCatalog(path, validate, controller.signal))
       .then((result) => {
         if (!controller.signal.aborted)
           setResult({ key, state: { status: "ready", ...result } });

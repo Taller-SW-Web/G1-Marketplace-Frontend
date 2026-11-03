@@ -1,19 +1,22 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const frontend = fileURLToPath(new URL('../', import.meta.url));
 const backend = fileURLToPath(new URL('../../G1-Marketplace-Backend/', import.meta.url));
 const npmCli = process.env.npm_execpath;
 const args = process.argv.slice(2);
-if (!npmCli || args.some(arg => !['--check', '--skip-build'].includes(arg))) {
-  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build]');
+if (!npmCli || args.some(arg => !['--check', '--skip-build', '--featured', '--matrix'].includes(arg))) {
+  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build --featured --matrix]');
   process.exit(1);
 }
 const children = [];
 const bffEnv = { ...process.env, NODE_ENV: 'test', PORT: '10500', CATALOG_SOURCE: 'mock',
+  CATALOG_FEATURED_ENABLED: args.includes('--featured') ? 'true' : 'false',
+  CATALOG_FEATURED_APPROVED: 'false',
+  CATALOG_FEATURED_IDS: args.includes('--featured') ? 'mock-product-3,mock-product-1' : '',
   BFF_MODE: 'mock', USE_MOCKS: 'true', ORDERS_SOURCE: 'unconfigured', G1_AUTH_ENABLED: 'false',
   H3_SANDBOX_ENABLED: 'false', H3_AUTH_MOCK: 'false', AUTH_G7_INTROSPECTION_ENABLED: 'false',
   DATABASE_URL: 'postgresql://unused:unused@127.0.0.1:1/h4_catalog_demo',
@@ -66,6 +69,19 @@ try {
   for (const path of ['home', 'filters', 'products?q=running&pageSize=4&sort=NAME_ASC']) {
     const response = await fetch('http://127.0.0.1:3500/api/catalog/' + path);
     assert.equal(response.status, 200); assert.equal(response.headers.get('x-catalog-source'), 'MOCK');
+  }
+  if (args.includes('--featured')) {
+    const home = await (await fetch('http://127.0.0.1:3500/api/catalog/home')).json();
+    assert.deepEqual(home.featuredProducts.map(product => product.productId), ['mock-product-3', 'mock-product-1']);
+    console.log('PASS: seleccion editorial sintetica, orden y tarjetas mediante Next -> BFF [MOCK]. Seleccion real pendiente del grupo.');
+  }
+  if (args.includes('--matrix')) {
+    const { checkCatalogH4 } = await import(pathToFileURL(backend + 'scripts/catalog-h4/check.mjs').href);
+    const report = await checkCatalogH4({ baseUrl: 'http://127.0.0.1:3500', viaWeb: true, source: 'MOCK', query: 'running' });
+    mkdirSync(frontend + '.local-security', { recursive: true });
+    writeFileSync(frontend + '.local-security/catalog-h4-demo.json', JSON.stringify(report, null, 2) + '\n');
+    console.log('Matriz H4 [MOCK]: ' + JSON.stringify(report.counts) + '. Reporte: .local-security/catalog-h4-demo.json');
+    if (report.status === 'FAIL' || report.counts.BLOCKED) throw new Error('DEMO_MATRIX_FAILED');
   }
   console.log('PASS: home, filtros y busqueda mediante Next -> BFF [MOCK].');
   if (args.includes('--check')) { stop(); }

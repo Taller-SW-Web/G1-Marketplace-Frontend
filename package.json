@@ -21,7 +21,8 @@
     "demo:h3": "node scripts/h3-connected.mjs --demo",
     "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",
     "demo:favoritos": "node scripts/favorites-demo.mjs",
-    "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs"
+    "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs",
+    "demo:catalogo:featured": "node scripts/demo-catalog-h4.mjs --featured"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
