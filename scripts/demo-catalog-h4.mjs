@@ -8,12 +8,15 @@ const frontend = fileURLToPath(new URL('../', import.meta.url));
 const backend = fileURLToPath(new URL('../../G1-Marketplace-Backend/', import.meta.url));
 const npmCli = process.env.npm_execpath;
 const args = process.argv.slice(2);
-if (!npmCli || args.some(arg => !['--check', '--skip-build', '--featured', '--matrix'].includes(arg))) {
-  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build --featured --matrix]');
+if (!npmCli || args.some(arg => !['--check', '--skip-build', '--featured', '--matrix', '--integration-budget'].includes(arg))) {
+  console.error('Usa npm run demo:catalogo:h4 [-- --check --skip-build --featured --matrix --integration-budget]');
   process.exit(1);
 }
+const { catalogTimings } = await import(pathToFileURL(backend + 'scripts/catalog-h4/timings.mjs').href);
+const timings = catalogTimings(args.includes('--integration-budget') ? 'integration' : 'standard');
 const children = [];
 const bffEnv = { ...process.env, NODE_ENV: 'test', PORT: '10500', CATALOG_SOURCE: 'mock',
+  PRODUCTOS_TIMEOUT_MS: String(timings.providerMs),
   CATALOG_FEATURED_ENABLED: args.includes('--featured') ? 'true' : 'false',
   CATALOG_FEATURED_APPROVED: 'false',
   CATALOG_FEATURED_IDS: args.includes('--featured') ? 'mock-product-3,mock-product-1' : '',
@@ -22,6 +25,7 @@ const bffEnv = { ...process.env, NODE_ENV: 'test', PORT: '10500', CATALOG_SOURCE
   DATABASE_URL: 'postgresql://unused:unused@127.0.0.1:1/h4_catalog_demo',
   CORS_ORIGINS: 'http://127.0.0.1:3500', CORS_ALLOWED_ORIGINS: 'http://127.0.0.1:3500' };
 const webEnv = { ...process.env, NODE_ENV: 'production', MARKETPLACE_API_URL: 'http://127.0.0.1:10500',
+  CATALOG_BFF_TIMEOUT_MS: String(timings.proxyMs),
   NEXT_TELEMETRY_DISABLED: '1', G1_AUTH_ENABLED: 'false', H3_FRONTEND_SANDBOX_ENABLED: 'false' };
 
 function stop() {
@@ -59,6 +63,7 @@ process.once('SIGINT', () => { stop(); process.exit(0); });
 process.once('SIGTERM', () => { stop(); process.exit(0); });
 try {
   await available(10500); await available(3500);
+  console.log('Presupuesto local: G6=' + timings.providerMs + 'ms, Next=' + timings.proxyMs + 'ms; objetivo G6=5000ms.');
   console.log('Demo H4 [MOCK]: datos sinteticos. Sin Docker, credenciales reales ni escrituras en BD.');
   if (!args.includes('--skip-build')) { build(backend, bffEnv); build(frontend, webEnv); }
   if (!existsSync(backend + 'dist/main.js') || !existsSync(frontend + '.next/BUILD_ID')) throw new Error('DEMO_BUILD_MISSING');
@@ -77,7 +82,7 @@ try {
   }
   if (args.includes('--matrix')) {
     const { checkCatalogH4 } = await import(pathToFileURL(backend + 'scripts/catalog-h4/check.mjs').href);
-    const report = await checkCatalogH4({ baseUrl: 'http://127.0.0.1:3500', viaWeb: true, source: 'MOCK', query: 'running' });
+    const report = await checkCatalogH4({ baseUrl: 'http://127.0.0.1:3500', viaWeb: true, source: 'MOCK', query: 'running', timeoutMs: timings.checkMs });
     mkdirSync(frontend + '.local-security', { recursive: true });
     writeFileSync(frontend + '.local-security/catalog-h4-demo.json', JSON.stringify(report, null, 2) + '\n');
     console.log('Matriz H4 [MOCK]: ' + JSON.stringify(report.counts) + '. Reporte: .local-security/catalog-h4-demo.json');
