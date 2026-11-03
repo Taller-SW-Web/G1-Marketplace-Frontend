@@ -131,3 +131,23 @@ export interface MergeAdjustmentsDialogProps {
   onViewCart?: () => void;
   onClose: () => void;
 }
+
+
+// --- F-021: Mover ítem del carrito a favoritos (Wishlist) ---
+
+export interface MoveToWishlistResult {
+  cartId: string;
+  version: number;
+  productId: string;
+  wishlistCreated: boolean;
+}
+
+export type MoveToWishlistStatus = 'READY' | 'AUTH_REQUIRED' | 'MOVING' | 'MOVED' | 'ALREADY_FAVORITE' | 'ERROR';
+
+export interface MoveCartToWishlistActionProps {
+  sku: string;
+  authenticated?: boolean;
+  busy?: boolean;
+  onMove?: (sku: string) => Promise<void> | void;
+  onRequireAuth?: (returnPath: string) => void;
+}
