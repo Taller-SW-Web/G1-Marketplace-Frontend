@@ -39,8 +39,10 @@ test('H4 unavailable brands do not block category and price, then retry restores
   await expect(form.getByLabel('Marca', { exact: true })).toBeDisabled();
   await expect(form.getByLabel('Categoría', { exact: true })).toBeEnabled();
   await expect(form.getByLabel('Precio mínimo', { exact: true })).toBeEnabled();
-  // Header navigation also reads home; the failed masters add one recovery read.
-  expect(homeRequests).toBe(2);
+  // Overlapping Header/recovery reads may share transport; completed data is not cached.
+  expect(homeRequests).toBeGreaterThanOrEqual(1);
+  expect(homeRequests).toBeLessThanOrEqual(2);
+  const initialHomeRequests = homeRequests;
   await form.getByLabel('Categoría', { exact: true }).selectOption('running');
   await form.getByLabel('Precio mínimo', { exact: true }).fill('10');
   await form.getByLabel('Precio máximo', { exact: true }).fill('100');
@@ -55,7 +57,7 @@ test('H4 unavailable brands do not block category and price, then retry restores
   await form.getByRole('button', { name: 'Reintentar filtros' }).click();
   await expect(form.getByLabel('Marca', { exact: true })).toBeEnabled();
   await expect(form.getByLabel('Precio mínimo', { exact: true })).toHaveValue('15');
-  expect(homeRequests).toBe(2);
+  expect(homeRequests).toBe(initialHomeRequests);
 });
 
 test('H4 mobile can apply price without either master and restores applied draft after cancel', async ({ page }) => {
