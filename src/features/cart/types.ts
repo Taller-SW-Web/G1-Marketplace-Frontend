@@ -94,3 +94,40 @@ export interface UndoRemovalFeedbackProps {
   onUndo: () => void;
   onDismiss: () => void;
 }
+
+export interface MergeAdjustment {
+  sku: string;
+  requestedQuantity: number;
+  confirmedQuantity: number;
+  reason: 'STOCK_LIMIT' | 'COMMERCE_POLICY' | string;
+}
+
+export interface CartMergeResult {
+  cartId: string;
+  version: number;
+  merged: boolean;
+  adjustments: MergeAdjustment[];
+}
+
+export type MergeStatus = 'IDLE' | 'MERGING' | 'MERGED' | 'NO_SOURCE' | 'FAILED' | 'DEFERRED';
+
+export interface CartMergeCoordinatorProps {
+  sessionReady: boolean;
+  returnPath?: string;
+  onMerged?: (result: CartMergeResult) => void;
+  onFailed?: () => void;
+}
+
+export interface MergeFailureNoticeProps {
+  busy?: boolean;
+  canRetry?: boolean;
+  onRetry: () => void;
+  onContinueWithoutMerge: () => void;
+}
+
+export interface MergeAdjustmentsDialogProps {
+  adjustments: MergeAdjustment[];
+  opened: boolean;
+  onViewCart?: () => void;
+  onClose: () => void;
+}

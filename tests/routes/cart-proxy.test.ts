@@ -135,4 +135,42 @@ describe("cart proxy with the shared Backend", () => {
     const json = await response.json();
     expect(json.error.code).toBe('CART_BACKEND_UNAVAILABLE');
   });
+
+  it('forwards POST /api/cart/current/merge-anonymous preserving Authorization and Cookie (F-020)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const mergeResponse = {
+      cartId: 'cart-auth-99',
+      version: 4,
+      merged: true,
+      adjustments: [],
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: mergeResponse }, {
+        status: 200,
+        headers: {
+          'Set-Cookie': 'cart_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
+          'X-Cart-Version': '4',
+        },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await POST(
+      new NextRequest('https://web.example/api/cart/current/merge-anonymous', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-jwt',
+          Cookie: 'cart_session=anon-to-merge',
+        },
+      }),
+      { params: Promise.resolve({ path: ['current', 'merge-anonymous'] }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe('https://marketplace.example/api/v1/carts/current/merge-anonymous');
+    expect(upstream.mock.calls[0][1].headers.get('Authorization')).toBe('Bearer test-jwt');
+    expect(upstream.mock.calls[0][1].headers.get('Cookie')).toBe('cart_session=anon-to-merge');
+    expect(response.headers.get('Set-Cookie')).toContain('cart_session=');
+  });
 });

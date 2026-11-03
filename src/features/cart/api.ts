@@ -1,4 +1,4 @@
-import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot } from './types';
+import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot, CartMergeResult, MergeAdjustment } from './types';
 
 // Almacén en memoria para simular persistencia MOCK en Hito 3 si el backend no está disponible
 let mockCart: CartSnapshot = {
@@ -453,5 +453,53 @@ export function resetMockCart(initialCart?: Partial<CartSnapshot>) {
     version: 1,
     items: [],
     ...initialCart,
+  };
+}
+
+/**
+ * Fusionar carrito anónimo al iniciar sesión (F-020)
+ */
+export async function mergeAnonymousCartApi(useMock: boolean = true): Promise<CartMergeResult> {
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const adjustments: MergeAdjustment[] = [];
+
+    mockCart.items.forEach((it) => {
+      if (it.quantity > 99) {
+        adjustments.push({
+          sku: it.sku,
+          requestedQuantity: it.quantity,
+          confirmedQuantity: 99,
+          reason: 'STOCK_LIMIT',
+        });
+        it.quantity = 99;
+      }
+    });
+
+    const hadItems = mockCart.items.length > 0;
+    return {
+      cartId: 'MOCK-AUTH-CART-001',
+      version: mockCart.version + 1,
+      merged: hadItems,
+      adjustments,
+    };
+  }
+
+  const res = await fetch('/api/cart/current/merge-anonymous', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: no se pudo fusionar el carrito`);
+  }
+
+  const json = await res.json();
+  const data = json.data;
+  return {
+    cartId: data?.cartId ?? '',
+    version: data?.version ?? 0,
+    merged: Boolean(data?.merged),
+    adjustments: data?.adjustments ?? [],
   };
 }
