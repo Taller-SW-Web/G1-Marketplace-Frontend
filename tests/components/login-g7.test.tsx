@@ -19,6 +19,13 @@ describe("G7 login and MFA states", () => {
     expect(screen.queryByText(/Demostración con datos/)).toBeNull();
     expect(screen.queryByText(/sesión iniciada/i)).toBeNull();
   });
+  it("uses the shorter OTP lifetime returned by G7", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 12, desafioExpiraEn: 240 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    await screen.findByText("Correo: a***@fixture.test");
+    await waitFor(() => expect(screen.getByRole("timer").textContent).toMatch(/1[12] s/));
+  });
   it("keeps the challenge for a wrong code and clears the entered code", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 }))
       .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }))

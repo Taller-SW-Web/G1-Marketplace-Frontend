@@ -18,9 +18,10 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
-  const [challenge, setChallenge] = useState<{ deadline: number; destination?: string } | null>(null);
+  const [challenge, setChallenge] = useState<{ deadline: number; challengeDeadline: number; destination?: string } | null>(null);
   const [codigo, setCodigo] = useState("");
   const [remaining, setRemaining] = useState(0);
+  const [challengeRemaining, setChallengeRemaining] = useState(0);
   const [resendAt, setResendAt] = useState(0);
   const [resendReady, setResendReady] = useState(false);
   const activeRequest = useRef<AbortController | null>(null);
@@ -31,8 +32,8 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
   useEffect(() => { heading.current?.focus(); }, [mfaStep]);
   useEffect(() => { if (feedback?.kind === "error" && !busy) feedbackElement.current?.focus(); }, [feedback, busy]);
   useEffect(() => {
-    if (challenge && challenge.deadline <= Date.now() && remaining === 0 && !busy) expiredNotice.current?.focus();
-  }, [challenge, remaining, busy]);
+    if (challenge && challengeRemaining === 0 && !busy) expiredNotice.current?.focus();
+  }, [challenge, challengeRemaining, busy]);
   useEffect(() => () => activeRequest.current?.abort(), []);
   async function call(action: string, body: unknown) {
     activeRequest.current?.abort(); const controller = new AbortController(); activeRequest.current = controller;
@@ -44,6 +45,7 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
     if (!challenge) return;
     const update = () => {
       setRemaining(Math.max(0, Math.ceil((challenge.deadline - Date.now()) / 1000)));
+      setChallengeRemaining(Math.max(0, Math.ceil((challenge.challengeDeadline - Date.now()) / 1000)));
       setResendReady(Date.now() >= resendAt);
     };
     update(); const timer = window.setInterval(update, 1000);
@@ -57,7 +59,13 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
   }
   async function sendCode() {
     const result = await call("otp/solicitar", {});
-    setChallenge(previous => previous ? { ...previous, destination: typeof result.destinoEnmascarado === "string" ? result.destinoEnmascarado : undefined } : previous);
+    const now = Date.now();
+    setChallenge(previous => previous ? {
+      ...previous,
+      deadline: Math.min(previous.challengeDeadline, now + Math.max(0, Number(result.desafioExpiraEn)) * 1000,
+        now + Math.max(0, Number(result.expiraEn)) * 1000),
+      destination: typeof result.destinoEnmascarado === "string" ? result.destinoEnmascarado : undefined,
+    } : previous);
     setResendAt(Date.now() + 30000);
     setFeedback({ kind: "success", message: "Enviamos un código a tu correo. Revisa también la carpeta de spam." });
   }
@@ -89,7 +97,9 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
         setContrasena("");
         if (result.mfaRequerido === true && typeof result.expiraEn === "number") {
           setRemaining(Math.max(0, Math.ceil(result.expiraEn)));
-          setChallenge({ deadline: Date.now() + result.expiraEn * 1000 });
+          setChallengeRemaining(Math.max(0, Math.ceil(result.expiraEn)));
+          const deadline = Date.now() + result.expiraEn * 1000;
+          setChallenge({ deadline, challengeDeadline: deadline });
           await sendCode();
         } else finish(result);
         return;
@@ -166,9 +176,10 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
             value={codigo} onChange={event => setCodigo(event.target.value.replace(/\D/g, "").slice(0, 6))}
             readOnly={busy} disabled={!remaining} maxLength={6} required />
           {remaining ? <p role="timer" aria-live="off">Tiempo para completar el acceso: {remaining} s</p>
-            : <p ref={expiredNotice} tabIndex={-1} role="status">El desafío venció. Vuelve a iniciar sesión.</p>}
+            : challengeRemaining ? <p role="status">El código venció. Solicita uno nuevo.</p>
+              : <p ref={expiredNotice} tabIndex={-1} role="status">El desafío venció. Vuelve a iniciar sesión.</p>}
           <Button type="submit" loading={busy} preserveFocusWhileLoading disabled={codigo.length !== 6 || !remaining} fullWidth>Verificar código</Button>
-          <button className="auth-text-link" type="button" disabled={busy || !remaining || !resendReady} onClick={async () => {
+          <button className="auth-text-link" type="button" disabled={busy || !challengeRemaining || !resendReady} onClick={async () => {
             setBusy(true); setFeedback(null);
             try { await sendCode(); } catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos enviar el código." }); }
             finally { setBusy(false); }
