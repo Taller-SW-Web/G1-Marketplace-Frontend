@@ -245,7 +245,7 @@ function resolveVariants(slug: string): Response {
 function availabilityBody(
   productId: string,
   sku: string,
-  availability: "AVAILABLE" | "STOCK_LOW" | "OUT_OF_STOCK",
+  availability: "AVAILABLE" | "STOCK_LOW" | "OUT_OF_STOCK" | "UNDETERMINED",
 ): ProductAvailabilityResponseDTO {
   return {
     data: {
@@ -298,7 +298,9 @@ function resolveAvailability(slug: string, sku: string | null): Response {
     if (sku && sku !== expectedSku)
       return problem(409, "SKU_NOT_BELONG_TO_PRODUCT");
     const availability =
-      number % 5 === 0
+      number % 7 === 0
+        ? "UNDETERMINED"
+        : number % 5 === 0
         ? "OUT_OF_STOCK"
         : number % 3 === 0
           ? "STOCK_LOW"

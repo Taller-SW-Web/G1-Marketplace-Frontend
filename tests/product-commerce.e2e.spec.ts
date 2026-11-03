@@ -117,3 +117,17 @@ test.describe("ficha comercial MOCK · F-012…F-015", () => {
     );
   });
 });
+
+// M01: Next -> BFF MOCK, sin interceptar HTTP ni inventar respuesta G6.
+test("F-014: indeterminado con reintento no se convierte en agotado ni permite compra", async ({ page }) => {
+  await page.goto("/productos/producto-demostracion-7");
+  await expect(page.locator('[data-availability="UNDETERMINED"]')).toContainText("Disponibilidad por confirmar");
+  await expect(page.getByRole("button", { name: "Agregar al carrito" })).toHaveCount(0);
+  await expect(page.locator(".product-commerce")).not.toContainText(/agotado|No pudimos consultar disponibilidad/u);
+  const response = page.waitForResponse((res) => res.url().includes("/availability") && res.status() === 200);
+  await page.getByRole("button", { name: "Volver a consultar" }).click();
+  const body = await (await response).json();
+  expect(body.data.availability).toBe("UNDETERMINED");
+  expect(Object.keys(body.data).sort()).toEqual(["availability", "checkedAt", "productId", "sku"]);
+  await expect(page.locator('[data-availability="UNDETERMINED"]')).toBeVisible();
+});
