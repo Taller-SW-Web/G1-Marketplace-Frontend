@@ -16,3 +16,7 @@ Workflow: `.github/workflows/cicd.yml`. Se ejecuta en cada push a `develop`; en 
 - Secreto `VERCEL_DEPLOY_HOOK_URL` en Settings → Secrets → Actions (URL del deploy hook).
 - Desactivar el auto-deploy de Vercel para que el pipeline sea el único que despliega.
 - Opcional: variable `FRONTEND_URL` para sobrescribir la URL del smoke test.
+
+## Imagen Docker
+
+Cuando el versionado publica una versión, el job `docker-image` construye el `Dockerfile` del repo y publica `ghcr.io/taller-sw-web/g1-marketplace-frontend:X.Y.Z` (y `latest`) con **la misma versión** del tag Git.

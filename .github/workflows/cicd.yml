@@ -98,3 +98,30 @@ jobs:
             sleep 15
           done
           echo "::error::El sitio no respondió 200"; exit 1
+
+  docker-image:
+    name: Imagen Docker etiquetada con la versión (GHCR)
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/taller-sw-web/g1-marketplace-frontend:${{ needs.release.outputs.version }}
+            ghcr.io/taller-sw-web/g1-marketplace-frontend:latest
