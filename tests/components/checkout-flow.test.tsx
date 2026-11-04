@@ -52,11 +52,12 @@ describe("CheckoutFlow local fixtures", () => {
     Object.defineProperty(testNavigator, "clipboard", { configurable: true, value: { writeText: clipboardWrite } });
     vi.stubGlobal("navigator", testNavigator);
     fireEvent.click(screen.getByRole("button", { name: /^Copiar código de pedido PED-MOCK-/ }));
-    expect((await screen.findByRole("status")).textContent).toContain("Código de pedido copiado.");
+    expect(await screen.findByText("Código de pedido copiado.")).toBeDefined();
     expect(clipboardWrite).toHaveBeenCalledWith(expect.stringMatching(/^PED-MOCK-/));
     expect(screen.getByText(/Resultado de fixture/)).toBeDefined();
     expect(screen.getByText("PAGADO (fixture)")).toBeDefined();
     expect(screen.getByRole("region", { name: "¡Pedido confirmado!" }).textContent).toContain("No se llamó al Backend");
+    expect(screen.getByText("No se envió un correo en esta fixture local.")).toBeDefined();
   });
 
   it("does not create a preparation until the no-charge consent is checked", async () => {

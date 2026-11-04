@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, isVerifiedPaidOperation, type CheckoutOperation } from "./api";
 import { formatCheckoutMoney } from "./fixtures";
+import { OrderEmailNotice } from "./OrderEmailNotice";
 
 type LookupState = "loading" | "paid" | "pending" | "failed" | "error" | "fixture";
 
@@ -72,6 +73,7 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
             <Button variant="secondary" onClick={copyOrderCode} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
             <Button onClick={() => window.location.assign("/catalogo")}>Seguir comprando</Button>
           </div>
+          <OrderEmailNotice fixture={false} />
         </div>}
         {state === "pending" && <div>
           <h2>Estamos verificando tu pedido</h2>

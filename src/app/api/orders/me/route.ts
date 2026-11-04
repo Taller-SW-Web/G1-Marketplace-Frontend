@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { ordersBackendTimeout } from "../request-timeout";
 
 export const dynamic = "force-dynamic";
 
@@ -46,11 +47,21 @@ export async function GET(request: NextRequest) {
     const url = new URL("/api/v1/orders/me", base);
     url.searchParams.set("page", String(page));
     url.searchParams.set("pageSize", String(pageSize));
+    for (const name of ["state", "from", "to"] as const) {
+      const value = request.nextUrl.searchParams.get(name);
+      if (value !== null) url.searchParams.set(name, value);
+    }
+    const sessionCookie = request.cookies.get("__Host-g1_session")?.value ?? request.cookies.get("g1_session")?.value;
     const response = await fetch(url, {
       cache: "no-store",
       redirect: "error",
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
+      headers: {
+        Accept: "application/json",
+        ...(sessionCookie && /^[A-Za-z0-9_-]{43}$/.test(sessionCookie)
+          ? { Cookie: `${request.cookies.has("__Host-g1_session") ? "__Host-" : ""}g1_session=${sessionCookie}` }
+          : {}),
+      },
+      signal: AbortSignal.any([request.signal, ordersBackendTimeout()]),
     });
     const body = await response.text();
     JSON.parse(body);

@@ -7,76 +7,16 @@ import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Skeleton, LoadingState } from "@/shared/ui/Skeleton";
 import { OrdersRequestError, readOrders } from "./api";
+import { OrderList } from "./OrderList";
+import { OrdersFilterForm } from "./OrdersFilterForm";
+import { OrdersFilterSummary } from "./OrdersFilterSummary";
+import { hasOrderFilters, validateOrderFilters, type OrderFilterErrors, type OrderFilters } from "./filters";
 import type {
   OrdersHistoryResponse,
   OrdersHistoryState,
   OrdersSource,
   OrderSummary,
 } from "./types";
-
-const statusLabels: Record<string, string> = {
-  PAGADO: "Pagado",
-  CREADO: "Creado",
-  PREPARANDO: "Preparando",
-  EN_TRANSITO: "En tránsito",
-  ENTREGADO: "Entregado",
-  ANULADO: "Cancelado",
-};
-
-// F-030 (detalle de pedido) está fuera de esta entrega: no se enlaza a una ruta inexistente.
-const DETAIL_PENDING_LABEL = "Detalle próximamente";
-const DETAIL_PENDING_HINT = "El detalle del pedido estará disponible en una próxima entrega.";
-
-function statusTone(state: string) {
-  switch (state) {
-    case "PAGADO":
-      return "paid";
-    case "CREADO":
-    case "PREPARANDO":
-      return "preparing";
-    case "EN_TRANSITO":
-      return "transit";
-    case "ENTREGADO":
-      return "delivered";
-    case "ANULADO":
-      return "cancelled";
-    default:
-      return "neutral";
-  }
-}
-
-function displayStatus(state: string) {
-  return statusLabels[state] || state.replaceAll("_", " ").toLocaleLowerCase("es-PE");
-}
-
-function formatDate(value: string) {
-  const parts = new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "America/Lima",
-  }).formatToParts(new Date(value));
-  const day = parts.find((part) => part.type === "day")?.value;
-  const month = parts.find((part) => part.type === "month")?.value.replace(".", "");
-  const year = parts.find((part) => part.type === "year")?.value;
-  return `${day} ${month} ${year}`;
-}
-
-function formatMoney(order: OrderSummary) {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: order.total.currency,
-  }).format(order.total.amount);
-}
-
-function StatusBadge({ state }: { state: string }) {
-  return (
-    <span className={`order-status order-status--${statusTone(state)}`}>
-      <span className="order-status__dot" aria-hidden="true" />
-      {displayStatus(state)}
-    </span>
-  );
-}
 
 function OrderLoading() {
   return (
@@ -92,71 +32,12 @@ function OrderLoading() {
   );
 }
 
-function OrderCard({ order }: { order: OrderSummary }) {
-  return (
-    <article className="order-card">
-      <div className="order-card__top">
-        <h2 className="order-card__id">{order.orderId}</h2>
-        <StatusBadge state={order.state} />
-      </div>
-      <div className="order-card__summary">
-        <span>Fecha: {formatDate(order.createdAt)}</span>
-        <strong>{formatMoney(order)}</strong>
-      </div>
-      <div className="order-card__actions">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled
-          title={DETAIL_PENDING_HINT}
-          aria-label={`Detalle del pedido ${order.orderId}: ${DETAIL_PENDING_LABEL.toLowerCase()}`}
-        >
-          {DETAIL_PENDING_LABEL}
-        </Button>
-      </div>
-    </article>
-  );
-}
-
-function DesktopOrdersTable({ orders }: { orders: OrderSummary[] }) {
-  return (
-    <div className="orders-table-wrap">
-      <table className="orders-table">
-        <caption className="sr-only">Historial de pedidos</caption>
-        <thead>
-          <tr>
-            <th scope="col">Código</th>
-            <th scope="col">Fecha</th>
-            <th scope="col">Total</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.orderId}>
-              <th scope="row">{order.orderId}</th>
-              <td>{formatDate(order.createdAt)}</td>
-              <td>{formatMoney(order)}</td>
-              <td><StatusBadge state={order.state} /></td>
-              <td>
-                <span
-                  className="orders-table__detail orders-table__detail--pending"
-                  title={DETAIL_PENDING_HINT}
-                  aria-label={`Detalle del pedido ${order.orderId}: ${DETAIL_PENDING_LABEL.toLowerCase()}`}
-                >
-                  {DETAIL_PENDING_LABEL}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function OrdersResults({ data, source }: { data: OrdersHistoryResponse; source: OrdersSource }) {
+function OrdersResults({ data, source, filters, onClearFilters }: {
+  data: OrdersHistoryResponse;
+  source: OrdersSource;
+  filters: OrderFilters;
+  onClearFilters: () => void;
+}) {
   const { page } = data;
   const from = page.totalElements === 0 ? 0 : page.number * page.size + 1;
   const to = Math.min((page.number + 1) * page.size, page.totalElements);
@@ -169,33 +50,42 @@ function OrdersResults({ data, source }: { data: OrdersHistoryResponse; source: 
       {data.data.length === 0 ? (
         <EmptyState
           className="orders-empty"
-          title="Aún no has realizado pedidos"
-          description="Cuando hagas una compra, podrás consultar aquí su estado y fecha."
-          actions={
+          title={hasOrderFilters(filters) ? "No hay pedidos con estos filtros" : "Aún no has realizado pedidos"}
+          description={hasOrderFilters(filters)
+            ? "Prueba con otros criterios o limpia los filtros para volver a consultar tus pedidos."
+            : "Cuando hagas una compra, podrás consultar aquí su estado y fecha."}
+          actions={hasOrderFilters(filters)
+            ? <Button variant="primary" onClick={onClearFilters}>Limpiar filtros</Button>
+            : (
             <Link className="button button--primary button--md" href="/catalogo">
               Explorar catálogo
             </Link>
-          }
+            )}
         />
       ) : (
         <>
-          <DesktopOrdersTable orders={data.data} />
-          <div className="orders-cards" aria-label="Tus pedidos">
-            {data.data.map((order) => <OrderCard order={order} key={order.orderId} />)}
-          </div>
+          <OrderList orders={data.data} />
           <p className="orders-count" aria-live="polite">
             Mostrando {from}–{to} de {page.totalElements} {page.totalElements === 1 ? "pedido" : "pedidos"}
           </p>
-          {page.totalPages > 1 && <Pagination page={page.number} totalPages={page.totalPages} />}
+          {page.totalPages > 1 && <Pagination page={page.number} totalPages={page.totalPages} filters={filters} />}
         </>
       )}
     </>
   );
 }
 
-function Pagination({ page, totalPages }: { page: number; totalPages: number }) {
+function ordersHref(page: number, filters: OrderFilters): string {
+  const params = new URLSearchParams({ page: String(page) });
+  if (filters.state) params.set("state", filters.state);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  return `/mis-pedidos?${params.toString()}`;
+}
+
+function Pagination({ page, totalPages, filters }: { page: number; totalPages: number; filters: OrderFilters }) {
   const router = useRouter();
-  const goTo = (nextPage: number) => router.push(`/mis-pedidos?page=${nextPage}`);
+  const goTo = (nextPage: number) => router.push(ordersHref(nextPage, filters));
   const first = Math.max(0, page - 1);
   const last = Math.min(totalPages - 1, page + 1);
   return (
@@ -211,18 +101,38 @@ function Pagination({ page, totalPages }: { page: number; totalPages: number }) 
   );
 }
 
-export function OrdersHistory({ initialPage }: { initialPage: number }) {
+export function OrdersHistoryContainer({ initialPage, initialFilters = {} }: { initialPage: number; initialFilters?: OrderFilters }) {
   const router = useRouter();
+  const stateFilter = initialFilters.state ?? "";
+  const fromFilter = initialFilters.from ?? "";
+  const toFilter = initialFilters.to ?? "";
+  const filtersKey = `${stateFilter}|${fromFilter}|${toFilter}`;
+  const [draft, setDraft] = useState<OrderFilters>(initialFilters);
+  const [filterErrors, setFilterErrors] = useState<OrderFilterErrors>({});
   const [result, setResult] = useState<{
     key: string;
     state: OrdersHistoryState;
   }>({ key: "", state: { status: "loading" } });
   const [attempt, setAttempt] = useState(0);
-  const key = `${initialPage}:${attempt}`;
+  const key = `${initialPage}:${filtersKey}:${attempt}`;
+
+  useEffect(() => {
+    setDraft({
+      ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+      ...(fromFilter ? { from: fromFilter } : {}),
+      ...(toFilter ? { to: toFilter } : {}),
+    });
+    setFilterErrors({});
+  }, [stateFilter, fromFilter, toFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
-    readOrders(initialPage, controller.signal)
+    const appliedFilters: OrderFilters = {
+      ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+      ...(fromFilter ? { from: fromFilter } : {}),
+      ...(toFilter ? { to: toFilter } : {}),
+    };
+    readOrders(initialPage, controller.signal, appliedFilters)
       .then(({ data, source }) => {
         if (!controller.signal.aborted) {
           setResult({ key, state: { status: "ready", data, source } });
@@ -242,7 +152,7 @@ export function OrdersHistory({ initialPage }: { initialPage: number }) {
         });
       });
     return () => controller.abort();
-  }, [initialPage, key]);
+  }, [initialPage, stateFilter, fromFilter, toFilter, key]);
 
   const state = useMemo(
     () => (result.key === key ? result.state : { status: "loading" as const }),
@@ -252,8 +162,36 @@ export function OrdersHistory({ initialPage }: { initialPage: number }) {
   useEffect(() => {
     if (state.status !== "ready") return;
     const pages = state.data.page.totalPages;
-    if (pages > 0 && initialPage >= pages) router.replace(`/mis-pedidos?page=${pages - 1}`);
-  }, [initialPage, router, state]);
+    if (pages > 0 && initialPage >= pages) {
+      router.replace(ordersHref(pages - 1, {
+        ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+        ...(fromFilter ? { from: fromFilter } : {}),
+        ...(toFilter ? { to: toFilter } : {}),
+      }));
+    }
+  }, [initialPage, router, state, stateFilter, fromFilter, toFilter]);
+
+  const applyFilters = () => {
+    const errors = validateOrderFilters(draft);
+    setFilterErrors(errors);
+    if (Object.keys(errors).length) return;
+    router.push(ordersHref(0, draft));
+  };
+  const clearFilters = () => {
+    setDraft({});
+    setFilterErrors({});
+    router.push("/mis-pedidos?page=0");
+  };
+  const removeFilter = (keyToRemove: keyof OrderFilters) => {
+    const next: OrderFilters = {
+      ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+      ...(fromFilter ? { from: fromFilter } : {}),
+      ...(toFilter ? { to: toFilter } : {}),
+    };
+    delete next[keyToRemove];
+    setDraft(next);
+    router.push(ordersHref(0, next));
+  };
 
   return (
     <section className="orders-page" aria-labelledby="orders-title">
@@ -264,6 +202,21 @@ export function OrdersHistory({ initialPage }: { initialPage: number }) {
         <h1 id="orders-title">Mis pedidos</h1>
         <p>Consulta el historial de tus compras</p>
       </header>
+      <OrdersFilterForm
+        draft={draft}
+        errors={filterErrors}
+        onChange={(next) => { setDraft(next); setFilterErrors({}); }}
+        onApply={applyFilters}
+        onClear={clearFilters}
+      />
+      <OrdersFilterSummary
+        filters={{
+          ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+          ...(fromFilter ? { from: fromFilter } : {}),
+          ...(toFilter ? { to: toFilter } : {}),
+        }}
+        onRemove={removeFilter}
+      />
       {state.status === "loading" && <OrderLoading />}
       {state.status === "error" && (
         <EmptyState
@@ -277,7 +230,14 @@ export function OrdersHistory({ initialPage }: { initialPage: number }) {
           }
         />
       )}
-      {state.status === "ready" && <OrdersResults data={state.data} source={state.source} />}
+      {state.status === "ready" && <OrdersResults data={state.data} source={state.source} onClearFilters={clearFilters} filters={{
+        ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
+        ...(fromFilter ? { from: fromFilter } : {}),
+        ...(toFilter ? { to: toFilter } : {}),
+      }} />}
     </section>
   );
 }
+
+/** Backward-compatible name kept for existing route/tests. */
+export const OrdersHistory = OrdersHistoryContainer;
