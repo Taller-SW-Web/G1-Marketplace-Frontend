@@ -30,3 +30,11 @@ test('CLI supports check and explicit existing-build reuse; rejects other option
   assert.deepEqual(demoOptions(['--check', '--skip-build']), { check: true, skipBuild: true });
   assert.throws(() => demoOptions(['--production']), /REAL_DEMO_INVALID_ARGUMENT/);
 });
+
+// Only error codes are exposed; corporate proxy details and raw errors stay private.
+test('network diagnostic distinguishes certificate errors from transport failures', async () => {
+  const { networkError } = await import('./check-g6-network.mjs');
+  assert.deepEqual(networkError({cause:{code:'SELF_SIGNED_CERT_IN_CHAIN',message:'private-detail'}}), {outcome:'TLS_ERROR',codes:['SELF_SIGNED_CERT_IN_CHAIN']});
+  assert.deepEqual(networkError({code:'ECONNREFUSED'}), {outcome:'TRANSPORT_ERROR',codes:['ECONNREFUSED']});
+  assert.deepEqual(networkError({code:'invalid secret-like text'}), {outcome:'TRANSPORT_ERROR',codes:[]});
+});

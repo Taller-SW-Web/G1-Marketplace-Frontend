@@ -23,7 +23,8 @@
     "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs",
     "demo:catalogo:featured": "node scripts/demo-catalog-h4.mjs --featured",
     "demo:catalogo:real": "node scripts/demo-catalog-real.mjs",
-    "test:demo:catalogo:real": "node --test scripts/demo-catalog-real.test.mjs"
+    "test:demo:catalogo:real": "node --test scripts/demo-catalog-real.test.mjs",
+    "check:g6:network": "node scripts/check-g6-network.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",

@@ -80,6 +80,22 @@ H3_FRONTEND_SANDBOX_ENABLED=false
 
 Ese NODE_ENV corresponde al build optimizado de **Next local**. El Backend de demo conserva test. No hay token en el navegador ni `NEXT_PUBLIC_*` para G6. No modificar `.env` de producción.
 
+## Redes con inspección TLS y ensayo desde otra red
+
+El revisor reportó que un firewall de su red re-firmaba el certificado HTTPS de G6. Si Node no confía en esa cadena, el catálogo puede terminar en 503 aunque los mismos datos funcionen desde otra red. No atribuir todo 503 a TLS: la ficha REAL también tiene su 503 propio por el adaptador pendiente.
+
+Antes del demo, ejecutar:
+
+```sh
+npm run check:g6:network
+```
+
+El diagnóstico hace un único GET público a G6, sin JWT, con validación TLS obligatoria y timeout de 15 s. Imprime estado HTTP, duración, correlación y metadatos públicos del certificado (emisor, sujeto, huella y vigencia); no imprime cuerpos ni credenciales. `TLS_ERROR` con códigos como `SELF_SIGNED_CERT_IN_CHAIN` o `UNABLE_TO_VERIFY_LEAF_SIGNATURE` identifica una cadena no confiable; `TRANSPORT_ERROR` y un HTTP 503 requieren su diagnóstico propio. No usar `NODE_TLS_REJECT_UNAUTHORIZED=0`, `curl -k` ni desactivar validación. El script rechaza ese bypass.
+
+Si falla sólo en la red inspeccionada, repetir el mismo comando y `npm run demo:catalogo:real -- --check` desde hotspot u otra red. Cualquier CA corporativa necesaria debe provenir del administrador autorizado y configurarse explícitamente para Node; el runner filtra el entorno heredado, de modo que la confianza del navegador o una variable de CA del shell no demuestra la confianza del proceso Backend hijo.
+
+También hay un ensayo **manual**, sin acceso a producción, en GitHub Actions: workflow **H3 Frontend**, seleccionar esta rama y activar `real_demo_network`. Usa un runner nuevo Ubuntu de GitHub, Node 22.18, Backend develop fijado y la guía/runner de esta PR. Primero comprueba TLS directo, luego instala dependencias, construye Next/BFF y ejecuta el catálogo REAL con `--check`. No entrega credenciales ni modifica certificados o Render. Esa ejecución acredita una red distinta de esta máquina; no sustituye la prueba en la red del revisor ni identifica por sí sola el firewall responsable.
+
 ## Qué comprobar en el navegador
 
 1. Buscar Nike y observar las tarjetas y sus imágenes. La respuesta `/api/catalog/products?q=Nike&pageSize=4&sort=NAME_ASC` debe tener HTTP 200 y `X-Catalog-Source: REAL`; el listado no declara `meta.source`.
