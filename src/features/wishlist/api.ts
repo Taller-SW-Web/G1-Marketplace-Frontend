@@ -16,7 +16,17 @@ async function failed(response: Response): Promise<never> {
   throw new WishlistError(code, response.status);
 }
 
-export async function getSession(signal?: AbortSignal, identity?: Identity): Promise<Session> {
+export async function getSession(signal?: AbortSignal, identity?: Identity, realAuth = false): Promise<Session> {
+  if (realAuth) {
+    if (identity !== undefined) throw new WishlistError("FORBIDDEN", 403);
+    const response = await fetch("/api/v1/auth/session", { cache: "no-store", signal });
+    if (!response.ok) return failed(response);
+    const result: unknown = await response.json();
+    if (!result || typeof result !== "object" || !("authenticated" in result) || !("scope" in result) || typeof result.scope !== "string") throw new WishlistError("INVALID_RESPONSE", 502);
+    if (!result.authenticated) return { identity: null, scope: "anonymous", enabled: true };
+    if (!("user" in result) || !result.user || typeof result.user !== "object" || !("id" in result.user) || typeof result.user.id !== "string") throw new WishlistError("INVALID_RESPONSE", 502);
+    return { identity: result.user.id, scope: result.scope, enabled: true };
+  }
   const response = await fetch("/api/h3/session", { cache: "no-store", signal,
     ...(identity !== undefined ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identity }) } : {}) });
   if (!response.ok) return failed(response);

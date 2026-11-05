@@ -108,14 +108,25 @@ function parseOperation(value: unknown, operationId?: string): CheckoutOperation
 }
 
 export class CheckoutApiError extends Error {
-  constructor(readonly status: number, readonly code: string) {
+  constructor(readonly status: number, readonly code: string, readonly fields?: string[]) {
     super(code);
   }
 }
 
+function parseValidationFields(payload: unknown): string[] | undefined {
+  const error = isRecord(payload) ? payload.error : undefined;
+  if (!isRecord(error) || !Array.isArray(error.fields)) return undefined;
+
+  const fields = [...new Set(error.fields.filter((field): field is string =>
+    typeof field === "string" && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(field),
+  ))].slice(0, 32);
+  return fields.length > 0 ? fields : undefined;
+}
+
 const publicErrorMessages: Record<string, string> = {
+  ADDRESS_VALIDATION_ERROR: "Revisa los datos de la dirección e inténtalo de nuevo.",
   ADDRESS_NOT_FOUND: "No encontramos esa dirección. Selecciona otra o agrega una nueva.",
-  ADDRESS_SERVICE_UNAVAILABLE: "No pudimos cargar las direcciones. Inténtalo más tarde.",
+  ADDRESS_SERVICE_UNAVAILABLE: "El servicio de direcciones no está disponible. Inténtalo de nuevo.",
   BENEFITS_UNAVAILABLE: "No pudimos validar el beneficio. Puedes conservar el resumen actual.",
   CART_CHANGED: "Tu carrito cambió. Vuelve al carrito y actualiza el resumen.",
   CART_AUTH_UNAVAILABLE: "No pudimos validar tu sesión para consultar el carrito. Inténtalo de nuevo.",
@@ -123,6 +134,7 @@ const publicErrorMessages: Record<string, string> = {
   CART_BACKEND_MODE_DISABLED: "La consulta del carrito no está disponible en este entorno.",
   CART_EMPTY: "Agrega un producto al carrito para continuar.",
   CART_NOT_FOUND: "No encontramos un carrito activo. Vuelve al carrito para continuar.",
+  CART_OWNERSHIP_CONFLICT: "Hay más de un carrito activo. Vuelve al carrito y revisa su contenido antes de continuar.",
   CHECKOUT_BACKEND_UNAVAILABLE: "No pudimos comunicarnos con Checkout. Inténtalo más tarde.",
   CONTACT_VALIDATION_ERROR: "Revisa los datos de contacto e inténtalo de nuevo.",
   COUPON_NOT_APPLICABLE: "Ese cupón no se puede aplicar a esta compra.",
@@ -138,6 +150,7 @@ const publicErrorMessages: Record<string, string> = {
   SALES_UNAVAILABLE: "No pudimos registrar el pedido. Conservamos la operación para verificarla.",
   SIMULATION_NOT_CONFIRMED: "Confirma que entiendes que esta compra es una simulación.",
   STOCK_NOT_AVAILABLE: "La disponibilidad cambió. Vuelve al carrito y revisa los productos.",
+  UNAUTHENTICATED: "Tu sesión venció. Inicia sesión para continuar con tu compra.",
 };
 
 export function checkoutErrorMessage(error: unknown, fallback: string) {
@@ -165,8 +178,9 @@ async function request<T>(path: string, method: "GET" | "POST", body?: unknown, 
   let payload: unknown;
   try { payload = await response.json(); } catch { throw new CheckoutApiError(response.status, "INVALID_BACKEND_RESPONSE"); }
   if (!response.ok) {
-    const code = typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "object" && payload.error !== null && "code" in payload.error && typeof payload.error.code === "string" ? payload.error.code : "CHECKOUT_REQUEST_FAILED";
-    throw new CheckoutApiError(response.status, code);
+    const error = isRecord(payload) ? payload.error : undefined;
+    const code = isRecord(error) && typeof error.code === "string" ? error.code : "CHECKOUT_REQUEST_FAILED";
+    throw new CheckoutApiError(response.status, code, parseValidationFields(payload));
   }
   if (typeof payload !== "object" || payload === null || !("data" in payload)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   return (payload as Envelope<T>).data;

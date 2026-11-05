@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SearchBox } from "@/features/catalog/SearchBox";
 import { CategoryNavigation } from "@/features/catalog/CategoryNavigation";
+import { AccountMenu } from "@/features/auth/AccountMenu";
 
 export function Header() {
   const favoritesContent = <>
@@ -22,10 +23,7 @@ export function Header() {
             <SearchBox />
           </Suspense>
           <div className="header-actions" aria-label="Cuenta y compras">
-            <Link className="header-action account-action" href="/login" aria-label="Iniciar sesión">
-              <img className="mobile-icon" src="/figma/user-24.svg" alt="" width="24" height="24" />
-              <span>Iniciar sesión</span>
-            </Link>
+            <AccountMenu />
             <Link href="/favoritos" className="header-action" aria-label="Favoritos">
               {favoritesContent}
             </Link>

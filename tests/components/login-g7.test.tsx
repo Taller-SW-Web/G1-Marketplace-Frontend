@@ -1,0 +1,85 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { LoginForm } from "../../src/features/auth/LoginForm";
+
+afterEach(() => vi.unstubAllGlobals());
+function fill() {
+  fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "a@fixture.test" } });
+  fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "Fixture!123" } });
+  fireEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
+}
+describe("G7 login and MFA states", () => {
+  it("requests the email OTP and waits for verification without claiming an authenticated session", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    expect(await screen.findByLabelText("Código de verificación")).toBeTruthy();
+    expect(await screen.findByText("Correo: a***@fixture.test")).toBeTruthy();
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual(["/api/v1/auth/login", "/api/v1/auth/otp/solicitar"]);
+    expect(screen.queryByText(/Demostración con datos/)).toBeNull();
+    expect(screen.queryByText(/sesión iniciada/i)).toBeNull();
+  });
+  it("uses the shorter OTP lifetime returned by G7", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 12, desafioExpiraEn: 240 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    await screen.findByText("Correo: a***@fixture.test");
+    await waitFor(() => expect(screen.getByRole("timer").textContent).toMatch(/1[12] s/));
+  });
+  it("keeps the challenge for a wrong code and clears the entered code", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, canal: "EMAIL", expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ code: "CODIGO_INVALIDO" }, { status: 401 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    const field = await screen.findByLabelText("Código de verificación");
+    await screen.findByText("Correo: a***@fixture.test");
+    fireEvent.change(field, { target: { value: "999999" } }); fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("El código no es válido");
+    expect((field as HTMLInputElement).value).toBe("");
+    expect(fetcher.mock.calls[2][1].body).toBe(JSON.stringify({ codigo: "999999" }));
+  });
+  it.each(["CREDENCIALES_INVALIDAS", "UNAUTHORIZED", "unknown"])("shows a generic login error for 401 (%s)", async code => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ code, detail: "private" }, { status: 401 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.",
+    );
+    expect(screen.queryByLabelText("Código de verificación")).toBeNull();
+  });
+  it("explains an expired OTP without establishing a session", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ code: "OTP_EXPIRADO" }, { status: 410 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    const field = await screen.findByLabelText("Código de verificación");
+    fireEvent.change(field, { target: { value: "999999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("El código venció");
+    expect((field as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("heading", { name: "Verifica tu acceso" })).toBeTruthy();
+  });
+  it("shows an unavailable login error without opening the MFA step", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 })));
+    render(<LoginForm realAuth />); fill();
+    expect((await screen.findByRole("alert")).textContent).toBe("No pudimos completar el acceso. Inténtalo más tarde.");
+    expect(screen.queryByLabelText("Código de verificación")).toBeNull();
+  });
+  it("explains a password policy or temporary throttle response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "PASSWORD_CADUCADA" }, { status: 403 })));
+    render(<LoginForm realAuth />); fill();
+    expect((await screen.findByRole("alert")).textContent).toContain("contraseña necesita actualizarse");
+  });
+  it("allows retry after the initial OTP delivery fails", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    const resend = screen.getByRole("button", { name: "Reenviar código" });
+    await waitFor(() => expect((resend as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(resend);
+    expect(await screen.findByText("Correo: a***@fixture.test")).toBeTruthy();
+    await waitFor(() => expect((screen.getByRole("button", { name: "Reenviar código" }) as HTMLButtonElement).disabled).toBe(true));
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+});

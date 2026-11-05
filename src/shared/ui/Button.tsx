@@ -1,3 +1,4 @@
+"use client";
 import type { ComponentProps, ReactNode } from "react";
 
 export type ButtonProps = ComponentProps<"button"> & {
@@ -5,6 +6,7 @@ export type ButtonProps = ComponentProps<"button"> & {
   size?: "sm" | "md" | "lg";
   loading?: boolean;
   loadingLabel?: string;
+  preserveFocusWhileLoading?: boolean;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
   fullWidth?: boolean;
@@ -15,6 +17,7 @@ export function Button({
   size = "md",
   loading = false,
   loadingLabel = "Cargando…",
+  preserveFocusWhileLoading = false,
   disabled = false,
   type = "button",
   startIcon,
@@ -23,14 +26,18 @@ export function Button({
   className = "",
   children,
   "aria-busy": ariaBusy,
+  "aria-disabled": ariaDisabled,
+  onClick,
   ...props
 }: ButtonProps) {
   return (
     <button
       {...props}
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled || (loading && !preserveFocusWhileLoading)}
       aria-busy={loading || ariaBusy || undefined}
+      aria-disabled={disabled || loading || ariaDisabled || undefined}
+      onClick={event => { if (loading) { event.preventDefault(); return; } onClick?.(event); }}
       className={`button button--${variant} button--${size}${fullWidth ? " button--full" : ""} ${className}`.trim()}
     >
       {loading ? (

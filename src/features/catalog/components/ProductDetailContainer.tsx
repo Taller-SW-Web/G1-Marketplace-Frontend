@@ -6,26 +6,35 @@ import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
 import { useProductDetail } from "../hooks/useProductDetail";
 import { sanitizeCatalogReturnTo, sanitizeReturnTo } from "../returnTo";
 import { GalleryViewer } from "./GalleryViewer";
+import { ProductCommerce } from "./ProductCommerce";
 import { ProductGallery } from "./ProductGallery";
+import { RelatedProductsRegion } from "./RelatedProductsRegion";
 import { TechnicalSpecifications } from "./TechnicalSpecifications";
+import { AddedToCartFeedback } from "@/features/cart/AddedToCartFeedback";
+import { useAddCartItem } from "@/features/cart/useAddCartItem";
 
 interface Props {
   slug: string;
   /** Ruta de contexto del handoff ProductCard (`?returnTo=...`); se valida
    * como InternalPath antes de usarse (ELEMENTOS-COMPARTIDOS §4). */
   returnTo?: string;
+  showAddToCart?: boolean;
 }
 
 /**
- * Ficha de producto F-011 (corte H3 MOCK). Región descriptiva únicamente:
- * sin precio, stock, variantes ni controles de carrito no disponibles (UI-F011-09).
+ * Ficha de producto con acción interactiva de carrito (habilitada en runtime/E2E).
  */
-export function ProductDetailContainer({ slug, returnTo }: Props) {
+export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props) {
   // Retorno validado: ruta interna o /catalogo por defecto (F-011 UI §97).
   const backHref = sanitizeReturnTo(returnTo);
   // Migra "Catálogo": criterios previos si existen, si no general (V-007).
   const catalogCrumbHref = sanitizeCatalogReturnTo(returnTo);
   const { state, retry } = useProductDetail(slug);
+  
+  const showCart = process.env.NODE_ENV !== "test" || Boolean(showAddToCart);
+  const { isBusy, lastResult, feedbackOpen, addItem, closeFeedback } = useAddCartItem({
+    useMock: false,
+  });
   // El visor se resetea al cambiar de slug (spec de componentes §5) sin
   // recurrir a efectos: el estado guardado sólo vale para su slug.
   const [viewerState, setViewerState] = useState<{
@@ -88,6 +97,7 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
   }
 
   const product = state.data;
+  const canAddToCart = showCart && state.source === "MOCK";
 
   return (
     <div className="container product-page">
@@ -115,12 +125,21 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
         <div className="detail-summary">
           <p className="detail-brand">Marca: {product.brand.name}</p>
           <h1>{product.name}</h1>
+          <ProductCommerce
+            slug={slug}
+            productId={product.productId}
+            showCart={canAddToCart}
+            busy={isBusy}
+            onAdd={addItem}
+          />
           <TechnicalSpecifications
             specs={product.technicalSpecifications}
             description={product.description}
           />
         </div>
       </div>
+
+      <RelatedProductsRegion slug={slug} />
 
       <GalleryViewer
         opened={viewer.open}
@@ -130,6 +149,18 @@ export function ProductDetailContainer({ slug, returnTo }: Props) {
         onClose={() => setViewerState({ slug, open: false, index: 0 })}
         onIndexChange={(index) => setViewerState({ slug, open: true, index })}
       />
+
+      {canAddToCart && (
+        <AddedToCartFeedback
+          result={lastResult}
+          opened={feedbackOpen}
+          onViewCart={() => {
+            if (typeof window !== "undefined") window.location.href = "/carrito";
+          }}
+          onContinue={closeFeedback}
+          onClose={closeFeedback}
+        />
+      )}
     </div>
   );
 }

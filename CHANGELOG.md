@@ -1,0 +1,88 @@
+## [1.3.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.2.0...v1.3.0) (2026-11-05)
+
+### Features
+
+* **f014:** disponibilidad por confirmar con reintento y sin compra ([e58996a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/e58996a959842d4788482022de64a2ff78867291))
+
+## [1.2.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.1.0...v1.2.0) (2026-11-05)
+
+### Features
+
+* **catalogo:** cerrar filtros, orden y paginación para demo MOCK H4 ([6e5ba7b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/6e5ba7b87f4f976021b23cb697cc796e1dda1576))
+
+## [1.1.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.0.0...v1.1.0) (2026-11-05)
+
+### Features
+
+* **catalog:** region comercial F-012 a F-015 en la ficha de producto (MOCK) ([cd0dfba](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/cd0dfba60d2536ce22e39ebe916242c251c3b789))
+
+## 1.0.0 (2026-11-04)
+
+### Features
+
+* **auth:** conectar login MFA sesion y logout con BFF G7 ([0dc5d6e](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0dc5d6e1a30d497e5f1d52e8f5bae9197213aee4))
+* **auth:** entrar a recuperación G7 desde Marketplace ([a0fbbc9](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/a0fbbc92e86824f8d186be5ed7202b5596e04d5d))
+* **auth:** implementar cuenta y recuperacion H4 desde mockups ([49e6281](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/49e6281aa62da5726bc8788be1ae25b4ee9112ed))
+* **auth:** publish academic terms and privacy pages ([0bca767](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0bca7673bb023d8781c130b0cd7a4adf0653138e))
+* **cart:** accion y hook mover carrito a favoritos F-021 (closes TASK-F021-FE-001, TASK-F021-QA-001) ([2561ce6](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/2561ce6f7eadcc40ebf1f6b9f56121123030ea2d))
+* **cart:** add catalog products from detail ([78307b9](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/78307b9cc6d0e9ba06beb8fcbcaa2b640a12a6d4))
+* **cart:** conectar UI de carrito con backend real NestJS y configurar proxy ([8897366](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/889736673e7b2c69590d1bd58dcbfb9964285a7f))
+* **cart:** controles de cambio de cantidad e input numerico con limites (F-017) ([a60a41a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/a60a41a058a64a0f96f8b6d3039cd810c14fd8b4))
+* **cart:** coordinador y dialogos de fusion de carrito anonimo F-020 (closes [#55](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/55), [#56](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/56), [#106](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/106)) ([981c09d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/981c09dc66df45dd73d4cd595c39c7ce1382300d))
+* **cart:** implementar corte vertical F-016 y F-019 con componentes UI y pruebas ([78b3bbf](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/78b3bbf3a744a4f82bd2b4a5a80a282eeb8a3fb5))
+* **cart:** implementar DELETE idempotente de item del carrito y versionado optimista (F-018) ([953e403](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/953e403731ae62f84bc9092075b07ca2fd422eb8))
+* **cart:** vista de carrito /carrito, totales informativos y estado vacio (F-019) ([3ff7b53](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/3ff7b535146e08a18d8cdcdfe1fdaf103337ab5d))
+* **catalog-cart:** integrar botón de añadir al carrito y automatización E2E ([10a4771](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/10a47714b85db54fdad35567cd2255c903faf6a5))
+* **catalog-cart:** integrar botón de añadir al carrito y automatización E2E ( añadir next-env.d.ts) ([f09fcdd](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f09fcdd46851dc8143592aa67c2e333944734a37))
+* **catalog:** consumir returnTo del handoff en la ficha F-011 ([44f7c21](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/44f7c215ae42b43303c74d7047787ccdd57f8bc9))
+* **catalog:** ficha MOCK vía BFF, HTTP 404 real y e2e reproducible ([134ba4b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/134ba4b5a668f30d6ed880e74b9d228146aa1cea)), closes [#11](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/11)
+* **catalogo:** implementar inicio y búsqueda con pruebas mock ([0f0e6dc](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0f0e6dc5cc26cd6b196b13fe1da4bf3f2f134f13))
+* **checkout:** add order summary and detail action ([e114bc5](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/e114bc5cf30aac5b5867c0331ef55a8f61a8344b))
+* **checkout:** connect persisted cart and verified order flow ([c014d6d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/c014d6d711befb9f7b794649c288599fb3262244))
+* **checkout:** extract address quote and benefit UI ([79cdfa7](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/79cdfa7e146b1136b112b5c34025aa6839481cb9))
+* **checkout:** extract payment and order components ([68ed011](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/68ed011597dfc96cc018c4a794c84ab1211f69c9))
+* **checkout:** implement F-022 to F-027 flow ([0e3f481](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0e3f4810e1fa2ed24197f2ead67bfd41c8246173))
+* **favoritos:** agregar contratos BFF y controlador de operaciones ([853a172](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/853a172dd5b3d24a2e7021f96756f35bd0929d06))
+* **favoritos:** implementar vistas Figma y escenarios de validacion ([169cf01](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/169cf0105c4afb39946c8013dd1dd2e803bc23f0))
+* **favoritos:** integrar avance frontend F-036–F-038 ([d6a991b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/d6a991becc3113c51add09f7504d7ed12fc9bbb7))
+* **ficha:** CTA naranja 'Agregar al carrito' (mock V-007/F-016) en la ficha ([41049b6](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/41049b66b1c69cbbe679686945d32ba89673bbdd))
+* **h3:** adaptar inicio y catalogo a los mockups de Figma ([9f39e0c](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/9f39e0c58ace011a0c910c27bcc43e46a80d8108))
+* **h3:** conectar web Docker al BFF con origen interno autorizado ([01627df](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/01627dfd2ff16b82acc5bc1e8fdf17f951fa72a9))
+* **h3:** ficha parcial F-011 (V-007) con fixture MOCK ([64f68e8](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/64f68e83c025f632a9967e830c6e8f199256fa9a))
+* **h3:** implementar vista de inicio de sesión MOCK F-002 ([42016e9](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/42016e9663222f7379650d803652774d0d5d1b2b))
+* **orders:** implement H3 mock history frontend ([498a2ce](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/498a2ceaee8392f747a93eca5be9c1d8afe69685))
+* **ui:** implementar componentes base compartidos y pruebas ([119b117](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/119b117c18294d3128f5caf55858f16a1d80aee8))
+
+### Bug Fixes
+
+* **auth:** cumplir foco y errores accesibles en flujos de cuenta ([98f1679](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/98f167916046ced991f1aa4319a81c9ed53881a7))
+* **auth:** iniciar recuperación G7 con canal Marketplace ([#126](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/126)) ([5f33e45](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/5f33e457bb3e2a8c9750783f16c81f5fc7ba0ddc))
+* **auth:** mostrar vigencia real del código OTP y permitir reenvío ([50952a3](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/50952a383e6b360c4470d6ab9a7c64640a33d48d))
+* **cart:** corregir advertencias de eslint y desincronizacion de estado en frontend (F-018) ([aba6b00](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/aba6b00a9bf17f4a0be1dbef2aa0afb3f85a6099))
+* **cart:** draft local en CartLine, reconciliacion 409 y alineacion de errores (F-017) ([0f86150](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0f86150edf0f5e455b1a67d8210369e38f297ac2))
+* **cart:** draft local en CartLine, reconciliacion 409 y alineacion de errores (F-017) ([a63f9c8](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/a63f9c88842bbb0d1c6dabd9eb3ce281209d7c51))
+* **cart:** draft local en CartLine, reconciliacion 409 y alineacion de errores (F-017) ([e9cccc0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/e9cccc071f58b2010e2ff55dfc8b4bd7f6aed86d))
+* **cart:** draft local en CartLine, reconciliacion 409 y alineacion de errores (F-017) ([be79f4e](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/be79f4e6a55464f1f122741b0be4e17c8600fe16))
+* **cart:** remover declaracion duplicada de variable api en proxy de carrito ([a636cde](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/a636cde83ba04ede622cf209b53412e019dd9b02))
+* **catalogo:** mostrar placeholder para productos sin imagen ([71202df](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/71202dfeac0a27b2248e55e9b6b424385720fa26))
+* **catalog:** propagar X-Request-Id y responder Problem Details en el proxy ([51bc441](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/51bc441126d46c2a5b43d44bc651a130bff1da8e))
+* **checkout:** address frontend review feedback ([2253859](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/22538593655f210cc6d64b7c835ff45681e6d013))
+* **checkout:** clarify document number validation ([1673fe8](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/1673fe87ac76ad108f94f5236d8fd58933e98ba3))
+* **checkout:** map address validation and empty states ([d9cbb5c](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/d9cbb5cd2cfb80c7c59396aa1af5bf8af4d0f6f6))
+* **checkout:** map contact validation errors to fields ([5e67562](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/5e67562dbfde5529a0f02ac2021323b80a5519d7))
+* **checkout:** recover unavailable stock preparation ([b74fcb6](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/b74fcb61fe032ac70a7978602983d5ccbd01b33d))
+* **checkout:** recover validation and stale preparation ([4ec65cd](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/4ec65cda624c9e2ac603d5142cb5dc378e6fbd27))
+* **checkout:** reset stale prep keys and recovery state ([00ef7f6](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/00ef7f6baabec54bf62f55e580b7687ea141f096))
+* **ci:** aclarar identificador publico de Figma en manifiesto ([b5b92db](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/b5b92dbfe54a20c2bfcf013fba0795738486820a))
+* **deps:** update happy-dom security patch ([37c93d7](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/37c93d73bd54cd72796bcc2928da1cf5b4074456))
+* **deps:** update happy-dom security patch ([db5a938](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/db5a93879c7e6807510028245f87809be73384b4))
+* **e2e:** alinear checkout smoke test con develop y configurar mock catalog en CI ([5a42747](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/5a4274741d0f5568a89bbcccd84c3faa6f6d13b3))
+* **e2e:** robustecer resolucion de auth en proxies y sincronizar variables de entorno en ci ([26b2e6c](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/26b2e6cfad5f39ce265a24823ed03ae910050f01))
+* **f011:** ajustar la ficha a los specs de contrato, textos y estados ([3e6ea7c](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/3e6ea7cfae9befa7371a5c14c24316b89a3c5a11))
+* **favoritos:** enlazar ficha y carrito integrados desde develop ([4d54f1b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/4d54f1ba63da380cc81ab6abe0f870df4538cefc))
+* **h3:** omit unavailable cart action from product detail ([1524fa3](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/1524fa303b164bc064f0c740b31cb00f2ac96a9c))
+* **security:** actualizar happy-dom a 21.0.4 para mitigar CVE-2026-33943 (sca-all PASS) ([e48bc21](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/e48bc215ef4668e9d0568601fa44580ce3c84f79))
+* **security:** clasificar claves privadas generadas por Next con controles ([2b2bdf5](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/2b2bdf54c002a3db3e520e699b0072a428c47bac))
+* **security:** stabilize secret detection control ([9655561](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/9655561373fa23d5ebac46094cfd1ccb939d93a3))
+* **ui:** estandarizar header y footer en todas las vistas ([0e87a5a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0e87a5a5d8a8f773150d5aa0188ebd7ad71034b4))
+* update vulnerable happy-dom dependency ([27873ce](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/27873ce87dc760749f394e770d0f9720bf033562))

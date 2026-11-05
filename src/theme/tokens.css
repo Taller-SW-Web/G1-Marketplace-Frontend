@@ -15,6 +15,10 @@
   --border-inverse: #3a362c;
   --error: #e03131;
   --error-background: #fff5f5;
+  --warning: #f08c00;
+  --warning-background: #fff9db;
+  --info: #1971c2;
+  --info-background: #e7f5ff;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;

@@ -59,7 +59,7 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
     ).toHaveAttribute("href", /\/catalogo\?categoryIds=running/);
   });
 
-  test("UI-F011-09: ficha descriptiva MOCK sin región comercial", async ({
+  test("Ficha MOCK muestra la región comercial F-012…F-015", async ({
     page,
   }) => {
     await page.goto("/productos/zapatillas-running-aero-x");
@@ -68,11 +68,24 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
     );
     await expect(page.getByRole("heading", { level: 1 })).toContainText("[MOCK]");
     await expect(page.getByText("Malla técnica")).toBeVisible();
-    const body = page.locator(".product-page");
-    await expect(body).not.toContainText(/S\//);
-    await expect(body).not.toContainText(/precio/i);
-    await expect(body).not.toContainText(/stock/i);
-    await expect(body).not.toContainText(/carrito/i);
+
+    // F-012: precio vigente y oferta derivada por el BFF.
+    await expect(page.locator(".price-current")).toContainText("S/");
+    await expect(page.locator(".price-offer")).toContainText("Oferta");
+    // F-014: estado comercial, sin cantidades.
+    await expect(page.locator(".availability-status")).toContainText(
+      "Disponible",
+    );
+    // F-015: recomendaciones del BFF con enlaces a la ficha.
+    await expect(page.locator(".related-products h2")).toHaveText(
+      "Productos relacionados",
+    );
+    await expect(page.locator(".related-card")).toHaveCount(4);
+
+    // F-016: el CTA se habilita sólo cuando precio y disponibilidad están listos.
+    await expect(
+      page.getByRole("button", { name: "Agregar al carrito" }),
+    ).toBeEnabled();
   });
 
   test("producto inexistente responde HTTP 404 con estado neutral", async ({

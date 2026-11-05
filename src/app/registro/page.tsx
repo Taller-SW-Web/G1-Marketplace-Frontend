@@ -1,5 +1,8 @@
-import { AuthComingSoon } from "@/features/auth/AuthComingSoon";
+import { RegistrationForm } from "@/features/auth/RegistrationForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Crea tu cuenta" };
 
 export default function RegisterPage() {
-  return <AuthComingSoon title="Crear cuenta" milestone="H4" />;
+  return <RegistrationForm termsUrl="/terminos" privacyUrl="/privacidad" />;
 }

@@ -10,7 +10,7 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
     const onAdd = vi.fn();
     render(
       <AddToCartAction
-        sku="INKA-PRO-M"
+        productId="INKA-PRO-M"
         availability="AVAILABLE"
         priceReady={true}
         busy={false}
@@ -23,14 +23,14 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
 
     fireEvent.click(button);
     expect(onAdd).toHaveBeenCalledTimes(1);
-    expect(onAdd).toHaveBeenCalledWith({ sku: 'INKA-PRO-M', quantity: 1 });
+    expect(onAdd).toHaveBeenCalledWith({ productId: 'INKA-PRO-M', quantity: 1 });
   });
 
   it('RC-F-016-01: bloquea doble clic y muestra estado busy durante el envío', () => {
     const onAdd = vi.fn();
     const { rerender } = render(
       <AddToCartAction
-        sku="INKA-PRO-M"
+        productId="INKA-PRO-M"
         availability="AVAILABLE"
         priceReady={true}
         busy={true}
@@ -50,7 +50,7 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
     // Al desocuparse, vuelve a ser interactivo
     rerender(
       <AddToCartAction
-        sku="INKA-PRO-M"
+        productId="INKA-PRO-M"
         availability="AVAILABLE"
         priceReady={true}
         busy={false}
@@ -66,7 +66,7 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
     const onAdd = vi.fn();
     render(
       <AddToCartAction
-        sku={undefined}
+        productId={undefined}
         availability="UNSELECTED"
         priceReady={true}
         busy={false}
@@ -86,7 +86,7 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
     const onRetry = vi.fn();
     render(
       <AddToCartAction
-        sku="INKA-PRO-XL"
+        productId="INKA-PRO-XL"
         availability="UNAVAILABLE"
         priceReady={true}
         busy={false}
@@ -266,5 +266,23 @@ describe('MOCK Cart API (Hito 3 / Semana 8)', () => {
     expect(res.success).toBe(false);
     expect(res.status).toBe(404);
     expect(res.code).toBe('SKU_NOT_AVAILABLE');
+  });
+
+  it('envía productId al Backend para que el SKU MOCK se resuelva en el servidor', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ data: { cartId: 'cart-1', version: 1, items: [{ sku: 'SKU-MOCK-001', quantity: 1 }] } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await addCartItemApi({ productId: 'PRD-MOCK-001', quantity: 1 }, false);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/cart/current/items', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ productId: 'PRD-MOCK-001', quantity: 1 }),
+    }));
+    expect(result.status).toBe(201);
+    vi.unstubAllGlobals();
   });
 });

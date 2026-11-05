@@ -61,6 +61,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
     <ProductDetailContainer
       slug={slug}
       returnTo={typeof returnTo === "string" ? returnTo : undefined}
+      showAddToCart={true}
     />
   );
 }
