@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.2.0...v1.3.0) (2026-11-05)
+
+### Features
+
+* **f014:** disponibilidad por confirmar con reintento y sin compra ([e58996a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/e58996a959842d4788482022de64a2ff78867291))
+
 ## [1.2.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.1.0...v1.2.0) (2026-11-05)
 
 ### Features
