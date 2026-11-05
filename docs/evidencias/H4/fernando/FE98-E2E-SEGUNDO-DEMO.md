@@ -6,7 +6,7 @@
 
 - Issue: [TASK-TRANS-S02-QA-001 — Frontend #98](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/98)
 - Rama: `test/fe98-e2e-segundo-demo-fernando`
-- Commit SHA: pendiente
+- Commit SHA de implementación E2E: `8f4fab6`
 - PR hacia `develop`: pendiente
 - Fecha/hora de ejecución (America/Lima): pendiente
 - Responsable / revisor: Fernando Saire / Jim Segovia

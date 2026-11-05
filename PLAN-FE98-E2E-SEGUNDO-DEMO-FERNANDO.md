@@ -114,5 +114,5 @@ Crear una PR **sólo para esta rama** hacia `develop`, con título sugerido `tes
 - [ ] Flujo único navegador con G7 fixture y alta/listado persistente de favorito: el modo Auth BFF no se puede combinar con `H3_SANDBOX_ENABLED`, y el proyector actual de Wishlist requiere ese flag. No cambiar la implementación de Favoritos dentro de #98 sin coordinar su alcance.
 - [ ] Decisión de Jim sobre si los negativos de auth del Backend satisfacen el requisito o si espera un flujo de navegador adicional.
 - [ ] Evidencia final completada.
-- [ ] Commit y push de la rama E2E.
+- [x] Commit `8f4fab6` y push de la rama E2E a `origin/test/fe98-e2e-segundo-demo-fernando`.
 - [ ] PR independiente abierta y revisión solicitada antes del plazo acordado.
