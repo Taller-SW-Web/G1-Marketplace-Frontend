@@ -2,6 +2,14 @@
 
 El listado consume G6 mediante navegador → Next → BFF G1 → G6, con su modo demo sin JWT autorizado para el ensayo. La ficha MOCK se muestra en otra pestaña y servicio, con rótulo visible. No hay fallback entre productos REAL y fixtures.
 
+## Compatibilidad actualizada — 05/11
+
+Los workflows fijan ahora Backend develop `28ab802cd9ac5f56a9621fbad83fd129f732a7d6` (v1.6.0), que ya integra #274 (client_credentials) y #273 (public-read-only). Frontend ya contiene todo su develop vigente `28f4bb0`; no necesita otro merge de sincronización. Los contratos públicos de catálogo permanecen compatibles.
+
+El runner conserva el perfil local explícito `NODE_ENV=test` + `demo-no-auth`; actualizar el pin no activa el modo público ni modifica producción. El nuevo modo `public-read-only` está disponible por configuración explícita, sin heredar credenciales. F011 REAL y su compatibilidad con G7 están preparados por separado en Backend #275, aún sin fusionar; por eso el Backend fijado aquí todavía no entrega esa ampliación de ficha.
+
+Los resultados de red/Edge del apartado de ensayo corresponden al corte anterior v1.4.0. El CI del nuevo pin acredita por separado las comprobaciones controladas; no debe interpretarse como un nuevo ensayo de G6 vivo.
+
 ## Preparación en otra máquina
 
 Requisitos: Git, Node **22.18 o superior de la rama 22**, npm y acceso HTTPS a GitHub, G6 y el host de imágenes. No requiere Docker, PostgreSQL, token ni archivos privados. La primera instalación necesita Internet.
