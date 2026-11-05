@@ -1,6 +1,6 @@
 # Evidencia QA local — Checkout F-022–F-027 (Frontend)
 
-**Corte base:** `develop` en `6d4491f1d0e34162af9bcaca24a5a5988fd45d89` (5-nov-2026).  
+**Corte base:** `develop` en `6d4491f1d0e34162af9bcaca24a5a5988fd45d89` (5-nov-2026).
 **Modo:** pruebas unitarias/componentes y E2E con fixtures o dobles; ningún proveedor externo real.
 
 Esta evidencia complementa las implementaciones fusionadas en [PR #108](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/108) y [PR #109](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/109). No cierra los gates INT ni acredita despliegue, grants, titularidad de direcciones o pago real.
