@@ -192,3 +192,55 @@ describe("proxy /api/catalog — correlación y Problem Details (F-011 §3/§4)"
     expect(problem.code).toBe("CATALOG_UNAVAILABLE");
   });
 });
+
+describe("proxy /api/catalog — subrutas comerciales F-012…F-015", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    ["price", "?sku=SKU-MOCK-001", "/api/v1/catalog/products/zapatillas/price", "?sku=SKU-MOCK-001"],
+    ["variants", "", "/api/v1/catalog/products/zapatillas/variants", ""],
+    ["availability", "?sku=SKU-MOCK-001", "/api/v1/catalog/products/zapatillas/availability", "?sku=SKU-MOCK-001"],
+    ["recommendations", "", "/api/v1/catalog/products/zapatillas/recommendations", ""],
+  ])(
+    "reenvía products/{slug}/%s y conserva el origen",
+    async (subpath, query, expectedPath, expectedSearch) => {
+      const fetchMock = stubFetch(async () =>
+        upstream(
+          { data: { ok: true } },
+          { headers: { "x-catalog-source": "MOCK", "x-request-id": "bff-1" } },
+        ),
+      );
+
+      const response = await catalogProxyGet(
+        requestFor(`products/zapatillas/${subpath}${query}`),
+        ["products", "zapatillas", subpath],
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-catalog-source")).toBe("MOCK");
+      expect(response.headers.get("x-request-id")).toBe("bff-1");
+      const [url] = fetchMock.mock.calls[0] ?? [undefined];
+      expect(url?.pathname).toBe(expectedPath);
+      expect(url?.search).toBe(expectedSearch);
+    },
+  );
+
+  it.each([
+    [["products", "zapatillas", "orders"]],
+    [["products", "zapatillas", "price", "extra"]],
+    [["products", "SLUG_INVALIDO!", "price"]],
+  ])("rechaza la ruta no permitida %j sin consultar el BFF", async (path) => {
+    const fetchMock = stubFetch(async () => upstream({}));
+    const response = await catalogProxyGet(
+      requestFor(path.join("/")),
+      path,
+    );
+
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const problem = await readProblem(response);
+    expect(problem.code).toBe("NOT_FOUND");
+  });
+});

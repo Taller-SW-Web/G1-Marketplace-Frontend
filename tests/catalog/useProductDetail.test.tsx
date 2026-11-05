@@ -108,7 +108,7 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
     expect(link.textContent).toBe("Volver al catálogo");
   });
 
-  it("UI-F011-09: migas, un único h1 y región comercial omitida", async () => {
+  it("UI-F011-09: migas, un único h1 y región comercial F-012/F-014", async () => {
     render(<ProductDetailContainer slug="zapatillas-running-aero-x" />);
 
     expect(
@@ -124,10 +124,13 @@ describe("ProductDetailContainer (F-011 · MOCK)", () => {
     expect(crumbLinks).toContain("/");
     expect(crumbLinks).toContain("/catalogo");
 
+    // F-012 y F-014 llegan al terminar sus consultas independientes.
+    expect(await screen.findByText(/S\/\s*254\.90/u)).toBeTruthy();
+    expect(await screen.findByText(/Disponible/u)).toBeTruthy();
+
     const page = document.querySelector(".product-page")?.textContent ?? "";
-    expect(page).not.toMatch(/S\//u);
-    expect(page).not.toMatch(/stock/i);
-    expect(page).not.toMatch(/precio/i);
+    expect(page).toMatch(/precio/i);
+    // El CTA interactivo permanece deshabilitado en el entorno de pruebas.
     expect(page).not.toMatch(/carrito/i);
   });
 

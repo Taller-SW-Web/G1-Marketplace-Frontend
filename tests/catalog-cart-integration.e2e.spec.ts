@@ -12,7 +12,9 @@ test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
     // 1. Simular la respuesta del BFF para el producto y el carrito
     const mockProduct = {
       productId: "prod-e2e-001",
-      slug: "zapatillas-running-e2e",
+      // The server-rendered product route checks the slug against the local
+      // Backend fixture before the browser request can be intercepted.
+      slug: "zapatillas-running-aero-x",
       name: "Zapatillas Running Inka Pro",
       brand: { brandId: "brand-inka", name: "Inka Athletics" },
       description: "Zapatillas de alto rendimiento para asfalto.",
@@ -41,12 +43,13 @@ test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
     await page.route("**/api/cart/current/items", async (route) => {
       if (route.request().method() === "POST") {
         const body = JSON.parse(route.request().postData() || "{}");
-        const existing = cartItems.find((it) => it.sku === body.sku);
+        const sku = body.sku ?? body.productId;
+        const existing = cartItems.find((it) => it.sku === sku);
         if (existing) {
           existing.quantity += body.quantity || 1;
         } else {
           cartItems.push({
-            sku: body.sku,
+            sku,
             name: "Zapatillas Running Inka Pro",
             quantity: body.quantity || 1,
             unitPrice: { amount: 199.9, currency: "PEN" },
@@ -81,7 +84,7 @@ test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
     });
 
     // 2. Visitar la ficha del producto
-    await page.goto("/productos/zapatillas-running-e2e");
+    await page.goto("/productos/zapatillas-running-aero-x");
 
     // Verificar que la ficha cargó el título
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
