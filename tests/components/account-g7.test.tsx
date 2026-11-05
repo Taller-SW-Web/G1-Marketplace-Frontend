@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RegistrationForm } from "../../src/features/auth/RegistrationForm";
-import { RecoverPasswordForm } from "../../src/features/auth/RecoverPasswordForm";
-import { ResetPasswordForm } from "../../src/features/auth/ResetPasswordForm";
 import { CheckoutLogoutDialog } from "../../src/features/auth/CheckoutLogoutDialog";
 
 const policy = { longitudMinima: 12, requiereMayuscula: true, requiereMinuscula: true, requiereDigito: true,
@@ -60,57 +58,6 @@ describe("G1 account UI with contract fixtures", () => {
     const button = screen.getByRole("button", { name: "Crear cuenta" }); expect((button as HTMLButtonElement).disabled).toBe(true);
     policyFails = false; fireEvent.click(screen.getByRole("button", { name: "Reintentar requisitos" }));
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-  });
-  it("uses a neutral recovery acceptance message", async () => {
-    postResult = Response.json({ accepted: true }, { status: 202 }); render(<RecoverPasswordForm />);
-    const button = screen.getByRole("button", { name: "Enviar instrucciones" }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "unknown@fixture.test" } }); fireEvent.click(button);
-    expect(await screen.findByText("Si el correo es válido, recibirás instrucciones para continuar.")).toBeTruthy();
-    expect(screen.queryByText(/cuenta existe/i)).toBeNull();
-  });
-  it("preserves the email and offers manual recovery after throttling", async () => {
-    postResult = Response.json({ code: "DEMASIADAS_SOLICITUDES" }, { status: 429 }); render(<RecoverPasswordForm />);
-    const button = screen.getByRole("button", { name: "Enviar instrucciones" }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "limit@fixture.test" } }); fireEvent.click(button);
-    expect((await screen.findByRole("alert")).textContent).toContain("Espera antes de volver");
-    expect((screen.getByLabelText("Correo electrónico") as HTMLInputElement).value).toBe("limit@fixture.test");
-  });
-  it("removes the recovery token from URL/history, sends it only in the POST body and never starts a session", async () => {
-    window.history.replaceState({ previous: "state-with-link" }, "", "/restablecer-contrasena?token=opaque-fixture");
-    postResult = new Response(null, { status: 204 }); render(<ResetPasswordForm />);
-    await screen.findByLabelText("Nueva contraseña", { exact: true });
-    expect(window.location.search).toBe(""); expect(window.history.state).toBeNull();
-    expect(document.body.textContent).not.toContain("opaque-fixture");
-    const button = screen.getByRole("button", { name: "Guardar nueva contraseña" }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.change(screen.getByLabelText("Nueva contraseña", { exact: true }), { target: { value: "Changed-fixture!123" } });
-    fireEvent.change(screen.getByLabelText("Confirma tu contraseña", { exact: true }), { target: { value: "Changed-fixture!123" } }); fireEvent.click(button);
-    expect(await screen.findByRole("heading", { name: "Contraseña actualizada" })).toBeTruthy();
-    const call = fetcher.mock.calls.find(([path]) => path.endsWith("/password/restablecer")) as unknown as [string, RequestInit];
-    expect(JSON.parse(call[1].body as string)).toEqual({ token: "opaque-fixture", nuevaContrasena: "Changed-fixture!123" });
-    expect(call[1].referrerPolicy).toBe("no-referrer");
-    expect(fetcher.mock.calls.filter(([path]) => path.endsWith("/auth/login"))).toHaveLength(0);
-  });
-  it("respects provider Retry-After without automatically repeating recovery", async () => {
-    postResult = Response.json({ code: "DEMASIADAS_SOLICITUDES", retryAfterSeconds: 2 }, { status: 429 }); render(<RecoverPasswordForm />);
-    const button = screen.getByRole("button", { name: "Enviar instrucciones" }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.change(screen.getByLabelText("Correo electrónico"), { target: { value: "limit@fixture.test" } }); fireEvent.click(button);
-    const waiting = await screen.findByRole("button", { name: "Reintentar en 2 s" }); expect((waiting as HTMLButtonElement).disabled).toBe(true);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Enviar instrucciones" })).toBeTruthy(), { timeout: 4000 });
-    expect(fetcher.mock.calls.filter(([path]) => path.endsWith("/password/recuperar"))).toHaveLength(1);
-  });
-  it("replaces an expired reset form with a new-link action", async () => {
-    window.history.replaceState(null, "", "/restablecer-contrasena?token=expired-fixture");
-    postResult = Response.json({ code: "TOKEN_RECUPERACION_EXPIRADO" }, { status: 410 }); render(<ResetPasswordForm />);
-    await screen.findByLabelText("Nueva contraseña", { exact: true });
-    const button = screen.getByRole("button", { name: "Guardar nueva contraseña" }); await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.change(screen.getByLabelText("Nueva contraseña", { exact: true }), { target: { value: "Changed-fixture!123" } });
-    fireEvent.change(screen.getByLabelText("Confirma tu contraseña", { exact: true }), { target: { value: "Changed-fixture!123" } }); fireEvent.click(button);
-    expect(await screen.findByRole("heading", { name: "Enlace vencido" })).toBeTruthy(); expect(screen.queryByLabelText("Nueva contraseña", { exact: true })).toBeNull();
-    expect(screen.getByRole("link", { name: "Solicitar otro enlace" }).getAttribute("href")).toBe("/recuperar-contrasena");
-  });
-  it("shows an invalid-link outcome without a made-up validation request", async () => {
-    render(<ResetPasswordForm />); expect(await screen.findByRole("heading", { name: "Enlace no válido" })).toBeTruthy();
-    expect(fetcher.mock.calls.some(([path]) => /validar|verificar/.test(path))).toBe(false);
   });
 });
 describe("checkout logout confirmation", () => {

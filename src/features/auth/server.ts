@@ -75,11 +75,14 @@ export async function proxyAuth(request: Request, action: "login" | "session" | 
     const outgoing = new Headers(headers);
     for (const cookie of upstream.headers.getSetCookie()) {
       if (cookiePattern.test(cookie) && /; HttpOnly(?:;|$)/i.test(cookie)
-        && /; Path=\/(?:;|$)/i.test(cookie) && !/; Domain=/i.test(cookie)) outgoing.append("Set-Cookie", cookie);
+        && /; Path=\/(?:;|$)/i.test(cookie) && !/; Domain=/i.test(cookie)
+        && !(action === "login" && object(value) && value.mfaRequerido === true
+          && /^(?:__Host-)?g1_session=[A-Za-z0-9_-]{43}(?:;|$)/.test(cookie))) outgoing.append("Set-Cookie", cookie);
     }
     if (!upstream.ok) {
       const allowed = ["CREDENCIALES_INVALIDAS", "PASSWORD_CADUCADA", "CODIGO_INVALIDO", "OTP_INTENTOS_AGOTADOS", "OTP_EXPIRADO", "TOKEN_INVALIDO", "REFRESCO_INVALIDO", "RATE_LIMITED", "UNAUTHORIZED", "FORBIDDEN", "INVALID_REQUEST", "AUTH_UNAVAILABLE"];
-      const code = object(value) && typeof value.code === "string" && allowed.includes(value.code) ? value.code : upstream.status === 400 ? "INVALID_REQUEST" : "AUTH_UNAVAILABLE";
+      const code = action === "login" && upstream.status === 401 ? "CREDENCIALES_INVALIDAS"
+        : object(value) && typeof value.code === "string" && allowed.includes(value.code) ? value.code : upstream.status === 400 ? "INVALID_REQUEST" : "AUTH_UNAVAILABLE";
       return Response.json({ code }, { status: [400, 401, 403, 410, 429].includes(upstream.status) ? upstream.status : 503, headers: outgoing });
     }
     let result: unknown = publicSession(value);
