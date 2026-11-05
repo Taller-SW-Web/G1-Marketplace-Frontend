@@ -13,3 +13,10 @@ La CI del nuevo aporte fija por SHA el backend compañero; evita ejecutar la fic
 Este aporte de Giuliano continúa las ramas de Sebastián; no modifica asignación ni revisor de la issue. Se mantiene separado de las entregas F-006–F-010. No se afirma aprobación humana, identidad G7, integración REAL ni despliegue. No se ejecutaron reservas, consumo de cupón ni operaciones contra servicios remotos.
 
 La issue conserva su DoD y permanece abierta. Faltan revisión independiente del nuevo corte, integración autorizada y comprobación del SHA desplegado. IA: Codex para implementación, pruebas y registro; revisión humana pendiente.
+
+
+## Revalidación 05/11/2026 tras #107
+
+PR #125 actualizada con develop y reapuntada a develop. Conflictos resueltos conservando UI/reintento de UNDETERMINED, guardia de campos e identidad SKU y cambios actuales del equipo. CI fija el Backend #266 actualizado con #232 y contrato OpenAPI de cuatro estados.
+
+321 componentes/proxy, 81 servidor, lint, build y tipos PASS. Los datos son MOCK y el ensayo no acredita inventario REAL, grants o despliegue. El demo del viernes será MOCK rotulado local junto con BE #265/#266 y FE #124. Producción queda a cargo de Andrés; issues abiertas hasta revisión y cumplimiento de DoD.

@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: Taller-SW-Web/G1-Marketplace-Backend
-          ref: a23665ce48487dd5f63624181065efb3b9e48d11
+          ref: b290075f8e3e9d5b0098755ee18fe494f7791a2c
           path: G1-Marketplace-Backend
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
