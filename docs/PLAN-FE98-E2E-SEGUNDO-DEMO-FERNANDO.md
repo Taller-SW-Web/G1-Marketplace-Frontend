@@ -97,7 +97,7 @@ No etiquetar toda la ejecución como REAL por usar los procesos locales de G1. S
 
 ## 7. Evidencia y PR
 
-Al terminar, completar [`docs/evidencias/H4/fernando/FE98-E2E-SEGUNDO-DEMO.md`](docs/evidencias/H4/fernando/FE98-E2E-SEGUNDO-DEMO.md) con commit SHA, entorno, comandos, casos/resultados, límites MOCK/REAL, defectos y retests. No registrar secretos ni tokens.
+Al terminar, completar [`docs/evidencias/H4/fernando/FE98-E2E-SEGUNDO-DEMO.md`](evidencias/H4/fernando/FE98-E2E-SEGUNDO-DEMO.md) con commit SHA, entorno, comandos, casos/resultados, límites MOCK/REAL, defectos y retests. No registrar secretos ni tokens.
 
 Crear una PR **sólo para esta rama** hacia `develop`, con título sugerido `test(H4): E2E segundo demo FE #98`, enlace `Refs #98` (sin cerrar automáticamente la issue), resumen de cobertura y enlace a la evidencia. Solicitar revisión de Jim. No incluir ni esperar la revisión de las ramas F-028–F-035.
 
@@ -111,8 +111,8 @@ Crear una PR **sólo para esta rama** hacia `develop`, con título sugerido `tes
 - [x] Suite Backend `test/auth-g7.e2e-spec.ts` ejecutada contra PostgreSQL desechable para JWT vencido, ownership A/B y MFA.
 - [x] Catálogo, ficha, carrito, Favoritos y autenticación tienen cobertura ejecutada por suites identificadas y límites MOCK/LOCAL explícitos.
 - [x] Recorrido UI catálogo MOCK → ficha → carrito → Favoritos agregado como prueba aislada; carrito y Favoritos usan stubs de navegador.
-- [ ] Flujo único navegador con G7 fixture y alta/listado persistente de favorito: el modo Auth BFF no se puede combinar con `H3_SANDBOX_ENABLED`, y el proyector actual de Wishlist requiere ese flag. No cambiar la implementación de Favoritos dentro de #98 sin coordinar su alcance.
-- [ ] Decisión de Jim sobre si los negativos de auth del Backend satisfacen el requisito o si espera un flujo de navegador adicional.
-- [ ] Evidencia final completada.
-- [x] Commit `8f4fab6` y push de la rama E2E a `origin/test/fe98-e2e-segundo-demo-fernando`.
-- [ ] PR independiente abierta y revisión solicitada antes del plazo acordado.
+- [x] Jim confirmó que `AUTH_ENABLED` y `H3_SANDBOX_ENABLED` son incompatibles intencionalmente y pidió mantener separados el recorrido MOCK y la prueba REAL contra el simulador G7.
+- [x] Se documentó que agregar un favorito persistente dentro del flujo G7 es opcional; no se presenta un stub como persistencia real.
+- [x] Evidencia final actualizada con la salida de la ejecución local FE #98 y la limitación de CI.
+- [x] PR independiente #129 abierta; revisión de Jim pendiente.
+- [ ] Fusionar sólo después de la revisión y aprobación de Jim.

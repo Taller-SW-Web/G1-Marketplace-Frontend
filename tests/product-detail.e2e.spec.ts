@@ -72,8 +72,7 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
     await expect(body).not.toContainText(/S\//);
     await expect(body).not.toContainText(/precio/i);
     await expect(body).not.toContainText(/stock/i);
-    // The cart action belongs to F-016; this F-011 scenario only verifies
-    // that the descriptive fixture does not invent price or stock data.
+    await expect(body).not.toContainText(/carrito/i);
   });
 
   test("producto inexistente responde HTTP 404 con estado neutral", async ({

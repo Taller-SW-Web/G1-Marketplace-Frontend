@@ -1,13 +1,13 @@
 # Evidencia — FE #98: E2E del segundo demo
 
-> Estado: **avance preliminar; E2E integral pendiente**. Los datos siguientes registran sólo las comprobaciones efectuadas hasta ahora y no certifican #98 completa.
+> Estado: **PR #129 abierta para revisión**. Los recorridos MOCK y el flujo de autenticación contra el simulador G7 se reportan por separado; las integraciones productivas quedan fuera de esta prueba.
 
 ## Identificación
 
 - Issue: [TASK-TRANS-S02-QA-001 — Frontend #98](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/98)
 - Rama: `test/fe98-e2e-segundo-demo-fernando`
 - Commit SHA de implementación E2E: `8f4fab6`
-- PR hacia `develop`: pendiente
+- PR hacia `develop`: [#129](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/129)
 - Fecha/hora de ejecución (America/Lima): pendiente
 - Responsable / revisor: Fernando Saire / Jim Segovia
 
@@ -24,12 +24,12 @@
 
 | Módulo | Clasificación | Fuente/configuración | Resultado |
 |---|---|---|---|
-| Catálogo G6 | MOCK | En la prueba preliminar, respuesta de `page.route`; no G6 real | Parcial |
-| Frontend G1 | LOCAL | Next.js levantado por Playwright | Pendiente |
-| Backend/BFF G1 | LOCAL | API local levantada por Playwright | Pendiente |
-| Auth G7 | LOCAL con fixture de contrato | `scripts/g7-contract-fixture.mjs`, BFF local y PostgreSQL desechable; sin G7 real ni correo | Integración local aprobada |
-| Carrito | MOCK en la prueba preliminar | Interceptaciones `page.route`; no API local validada por ese caso | Parcial |
-| Favoritos | LOCAL/MOCK según ruta probada | Completar tras revisar interceptaciones | Pendiente |
+| Catálogo G6 | MOCK | Backend local con `CATALOG_SOURCE=mock`; no G6 real | Aprobado en recorrido local |
+| Frontend G1 | LOCAL | Next.js levantado por Playwright | Aprobado en recorrido local |
+| Backend/BFF G1 | LOCAL | API local levantada por Playwright; catálogo en MOCK | Aprobado en recorrido local |
+| Auth G7 | REAL contra simulador local | `scripts/g7-contract-fixture.mjs`, BFF local y PostgreSQL desechable; sin G7 productivo ni correo | Aprobado local |
+| Carrito | MOCK (stub Playwright) | Interceptaciones `page.route`; no valida API ni persistencia local | Aprobado en recorrido UI |
+| Favoritos | MOCK (stub Playwright) en recorrido UI; lectura privada REAL (simulador) en suite G7 | Las rutas UI se interceptan en la primera suite; `g7-local.spec.ts` consulta favoritos privados con sesión del fixture | Aprobado por suites separadas |
 | G5, G6, G7 productivos / correo | NO PROBADOS | Fuera del alcance de esta ejecución | No probado |
 
 ## Casos y resultados
@@ -55,6 +55,21 @@
 | `npx playwright test --config playwright.fe98.config.ts` | **1/1 pasó** | Recorrido unificado catálogo→ficha→carrito→favoritos. Catálogo usa Backend local MOCK; Carrito/Favoritos y la identidad H3 se simulan con `page.route`; no valida persistencia ni G7. |
 | `node node_modules/@playwright/test/cli.js test --config playwright.auth.config.ts tests/auth/g7-local.spec.ts tests/auth/fe98-g7-auth-negative.spec.ts` | **3/3 pasaron** | Navegador→Next→BFF→PostgreSQL desechable→G7 contract fixture: login/MFA, OTP incorrecto sin sesión, sesión privada, recarga, segunda pestaña, logout y login móvil. No es G7 REAL ni envío de correo. |
 | `npm run test:e2e -- test/auth-g7.e2e-spec.ts` (Backend) | **18/18 pasaron** | Suite Backend con fixture HTTP y PostgreSQL desechable; incluye expiración de JWT, MFA inválido/expirado y aislamiento A/B. No se cuenta como E2E de navegador FE. |
+
+### Salida de la ejecución local FE #98
+
+Los specs `fe98-*` son ejecuciones locales. `playwright.fe98.config.ts` inicia el Backend con `npm --prefix ../G1-Marketplace-Backend ...`; esta configuración no es autocontenida para CI cuando el repositorio hermano no está disponible.
+
+```text
+$ npx playwright test --config playwright.fe98.config.ts
+
+Running 1 test using 1 worker
+  ok 1 tests\fe98-second-demo.e2e.spec.ts:14:5 › FE #98: catálogo MOCK → ficha → carrito → favoritos (17.2s)
+
+1 passed (48.5s)
+```
+
+La suite de autenticación G7 se ejecutó aparte con `playwright.auth.config.ts`, fixture local y PostgreSQL desechable: **3/3 pasaron** en la ejecución registrada arriba. No se conserva el stdout original de esa ejecución; por eso se informa el resultado sin reconstruir una salida de terminal. No corresponde a G7 productivo.
 
 El recorrido principal une Catálogo/Ficha/Carrito/Favoritos en UI con stubs para Carrito/Favoritos; la autenticación se valida aparte con el BFF real local y fixture G7. No se afirma todavía un único recorrido con alta/lista persistente de favoritos bajo sesión G7.
 
