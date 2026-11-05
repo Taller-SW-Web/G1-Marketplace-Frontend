@@ -15,19 +15,21 @@ const LABELS: Record<CommercialAvailability, string> = {
   AVAILABLE: "Disponible",
   STOCK_LOW: "Quedan pocas unidades",
   OUT_OF_STOCK: "Agotado",
+  UNDETERMINED: "Disponibilidad por confirmar",
 };
 
 const MODIFIERS: Record<CommercialAvailability, string> = {
   AVAILABLE: "availability-available",
   STOCK_LOW: "availability-low",
   OUT_OF_STOCK: "availability-out",
+  UNDETERMINED: "availability-undetermined",
 };
 
 /** Icono redundante con el texto (no depende sólo del color). */
 function AvailabilityIcon({ state }: { state: CommercialAvailability }) {
   return (
     <span className={`availability-icon ${MODIFIERS[state]}`} aria-hidden="true">
-      {state === "AVAILABLE" ? "✓" : state === "STOCK_LOW" ? "!" : "×"}
+      {state === "AVAILABLE" ? "✓" : state === "STOCK_LOW" ? "!" : state === "UNDETERMINED" ? "?" : "×"}
     </span>
   );
 }
@@ -87,6 +89,11 @@ export function AvailabilityRegion({ state, retry }: Props) {
         <AvailabilityIcon state={state.availability} />
         {LABELS[state.availability]}
       </p>
+      {state.availability === "UNDETERMINED" && (
+        <Button variant="secondary" size="sm" onClick={retry}>
+          Volver a consultar
+        </Button>
+      )}
     </section>
   );
 }

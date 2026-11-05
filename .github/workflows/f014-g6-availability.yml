@@ -1,0 +1,51 @@
+name: H4 F014 commercial availability
+on:
+  pull_request:
+    paths:
+      - 'src/features/catalog/**'
+      - 'tests/catalog/**'
+      - 'tests/product-commerce.e2e.spec.ts'
+      - '.github/workflows/f014-g6-availability.yml'
+permissions:
+  contents: read
+concurrency:
+  group: f014-availability-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  availability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: G1-Marketplace-Frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: G1-Marketplace-Frontend
+          persist-credentials: false
+      - name: Public companion backend, pinned to the tested four-state revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Taller-SW-Web/G1-Marketplace-Backend
+          ref: b290075f8e3e9d5b0098755ee18fe494f7791a2c
+          path: G1-Marketplace-Backend
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+          cache: npm
+          cache-dependency-path: |
+            G1-Marketplace-Frontend/package-lock.json
+            G1-Marketplace-Backend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm --prefix ../G1-Marketplace-Backend ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test:components
+      - run: npm run test:server
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - name: Next to BFF MOCK, no calls to G6 or real checkout
+        run: npx playwright test tests/product-commerce.e2e.spec.ts --reporter=line
