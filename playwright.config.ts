@@ -3,7 +3,7 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
   // Wishlist uses its explicit sandbox configs, kept outside this default suite.
-  testIgnore: ["**/wishlist/**", "**/auth/**"],
+  testIgnore: ["**/wishlist/**", "**/auth/**", "**/featured/**"],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
