@@ -8,7 +8,7 @@
 - Rama: `test/fe98-e2e-segundo-demo-fernando`
 - Commit SHA de implementación E2E: `8f4fab6`
 - PR hacia `develop`: [#129](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/129)
-- Fecha/hora de ejecución (America/Lima): pendiente
+- Fecha/hora de la ejecución FE #98 (America/Lima): `2026-11-04 22:55:37 UTC−05:00` (marca temporal del resultado Playwright local)
 - Responsable / revisor: Fernando Saire / Jim Segovia
 
 ## Entorno del recorrido unificado FE #98
