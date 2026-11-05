@@ -36,6 +36,8 @@ jobs:
         run: npm run typecheck
       - name: Build (next build)
         run: npm run build
+      - name: Test del runner REAL local (sin red)
+        run: npm run test:demo:catalogo:real
       - name: Test de componentes
         run: npm run test:components
       - name: Test de servidor
