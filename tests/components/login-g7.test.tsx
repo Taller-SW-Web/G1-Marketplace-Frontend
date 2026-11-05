@@ -38,6 +38,32 @@ describe("G7 login and MFA states", () => {
     expect((field as HTMLInputElement).value).toBe("");
     expect(fetcher.mock.calls[2][1].body).toBe(JSON.stringify({ codigo: "999999" }));
   });
+  it.each(["CREDENCIALES_INVALIDAS", "UNAUTHORIZED", "unknown"])("shows a generic login error for 401 (%s)", async code => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ code, detail: "private" }, { status: 401 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.",
+    );
+    expect(screen.queryByLabelText("Código de verificación")).toBeNull();
+  });
+  it("explains an expired OTP without establishing a session", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ mfaRequerido: true, expiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ canal: "EMAIL", destinoEnmascarado: "a***@fixture.test", expiraEn: 300, desafioExpiraEn: 300 }))
+      .mockResolvedValueOnce(Response.json({ code: "OTP_EXPIRADO" }, { status: 410 }));
+    vi.stubGlobal("fetch", fetcher); render(<LoginForm realAuth />); fill();
+    const field = await screen.findByLabelText("Código de verificación");
+    fireEvent.change(field, { target: { value: "999999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("El código venció");
+    expect((field as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("heading", { name: "Verifica tu acceso" })).toBeTruthy();
+  });
+  it("shows an unavailable login error without opening the MFA step", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "AUTH_UNAVAILABLE" }, { status: 503 })));
+    render(<LoginForm realAuth />); fill();
+    expect((await screen.findByRole("alert")).textContent).toBe("No pudimos completar el acceso. Inténtalo más tarde.");
+    expect(screen.queryByLabelText("Código de verificación")).toBeNull();
+  });
   it("explains a password policy or temporary throttle response", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "PASSWORD_CADUCADA" }, { status: 403 })));
     render(<LoginForm realAuth />); fill();

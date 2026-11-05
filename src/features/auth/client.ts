@@ -20,7 +20,11 @@ export async function authCall(action: string, body?: unknown, signal?: AbortSig
     signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(25000)]), ...(body !== undefined ? { method: "POST",
       headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}) });
   const result: unknown = await response.json();
-  if (!response.ok) throw new AccessError(result && typeof result === "object" && "code" in result && typeof result.code === "string" ? result.code : "AUTH_UNAVAILABLE", response.status);
+  if (!response.ok) {
+    const code = action === "login" && response.status === 401 ? "CREDENCIALES_INVALIDAS"
+      : result && typeof result === "object" && "code" in result && typeof result.code === "string" ? result.code : "AUTH_UNAVAILABLE";
+    throw new AccessError(code, response.status);
+  }
   if (!result || typeof result !== "object" || Array.isArray(result)) throw new AccessError("AUTH_UNAVAILABLE", 503);
   return result as Record<string, unknown>;
 }
