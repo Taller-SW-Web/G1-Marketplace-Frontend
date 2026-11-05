@@ -69,6 +69,30 @@ describe("checkout Backend MOCK adapter", () => {
     });
   });
 
+  it("posts only delivery-address fields and excludes buyer identity", async () => {
+    const address = {
+      label: "Casa nueva",
+      street: "Calle 1",
+      district: "Surco",
+      province: "Lima",
+      department: "Lima",
+      reference: "Dpto. 402",
+      phone: "999999999",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
+      addressId: "ADR-2", ...address,
+    } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkoutApi.createAddress(address)).resolves.toMatchObject({
+      addressId: "ADR-2", ...address,
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/checkout/delivery-addresses");
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: "POST", cache: "no-store" });
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual(address);
+  });
+
   it("merges a partial benefit response into the current quote without recalculating base amounts", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       quoteId: "quote-with-coupon", selectedBenefit: { type: "COUPON", id: "COUPON-1", discount: { amount: 20, currency: "PEN" } },
