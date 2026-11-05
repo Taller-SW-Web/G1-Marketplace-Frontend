@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { wishlistCartEnabled } from "@/features/wishlist/add-server";
 import { FavoritesContent } from "@/features/wishlist/FavoritesContent";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 export default function FavoritesPage() {
   return (
     <div className="container favorites-page">
-      <FavoritesContent />
+      <FavoritesContent cartEnabled={wishlistCartEnabled()} />
     </div>
   );
 }

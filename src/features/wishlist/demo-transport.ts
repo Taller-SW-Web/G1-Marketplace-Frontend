@@ -3,6 +3,7 @@ import type { FavoriteProduct } from "./contract";
 import type { FavoritesTransport } from "./transport";
 
 export const scenarios = {
+  carrito: "Agregar al carrito", "error-carrito": "Error al agregar", "carrito-incierto": "Adición sin confirmar", variante: "Elegir variante",
   lista: "Con favoritos", vacio: "Lista vacía", cargando: "Cargando", "error-catalogo": "Error de catálogo",
   agotados: "Sin existencias", retirado: "Producto retirado", quitando: "Quitando producto", "error-quitar": "Error al quitar",
   eliminado: "Eliminado / Deshacer", restaurando: "Restaurando", restaurado: "Restauración confirmada", "error-restaurar": "No restaurado",
@@ -43,6 +44,13 @@ export function createDemoTransport(scenario: Scenario) {
     pending = { complete: () => { signal.removeEventListener("abort", aborted); pending = undefined; resolve(); }, reject: aborted };
   });
   const adapter: FavoritesTransport = {
+    async addToCart(_id, signal) {
+      await delay(signal);
+      if (scenario === "error-carrito") throw new WishlistError("STOCK_LIMIT_REACHED", 409);
+      if (scenario === "carrito-incierto") throw new WishlistError("CART_RESULT_UNCERTAIN", 504);
+      if (scenario === "variante") throw new WishlistError("VARIANT_SELECTION_REQUIRED", 422, "/productos/nike-air-zoom-pegasus-41?returnTo=%2Ffavoritos");
+      // A confirmed addition preserves the favorite and its original date.
+    },
     async list(signal) {
       if (scenario === "cargando") await hold(signal); else await delay(signal);
       if (scenario === "error-catalogo" && listCalls++ === 0) throw new WishlistError("CATALOG_UNAVAILABLE", 503);

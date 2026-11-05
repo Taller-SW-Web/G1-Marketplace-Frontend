@@ -1,4 +1,5 @@
 import "server-only";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { errorResponse, invalidateSession, privateHeaders, sandboxEnabled, sessionEntry } from "./server";
@@ -6,10 +7,7 @@ import { parseWishlist, record } from "./contract";
 
 function origin(): URL | null {
   try {
-    const base = new URL(process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:10000");
-    if (base.username || base.password || base.search || base.hash || base.pathname !== "/"
-      || !(base.protocol === "https:" || (base.protocol === "http:" && ["localhost", "127.0.0.1"].includes(base.hostname)))) return null;
-    return base;
+    return marketplaceApiUrl();
   } catch { return null; }
 }
 async function failure(response: Response, request: NextRequest) {
@@ -17,7 +15,7 @@ async function failure(response: Response, request: NextRequest) {
   if ([404, 405, 501].includes(response.status)) return errorResponse("WISHLIST_UNAVAILABLE", 503);
   const allowed: Record<number, string[]> = {
     400: ["INVALID_REQUEST", "INVALID_PRODUCT_ID"],
-    503: ["CATALOG_UNAVAILABLE", "WISHLIST_UNAVAILABLE"],
+    503: ["CATALOG_UNAVAILABLE", "WISHLIST_UNAVAILABLE", "AUTH_UNAVAILABLE"],
   };
   try {
     const body: unknown = await response.json();
