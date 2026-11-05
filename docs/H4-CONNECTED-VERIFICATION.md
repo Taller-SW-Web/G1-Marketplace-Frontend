@@ -17,6 +17,8 @@ El runner aplica migraciones dos veces en una base nueva, inicia Nest y Next en 
 
 ## Cobertura aprobada el 2026-11-02
 
+Revalidación sobre la base de la PR frontend #118 (`bae0a17`): 256 pruebas de componentes, 95 de servidor y build de producción aprobados. Se conserva la autenticación incorporada en esa rama. Las rutas nuevas siguen siendo de prueba y no habilitan CSAT productivo.
+
 Siete pruebas recorren navegador → rutas Next → controladores/servicios Nest → PostgreSQL. No hay page.route ni respuestas simuladas entre frontend y backend.
 
 - Favoritos: guardar, listar, recargar, agregar al carrito conservando el favorito, verificar filas e ítems persistidos, lista vacía del segundo usuario y eliminar con 204.

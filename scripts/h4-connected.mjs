@@ -79,7 +79,7 @@ try {
   const { backendUrl, fixtureUrl } = JSON.parse(readFileSync(readyFile, 'utf8'));
   const origin = `http://127.0.0.1:${await port()}`;
   const next = start(['node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', '--port', new URL(origin).port, '--webpack'], frontend,
-    { ...process.env, NODE_ENV: 'development', MARKETPLACE_API_URL: backendUrl, H4_CONNECTED_TEST: 'true',
+    { ...process.env, NODE_ENV: 'development', MARKETPLACE_API_URL: backendUrl, H4_CONNECTED_TEST: 'true', G1_AUTH_ENABLED: 'false',
       H3_FRONTEND_SANDBOX_ENABLED: 'true', H3_FRONTEND_ORIGIN: origin,
       H3_WISHLIST_READ_ENABLED: 'true', H3_WISHLIST_CART_ENABLED: 'true',
       H3_SANDBOX_TOKEN_A: 'connected-A', H3_SANDBOX_TOKEN_B: 'connected-B', NEXT_TELEMETRY_DISABLED: '1' });

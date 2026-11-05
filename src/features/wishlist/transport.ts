@@ -35,7 +35,7 @@ export const httpFavorites: FavoritesTransport = {
   save: (id, signal) => mutateItem(id, "save", signal),
 };
 
-// Default page and in-memory demos do not imply support for authenticated cart.
+// Selected only when the server enables the existing cart integration opt-in.
 export const httpFavoritesWithCart: FavoritesTransport = {
   ...httpFavorites,
   async addToCart(id, signal) {

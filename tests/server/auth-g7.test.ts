@@ -107,6 +107,43 @@ describe("G7 BFF web boundary", () => {
     expect((await mutateWishlist(new NextRequest(`${origin}/api/wishlist/items/PRD-1`, { method: "DELETE", headers: { Cookie: `g1_session=${opaque}`, Origin: origin } }), "DELETE", "PRD-1")).status).toBe(204);
     expect(fetcher.mock.calls.every(([, options]) => options.headers.Cookie === `g1_session=${opaque}` && !options.headers.Authorization)).toBe(true);
   });
+  it.each([201, 200])("F-036 preserves save status %s through the shared opaque session without exposing credentials", async status => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ productId: "PRD-1", accessToken: "private-provider-data" }, { status }));
+    vi.stubGlobal("fetch", fetcher);
+    const response = await mutateWishlist(new NextRequest(`${origin}/api/wishlist/items`, {
+      method: "POST", headers: { Cookie: `g1_session=${opaque}; unrelated=private`, Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: "PRD-1" }),
+    }), "POST");
+    expect(response.status).toBe(status); expect(await response.json()).toEqual({ productId: "PRD-1" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, options] = fetcher.mock.calls[0];
+    expect(String(url)).toBe("http://127.0.0.1:10000/api/v1/wishlist/items");
+    expect(options.headers.Cookie).toBe(`g1_session=${opaque}`);
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(JSON.parse(options.body)).toEqual({ productId: "PRD-1" });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+  it("F-036 rejects owner injection before forwarding a real-session save", async () => {
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    const response = await mutateWishlist(new NextRequest(`${origin}/api/wishlist/items`, {
+      method: "POST", headers: { Cookie: `g1_session=${opaque}`, Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: "PRD-1", customerId: "22222222-2222-4222-8222-222222222222" }),
+    }), "POST");
+    expect(response.status).toBe(400); expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("F-036 never falls back to sandbox or confirms a save after an authentication transport failure", async () => {
+    const fetcher = vi.fn().mockRejectedValue(new Error("private auth transport failure"));
+    vi.stubGlobal("fetch", fetcher);
+    const response = await mutateWishlist(new NextRequest(`${origin}/api/wishlist/items`, {
+      method: "POST", headers: { Cookie: `g1_session=${opaque}`, Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: "PRD-1" }),
+    }), "POST");
+    expect(response.status).toBe(504);
+    const body = await response.json();
+    expect(body.code).toBe("RESULT_UNCERTAIN");
+    expect(JSON.stringify(body)).not.toContain("private auth transport failure");
+    expect(fetcher).toHaveBeenCalledTimes(1); expect(fetcher.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
 });
 describe("safe login return", () => {
   it.each(["https://evil.test", "//evil.test", "/\\evil.test", "/%2f%2fevil.test", "/%5cevil.test", "/api/auth", "/login?returnTo=/login", "/\nevil", null])("rejects %s", value => {

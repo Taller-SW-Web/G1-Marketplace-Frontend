@@ -1,6 +1,8 @@
 # Encargo de integración de favoritos: F-037 y F-038
 
-Actualizado el 17/10/2026. Backend local ya implementa lectura y adición al carrito; falta validar sesión, proyección y productos compartidos. Se reabre la preparación de adición exclusivamente dentro de favoritos, opcional y apagada por defecto. No se modifica ficha, login, carrito, backend ni configuración global. No acredita integración real. Ver [revisión](REVISION-CONEXIONES-FAVORITOS.md) y [prompt actualizado para backend](../PROMPT-BACKEND-FAVORITOS.md).
+> Revisión F-039 del 03/11/2026: [conexión con sesión web](F039-SESION-WEB.md). La operación ya puede reutilizar la sesión G1 con opt-in explícito; la homologación REAL y el cierre contractual siguen pendientes. Los apartados históricos que describen exclusivamente sandbox deben leerse con esta actualización.
+
+Actualizado el 17/10/2026. Backend local ya implementa lectura y adición al carrito; falta validar sesión, proyección y productos compartidos. Se reabre la preparación de adición exclusivamente dentro de favoritos, opcional y apagada por defecto. No se modifica ficha, login, carrito, backend ni configuración global. No acredita integración real. Ver [revisión](REVISION-CONEXIONES-FAVORITOS.md), el contrato de esta guía y el [prompt actualizado para backend](../PROMPT-BACKEND-FAVORITOS.md).
 
 ## Fuentes y decisiones
 
@@ -55,7 +57,7 @@ Para retirado sin datos: conservar productId/createdAt, campos de catálogo null
 
 POST sin cuerpo ni idempotency-key al endpoint existente. Respuesta 200 `{productId,cart}` con snapshot validado: cartId, version e items con sku, quantity y unitPrice opcional. Agrega una unidad y conserva el favorito. No es idempotente.
 
-`H3_WISHLIST_CART_ENABLED` queda false por defecto y requiere sandbox development/test. No activar para uso integrado hasta validar misma identidad y lectura del carrito ordinario. En 422 VARIANT_SELECTION_REQUIRED ofrecer redirectUrl de ficha interna, con retorno a favoritos. En 409 manejar stock/conflicto. En pérdida de respuesta bloquear una nueva adición del producto durante la vida de la vista, incluso tras refrescar la lista o cerrar el aviso. No reintentar automáticamente. Salir o recargar reinicia ese bloqueo; la reconciliación autoritativa sigue pendiente.
+`H3_WISHLIST_CART_ENABLED` queda false por defecto. Con `G1_AUTH_ENABLED=true` utiliza las cookies opacas de sesión G1 mediante el BFF compartido, con sandbox deshabilitado. Sin auth web requiere sandbox development/test. No activar para uso integrado hasta homologar los gates y validar proveedores REAL. En 422 VARIANT_SELECTION_REQUIRED ofrecer redirectUrl de ficha interna, con retorno a favoritos. En 409 manejar stock/conflicto. En pérdida de respuesta bloquear una nueva adición del producto durante la vida de la vista, incluso tras refrescar la lista o cerrar el aviso. No reintentar automáticamente. Salir o recargar reinicia ese bloqueo; la reconciliación autoritativa sigue pendiente.
 
 ## Errores públicos
 
