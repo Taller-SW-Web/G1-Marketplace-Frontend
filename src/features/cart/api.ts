@@ -1,4 +1,4 @@
-import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot } from './types';
+import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot, CartMergeResult, MergeAdjustment, MoveToWishlistResult } from './types';
 
 // Almacén en memoria para simular persistencia MOCK en Hito 3 si el backend no está disponible
 let mockCart: CartSnapshot = {
@@ -11,7 +11,9 @@ interface BffErrorResponse {
   error?: {
     code?: string;
     message?: string;
-  };
+  } | string;
+  code?: string;
+  message?: string;
 }
 
 interface BffSuccessResponse {
@@ -108,11 +110,25 @@ export async function addCartItemApi(
     const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
 
     if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al agregar el producto al carrito.'
+      );
+
       return {
         success: false,
         status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
-        code: (json.error?.code as CartMutationCode) || 'ERROR',
-        message: json.error?.message || 'Error al agregar el producto al carrito.',
+        code: errCode,
+        message: errMessage,
       };
     }
 
@@ -142,7 +158,23 @@ export async function addCartItemApi(
  */
 export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot> {
   if (useMock) {
-    return { ...mockCart };
+    const hasIncompletePrices = mockCart.items.some((it) => !it.unitPrice);
+    const subtotal = (mockCart.items.length > 0 && !hasIncompletePrices)
+      ? {
+          amount: Number(
+            mockCart.items.reduce(
+              (acc, it) => acc + (it.unitPrice?.amount ?? 0) * it.quantity,
+              0
+            ).toFixed(2)
+          ),
+          currency: mockCart.items[0]?.unitPrice?.currency || 'PEN',
+        }
+      : null;
+
+    return {
+      ...mockCart,
+      subtotal,
+    };
   }
   const res = await fetch('/api/cart/current', {
     credentials: 'include',
@@ -157,7 +189,7 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
     version: data?.version ?? 0,
     items: (data?.items ?? []).map((it: CartItemDTO) => ({
       sku: it.sku,
-      name: it.sku.replace('INKA-', '').replace(/-/g, ' '),
+      name: it.name || it.sku.replace('INKA-', '').replace(/-/g, ' '),
       quantity: it.quantity,
       unitPrice: it.unitPrice
         ? {
@@ -166,17 +198,350 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
             version: it.unitPrice.version || 1,
           }
         : undefined,
+      availability: it.availability || 'AVAILABLE',
+      attention: it.attention ?? null,
     })),
+    subtotal: data?.subtotal ?? null,
   };
+}
+
+/**
+ * Actualizar cantidad de un ítem en el carrito (F-017)
+ */
+export async function updateCartItemQuantityApi(
+  sku: string,
+  quantity: number,
+  expectedVersion?: number,
+  useMock: boolean = true
+): Promise<CartMutationResult> {
+  if (quantity < 1 || quantity > 99) {
+    return {
+      success: false,
+      status: 400,
+      code: 'INVALID_QUANTITY',
+      message: 'La cantidad debe ser un entero entre 1 y 99.',
+    };
+  }
+
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const existingIndex = mockCart.items.findIndex((it) => it.sku === sku);
+    if (existingIndex < 0) {
+      return {
+        success: false,
+        status: 404,
+        code: 'SKU_NOT_AVAILABLE',
+        message: 'El ítem no existe en el carrito.',
+      };
+    }
+
+    if (expectedVersion !== undefined && expectedVersion !== mockCart.version) {
+      return {
+        success: false,
+        status: 409,
+        code: 'CART_CONFLICT',
+        message: 'El carrito ha sido modificado concurrentemente.',
+        cart: { ...mockCart },
+      };
+    }
+
+    // Fixture sintético MOCK para pruebas locales (SPEC React §8, RC-F-017-03):
+    // No representa stock real ni consulta a G6 (gate G-QUANTITY / X-P0-03 bloqueado).
+    const isMockFixture = sku.includes('LIMITED') || sku.includes('FIXTURE-STOCK-3');
+    if (isMockFixture && quantity > 3) {
+      mockCart.items[existingIndex].quantity = 3;
+      mockCart.version += 1;
+      return {
+        success: false,
+        status: 409,
+        code: 'STOCK_LIMIT_REACHED',
+        message: 'Stock insuficiente para este fixture. Cantidad ajustada al límite (3 unidades).',
+        item: { ...mockCart.items[existingIndex] },
+        cart: { ...mockCart },
+      };
+    }
+
+    mockCart.items[existingIndex].quantity = quantity;
+    mockCart.version += 1;
+
+    return {
+      success: true,
+      status: 200,
+      code: 'QUANTITY_UPDATED',
+      message: 'Cantidad actualizada correctamente.',
+      item: { ...mockCart.items[existingIndex] },
+      cart: { ...mockCart },
+    };
+  }
+
+  // Llamada real al BFF de Next.js
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (expectedVersion !== undefined) {
+      headers['If-Match'] = String(expectedVersion);
+    }
+
+    const res = await fetch(`/api/cart/current/items/${encodeURIComponent(sku)}`, {
+      method: 'PATCH',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ quantity }),
+    });
+
+    const json = (await res.json().catch(() => ({}))) as BffErrorResponse & BffSuccessResponse;
+
+    if (!res.ok) {
+      const errCode = (
+        json.code ??
+        (typeof json.error === 'object' ? json.error?.code : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'ERROR'
+      ) as CartMutationCode;
+
+      const errMessage = (
+        json.message ??
+        (typeof json.error === 'object' ? json.error?.message : undefined) ??
+        (typeof json.error === 'string' ? json.error : undefined) ??
+        'Error al actualizar la cantidad.'
+      );
+
+      return {
+        success: false,
+        status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
+        code: errCode,
+        message: errMessage,
+      };
+    }
+
+    const cartData = json.data as CartSnapshot | undefined;
+    const items = cartData?.items ?? [];
+    return {
+      success: true,
+      status: 200,
+      code: 'QUANTITY_UPDATED',
+      message: 'Cantidad actualizada correctamente.',
+      item: items.find((i) => i.sku === sku),
+      cart: cartData,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor backend.';
+    return {
+      success: false,
+      status: 503,
+      code: 'COMMERCE_DATA_UNAVAILABLE',
+      message,
+    };
+  }
+}
+
+
+/**
+ * TASK-F018-FE-001: Quitar un ítem del carrito (DELETE)
+ */
+export async function removeCartItemApi(
+  sku: string,
+  expectedVersion?: number,
+  useMock: boolean = true
+): Promise<CartMutationResult> {
+  const trimmed = sku.trim();
+  if (!trimmed) {
+    return {
+      success: false,
+      status: 400,
+      code: 'SKU_NOT_AVAILABLE',
+      message: 'El parámetro SKU es requerido.',
+    };
+  }
+
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    if (expectedVersion !== undefined && expectedVersion !== mockCart.version) {
+      return {
+        success: false,
+        status: 409,
+        code: 'CART_CONFLICT',
+        message: 'El carrito ha sido modificado concurrentemente.',
+        cart: { ...mockCart },
+      };
+    }
+
+    const removedItem = mockCart.items.find((it) => it.sku === trimmed);
+    mockCart.items = mockCart.items.filter((it) => it.sku !== trimmed);
+    if (removedItem) {
+      mockCart.version += 1;
+    }
+
+    return {
+      success: true,
+      status: 200,
+      code: 'ITEM_REMOVED',
+      message: 'Ítem eliminado correctamente del carrito.',
+      item: removedItem,
+      cart: { ...mockCart },
+    };
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    if (expectedVersion !== undefined) {
+      headers['If-Match'] = String(expectedVersion);
+    }
+
+    const res = await fetch(`/api/cart/current/items/${encodeURIComponent(trimmed)}`, {
+      method: 'DELETE',
+      headers,
+      credentials: 'include',
+    });
+
+    if (res.status === 204 || res.ok) {
+      const rawVersion = res.headers.get('x-cart-version');
+      const newVersion = rawVersion ? parseInt(rawVersion, 10) : undefined;
+      return {
+        success: true,
+        status: 200,
+        code: 'ITEM_REMOVED',
+        message: 'Ítem eliminado correctamente.',
+        cart: newVersion ? { cartId: '', version: newVersion, items: [] } : undefined,
+      };
+    }
+
+    const json = (await res.json().catch(() => ({}))) as BffErrorResponse;
+    const errCode = (
+      json.code ??
+      (typeof json.error === 'object' ? json.error?.code : undefined) ??
+      (typeof json.error === 'string' ? json.error : undefined) ??
+      'ERROR'
+    ) as CartMutationCode;
+
+    const errMessage = (
+      json.message ??
+      (typeof json.error === 'object' ? json.error?.message : undefined) ??
+      (typeof json.error === 'string' ? json.error : undefined) ??
+      'Error al eliminar el ítem del carrito.'
+    );
+
+    return {
+      success: false,
+      status: (res.status === 400 || res.status === 404 || res.status === 409 || res.status === 503 ? res.status : 500),
+      code: errCode,
+      message: errMessage,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'No fue posible conectar con el servidor backend.';
+    return {
+      success: false,
+      status: 503,
+      code: 'COMMERCE_DATA_UNAVAILABLE',
+      message,
+    };
+  }
 }
 
 /**
  * Reiniciar mock para pruebas unitarias
  */
-export function resetMockCart() {
+export function resetMockCart(initialCart?: Partial<CartSnapshot>) {
   mockCart = {
     cartId: 'MOCK-CART-001',
     version: 1,
     items: [],
+    ...initialCart,
+  };
+}
+
+/**
+ * Fusionar carrito anónimo al iniciar sesión (F-020)
+ */
+export async function mergeAnonymousCartApi(useMock: boolean = true): Promise<CartMergeResult> {
+  if (useMock) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const adjustments: MergeAdjustment[] = [];
+
+    mockCart.items.forEach((it) => {
+      if (it.quantity > 99) {
+        adjustments.push({
+          sku: it.sku,
+          requestedQuantity: it.quantity,
+          confirmedQuantity: 99,
+          reason: 'STOCK_LIMIT',
+        });
+        it.quantity = 99;
+      }
+    });
+
+    const hadItems = mockCart.items.length > 0;
+    return {
+      cartId: 'MOCK-AUTH-CART-001',
+      version: mockCart.version + 1,
+      merged: hadItems,
+      adjustments,
+    };
+  }
+
+  const res = await fetch('/api/cart/current/merge-anonymous', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: no se pudo fusionar el carrito`);
+  }
+
+  const json = await res.json();
+  const data = json.data;
+  return {
+    cartId: data?.cartId ?? '',
+    version: data?.version ?? 0,
+    merged: Boolean(data?.merged),
+    adjustments: data?.adjustments ?? [],
+  };
+}
+
+
+/**
+ * Mover un ítem del carrito a favoritos (F-021)
+ */
+export async function moveCartItemToWishlistApi(
+  sku: string,
+  useMock: boolean = true
+): Promise<MoveToWishlistResult> {
+  if (useMock) {
+    const itemIndex = mockCart.items.findIndex((it) => it.sku === sku);
+    if (itemIndex === -1) {
+      throw new Error(`Error 404: CART_ITEM_NOT_FOUND`);
+    }
+    mockCart.items.splice(itemIndex, 1);
+    mockCart.version += 1;
+    return {
+      cartId: mockCart.cartId ?? 'MOCK-CART-001',
+      version: mockCart.version,
+      productId: sku.replace(/^SKU-/, 'PRD-'),
+      wishlistCreated: true,
+    };
+  }
+
+  const res = await fetch(`/api/cart/current/items/${encodeURIComponent(sku)}/move-to-wishlist`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: no se pudo mover el producto a favoritos`);
+  }
+
+  const json = await res.json();
+  const data = json.data;
+  return {
+    cartId: data?.cartId ?? '',
+    version: data?.version ?? 0,
+    productId: data?.productId ?? '',
+    wishlistCreated: Boolean(data?.wishlistCreated),
   };
 }

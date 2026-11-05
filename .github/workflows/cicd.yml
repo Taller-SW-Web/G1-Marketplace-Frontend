@@ -1,0 +1,127 @@
+name: CI-CD
+
+# Pipeline H4: Build -> Compile -> Test -> Version -> Deploy -> Smoke test.
+# La versión (SemVer) y el CHANGELOG salen de los commits convencionales;
+# nadie edita la versión a mano.
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build, Compile y Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Dependencias
+        run: npm ci --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Compile (verificación de tipos)
+        run: npm run typecheck
+      - name: Build (next build)
+        run: npm run build
+      - name: Test de componentes
+        run: npm run test:components
+      - name: Test de servidor
+        run: npm run test:server
+
+  release:
+    name: Versionado (SemVer + CHANGELOG)
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      published: ${{ steps.semrel.outputs.new_release_published }}
+      version: ${{ steps.semrel.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: semrel
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 24
+          extra_plugins: |
+            @semantic-release/changelog@6
+            @semantic-release/git@10
+            conventional-changelog-conventionalcommits@8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy a Vercel + Smoke test
+    needs: [build-test, release]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pruebas
+    env:
+      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+      SITE_URL: ${{ vars.FRONTEND_URL || 'https://g1-marketplace-frontend.vercel.app/' }}
+    steps:
+      - name: Disparar despliegue en Vercel
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::error::Falta el secreto VERCEL_DEPLOY_HOOK_URL"; exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$VERCEL_DEPLOY_HOOK_URL"
+          echo "Despliegue solicitado. Versión: ${{ needs.release.outputs.version || 'sin cambios' }}"
+      - name: Smoke test del sitio
+        run: |
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$SITE_URL" || true)
+            echo "intento $i -> HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "::error::El sitio no respondió 200"; exit 1
+
+  docker-image:
+    name: Imagen Docker etiquetada con la versión (GHCR)
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/taller-sw-web/g1-marketplace-frontend:${{ needs.release.outputs.version }}
+            ghcr.io/taller-sw-web/g1-marketplace-frontend:latest

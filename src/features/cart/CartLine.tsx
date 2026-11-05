@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import type { CartItemDTO } from './types';
 import { Button } from '@/shared/ui/Button';
+import { MoveCartToWishlistAction } from './MoveCartToWishlistAction';
 
 export interface CartLineProps {
   line: CartItemDTO;
@@ -12,9 +14,10 @@ export interface CartLineProps {
 }
 
 /**
- * CMP-F019-002 · CartLine
+ * CMP-F019-002 / CMP-F017-001 · CartLine & QuantityStepper
  * Línea de producto dentro del carrito (V-008).
- * Compone visualmente cantidad, precio unitario y acciones sin cálculos externos.
+ * Mantiene draftQuantity local para edición numérica y envía la mutación
+ * al presionar Enter o perder el foco (blur) con validación estricta de enteros 1-99.
  */
 export function CartLine({
   line,
@@ -23,16 +26,54 @@ export function CartLine({
   onRemove,
   onMoveToWishlist,
 }: CartLineProps) {
+  const [prevQuantity, setPrevQuantity] = useState(line.quantity);
+  const [draftQuantity, setDraftQuantity] = useState(String(line.quantity));
+
+  if (line.quantity !== prevQuantity) {
+    setPrevQuantity(line.quantity);
+    setDraftQuantity(String(line.quantity));
+  }
+
   const priceFormatted = line.unitPrice
-    ? `S/ ${line.unitPrice.amount.toFixed(2)} ${line.unitPrice.currency}`
+    ? "S/ " + line.unitPrice.amount.toFixed(2) + " " + line.unitPrice.currency
     : 'Precio pendiente';
 
   const lineTotal = line.unitPrice
-    ? `S/ ${(line.unitPrice.amount * line.quantity).toFixed(2)}`
+    ? "S/ " + (line.unitPrice.amount * line.quantity).toFixed(2)
     : 'Pendiente';
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraftQuantity(e.target.value);
+  };
+
+  const commitDraft = () => {
+    const trimmed = draftQuantity.trim();
+    // Validación estricta: solo enteros positivos sin decimales ni ceros
+    if (!/^[1-9]\d*$/.test(trimmed)) {
+      setDraftQuantity(String(line.quantity));
+      return;
+    }
+    const val = Number(trimmed);
+    if (!Number.isInteger(val) || val < 1 || val > 99) {
+      setDraftQuantity(String(line.quantity));
+      return;
+    }
+    if (val !== line.quantity) {
+      onQuantityChange?.(line.sku, val);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+      commitDraft();
+    } else if (e.key === 'Escape') {
+      setDraftQuantity(String(line.quantity));
+    }
+  };
+
   return (
-    <article className="cart-line-item" aria-label={`Producto ${line.name || line.sku}`}>
+    <article className="cart-line-item" aria-label={"Producto " + (line.name || line.sku)}>
       <div className="cart-line-details">
         <div className="cart-line-header">
           <h3 className="cart-line-title">{line.name || line.sku}</h3>
@@ -45,6 +86,12 @@ export function CartLine({
             <span className="cart-line-total">Total línea: {lineTotal}</span>
           )}
         </div>
+
+        {line.attention && (
+          <div className="cart-line-attention" role="status">
+            <span>{line.attention === 'PRECIO_PENDIENTE' ? 'Precio pendiente de confirmación' : line.attention}</span>
+          </div>
+        )}
       </div>
 
       <div className="cart-line-controls">
@@ -59,9 +106,18 @@ export function CartLine({
           >
             -
           </Button>
-          <span className="cart-quantity-display" aria-live="polite">
-            {line.quantity}
-          </span>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={draftQuantity}
+            onChange={handleInputChange}
+            onBlur={commitDraft}
+            onKeyDown={handleKeyDown}
+            disabled={busy}
+            className="cart-quantity-input"
+            aria-label={"Cantidad de " + (line.name || line.sku)}
+          />
           <Button
             type="button"
             variant="secondary"
@@ -76,15 +132,11 @@ export function CartLine({
 
         <div className="cart-line-actions">
           {onMoveToWishlist && (
-            <Button
-              type="button"
-              variant="tertiary"
-              size="sm"
-              disabled={busy}
-              onClick={() => onMoveToWishlist(line.sku)}
-            >
-              Guardar para después
-            </Button>
+            <MoveCartToWishlistAction
+              sku={line.sku}
+              busy={busy}
+              onMove={onMoveToWishlist}
+            />
           )}
           {onRemove && (
             <Button
@@ -94,6 +146,7 @@ export function CartLine({
               disabled={busy}
               onClick={() => onRemove(line.sku)}
               className="cart-remove-btn"
+              aria-label={"Quitar " + (line.name || line.sku) + " del carrito"}
             >
               Eliminar
             </Button>

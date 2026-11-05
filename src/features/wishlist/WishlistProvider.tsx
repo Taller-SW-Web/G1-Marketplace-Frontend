@@ -55,7 +55,7 @@ export function WishlistProvider({ enabled, children, realAuth = false }: { enab
     try {
       const next = await getSession(controller.signal, identity, realAuth);
       if (controller.signal.aborted) return;
-      if (next.scope !== sessionRef.current.scope) clear();
+      if (next.scope !== sessionRef.current.scope || next.identity !== sessionRef.current.identity) clear();
       sessionRef.current = next;
       setSession(next);
     } catch (error) {
