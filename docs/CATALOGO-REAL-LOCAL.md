@@ -104,12 +104,22 @@ Si falla sólo en la red inspeccionada, repetir el mismo comando y `npm run demo
 
 También hay un ensayo **manual**, sin acceso a producción, en GitHub Actions: workflow **H3 Frontend**, seleccionar esta rama y activar `real_demo_network`. Usa un runner nuevo Ubuntu de GitHub, Node 22.18, Backend develop fijado y la guía/runner de esta PR. Primero comprueba TLS directo, luego instala dependencias, construye Next/BFF y ejecuta el catálogo REAL con `--check`. No entrega credenciales ni modifica certificados o Render. Esa ejecución acredita una red distinta de esta máquina; no sustituye la prueba en la red del revisor ni identifica por sí sola el firewall responsable.
 
-## Qué comprobar en el navegador
+## Recorrido acordado del demo REAL
 
-1. Buscar Nike y observar las tarjetas y sus imágenes. La respuesta `/api/catalog/products?q=Nike&pageSize=4&sort=NAME_ASC` debe tener HTTP 200 y `X-Catalog-Source: REAL`; el listado no declara `meta.source`.
-2. Cambiar nombre ASC/DESC, página y categoría. Los tiempos y disponibilidad dependen de G6.
-3. Las imágenes deben provenir del **host exacto** configurado; nunca usar `*.supabase.co`. ProductCard y ProductGallery usan img nativo, por lo que no necesitan Next remotePatterns.
-4. Marcas y precio han presentado 503 y se muestran como errores. El demo no los reemplaza por datos falsos. Los destacados/ranking REAL están desactivados.
+Mostrar **búsqueda, categoría, orden y paginación**. No utilizar Marca ni Precio durante el recorrido; comenzar sin `brandIds`, `minPrice` ni `maxPrice` en la URL y dejar ambos precios vacíos.
+
+1. Abrir <http://127.0.0.1:3540/catalogo?q=Nike&pageSize=4&sort=NAME_ASC>. Mostrar la búsqueda Nike y sus tarjetas. La respuesta `/api/catalog/products?q=Nike&pageSize=4&sort=NAME_ASC` debe tener HTTP 200 y `X-Catalog-Source: REAL`; el listado no declara `meta.source`.
+2. Seleccionar la categoría **Balones** y aplicar, sin tocar marca ni precios. En el ensayo REAL del 05/11 se obtuvieron dos resultados con HTTP 200 y se conservó la búsqueda Nike. El dataset puede cambiar.
+3. Quitar únicamente la categoría para volver al conjunto Nike. Cambiar «Ordenar por» entre **Nombre: A a Z** y **Nombre: Z a A**; comprobar que las consultas mantienen la búsqueda y no añaden marca ni precio.
+4. Con `pageSize=4` y sin categoría, ir a **Siguiente** y volver a **Anterior**, conservando búsqueda y orden. Usar un conjunto con más de cuatro resultados: Nike tenía siete en el ensayo del 05/11. No intentar demostrar una segunda página del subconjunto Balones si sólo devuelve dos resultados.
+5. Comprobar las imágenes del **host exacto** configurado; nunca usar `*.supabase.co`. ProductCard y ProductGallery usan img nativo, por lo que no necesitan Next remotePatterns. Los tiempos y disponibilidad dependen de G6. Los destacados/ranking REAL están desactivados.
+
+## Limitaciones explícitas: Marca y Precio
+
+- **Marca fuera del demo REAL:** `/api/v1/marcas` de G6 devuelve 503 y hace fallar el agregado `/api/catalog/filters`. En escritorio y móvil, Marca queda deshabilitada y aparece «No pudimos cargar las marcas de los filtros.» con «Reintentar filtros». El listado sigue visible y Categoría se recupera desde `/api/catalog/home` (ocho categorías en el ensayo del 05/11); si esa lectura también falla, Categoría tampoco estará disponible. Reintentar conserva el borrador.
+- **Precio fuera del demo REAL:** que los campos estén habilitados no demuestra que G6 acepte el filtro. Al aplicar **Nike + Balones + S/ 0–100**, la consulta de productos devolvió 503 `CATALOG_UNAVAILABLE`: los resultados mostraron «El catálogo no está disponible», mientras el panel conservó categoría y precios. Para continuar, quitar el rango y volver a aplicar; durante la presentación mantener ambos precios vacíos.
+
+Estas limitaciones se comprobaron el 05/11 en navegador contra G6 REAL, sin interceptar HTTP ni sustituir respuestas por fixtures. No se presentan marca ni precio como integraciones operativas. La ficha MOCK permanece en el servicio separado descrito abajo; no hay fallback automático desde REAL.
 
 ## Ficha MOCK separada
 
