@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.0.0...v1.1.0) (2026-11-05)
+
+### Features
+
+* **catalog:** region comercial F-012 a F-015 en la ficha de producto (MOCK) ([cd0dfba](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/cd0dfba60d2536ce22e39ebe916242c251c3b789))
+
 ## 1.0.0 (2026-11-04)
 
 ### Features
