@@ -37,7 +37,18 @@ export function ProductPriceRegion({ state, retry }: Props) {
         </LoadingState>
       )}
 
-      {state.kind === "unavailable" && (
+      {/* 503 de Pricing: el importe aún no está homologado. Se informa como
+          pendiente, no como fallo, para no romper la ficha REAL mínima. */}
+      {state.kind === "unavailable" && state.code === "PRICING_UNAVAILABLE" && (
+        <div className="price-unavailable" data-price-status="UNDETERMINED">
+          <p>Precio por confirmar.</p>
+          <Button variant="secondary" size="sm" onClick={retry}>
+            Reintentar
+          </Button>
+        </div>
+      )}
+
+      {state.kind === "unavailable" && state.code !== "PRICING_UNAVAILABLE" && (
         <div className="price-unavailable" data-error-code={state.code}>
           <p>Precio no disponible por el momento.</p>
           <Button variant="secondary" size="sm" onClick={retry}>

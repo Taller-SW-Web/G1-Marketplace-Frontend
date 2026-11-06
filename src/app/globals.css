@@ -2973,9 +2973,11 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
 .availability-icon.availability-available { background: #2b8a3e; }
 .availability-icon.availability-low { background: var(--warning); }
 .availability-icon.availability-out { background: var(--error); }
+.availability-icon.availability-undetermined { background: var(--text-secondary); }
 .availability-available { color: #2b8a3e; }
 .availability-low { color: var(--warning); }
 .availability-out, .availability-error { color: var(--error); }
+.availability-undetermined { color: var(--text-secondary); }
 
 /* F-015 — productos relacionados */
 .related-products { margin-top: var(--spacing-xl); }

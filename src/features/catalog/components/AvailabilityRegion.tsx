@@ -63,6 +63,27 @@ export function AvailabilityRegion({ state, retry }: Props) {
     );
   }
 
+  // 503 de Inventory: la disponibilidad aún no está homologada. Se presenta
+  // como "por confirmar" (mismo estado comercial que UNDETERMINED), no como
+  // error, para no romper la ficha REAL mínima.
+  if (state.kind === "error" && state.code === "INVENTORY_UNAVAILABLE") {
+    return (
+      <section
+        className="availability-region"
+        aria-live="polite"
+        data-availability="UNDETERMINED"
+      >
+        <p className="availability-status availability-undetermined">
+          <AvailabilityIcon state="UNDETERMINED" />
+          {LABELS.UNDETERMINED}
+        </p>
+        <Button variant="secondary" size="sm" onClick={retry}>
+          Volver a consultar
+        </Button>
+      </section>
+    );
+  }
+
   if (state.kind === "error") {
     return (
       <section
