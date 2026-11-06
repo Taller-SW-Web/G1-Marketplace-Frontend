@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.0...v1.3.1) (2026-11-06)
+
+### Bug Fixes
+
+* **catalog:** mostrar por confirmar ante 503 de precio y disponibilidad ([93eb248](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/93eb248f93ff5c203d030a7f41de0e3078a08745))
+
 ## [1.3.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.2.0...v1.3.0) (2026-11-05)
 
 ### Features
