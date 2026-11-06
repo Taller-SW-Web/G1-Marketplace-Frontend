@@ -341,8 +341,14 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     fillContact();
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
     const verifyButton = await screen.findByRole("button", { name: "Verificar operación original" });
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+    const originalIdempotencyKey = api.createOrder.mock.calls[0]?.[2];
+    expect(originalIdempotencyKey).toBeTruthy();
+
     fireEvent.click(verifyButton);
     await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
+    expect(api.createOrder.mock.calls[1]?.[2]).toBe(originalIdempotencyKey);
+    expect(api.createOrder.mock.calls[1]?.[0]).toBe(api.createOrder.mock.calls[0]?.[0]);
     expect((screen.getByRole("button", { name: /Verificar operación original/ }) as HTMLButtonElement).disabled).toBe(true);
 
     resolveRecoveredPost({ checkoutOperationId: "operation-1", state: "SUBMITTED" });
