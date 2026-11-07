@@ -3,6 +3,12 @@ on:
   push:
     branches: [feat/s1-f006-f007-catalogo]
   workflow_dispatch:
+    inputs:
+      real_demo_network:
+        description: Read-only REAL demo from GitHub-hosted network (no JWT)
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -10,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
+    if: github.event_name != 'workflow_dispatch' || !inputs.real_demo_network
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -27,7 +34,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: Taller-SW-Web/G1-Marketplace-Backend
-          ref: 1507766823466448737d3b1ed046a669794f8bd6
+          ref: 28ab802cd9ac5f56a9621fbad83fd129f732a7d6
           path: G1-Marketplace-Backend
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -73,3 +80,32 @@ jobs:
             G1-Marketplace-Frontend/.local-security/summary.json
             G1-Marketplace-Frontend/.local-security/licenses.json
             G1-Marketplace-Frontend/playwright-report/
+
+  real-demo-network:
+    if: github.event_name == 'workflow_dispatch' && inputs.real_demo_network
+    name: REAL catalog from GitHub-hosted network
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: G1-Marketplace-Frontend
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: G1-Marketplace-Frontend
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Taller-SW-Web/G1-Marketplace-Backend
+          ref: 28ab802cd9ac5f56a9621fbad83fd129f732a7d6
+          path: G1-Marketplace-Backend
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.18.0
+      - name: TLS and direct public G6 GET (no credentials, no bodies in logs)
+        run: npm run check:g6:network
+      - run: npm ci --no-audit --no-fund
+      - run: npm --prefix ../G1-Marketplace-Backend ci --no-audit --no-fund
+      - name: Build and rehearse Next to BFF to G6 REAL from this network
+        run: npm run demo:catalogo:real -- --check

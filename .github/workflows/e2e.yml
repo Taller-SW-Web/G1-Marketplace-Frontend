@@ -35,8 +35,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Taller-SW-Web/G1-Marketplace-Backend
-          # Incluye carrito/checkout y la región comercial F-012 a F-015 (release 1.1.0).
-          ref: 6c03a4e2827e375fe0af10247a012bc98eda06be
+          # Incluye carrito/checkout y la región comercial F-012 a F-015 (develop, release 1.6.0).
+          ref: 28ab802cd9ac5f56a9621fbad83fd129f732a7d6
           path: backend
 
       - name: Setup Node.js

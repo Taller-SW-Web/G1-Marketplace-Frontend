@@ -97,6 +97,27 @@ describe("F-012 · precio, oferta y descuento", () => {
   it("formatea importes en es-PE", () => {
     expect(formatMoney(254.9, "PEN")).toBe("S/\u00A0254.90");
   });
+
+  it("un 503 de precio se informa como por confirmar, no como error", async () => {
+    render(commerce("producto-error-503-precio-mock", "PRD-X", false));
+
+    expect(await screen.findByText("Precio por confirmar.")).toBeTruthy();
+    expect(screen.queryByText("Precio no disponible por el momento.")).toBeNull();
+    expect(document.querySelector('[data-price-status="UNDETERMINED"]')).toBeTruthy();
+    expect(document.querySelector('[data-error-code="PRICING_UNAVAILABLE"]')).toBeNull();
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeTruthy();
+  });
+
+  it("un 502 de precio sigue siendo un error visible", async () => {
+    render(commerce("producto-error-502-precio-mock", "PRD-X", false));
+
+    expect(
+      await screen.findByText("Precio no disponible por el momento."),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('[data-error-code="PRICING_INVALID_RESPONSE"]'),
+    ).toBeTruthy();
+  });
 });
 
 describe("F-013 · selección de atributos y variante", () => {
@@ -252,14 +273,27 @@ describe("F-014 · disponibilidad comercial", () => {
 
     render(commerce("producto-error-503-stock-mock", "PRD-X", false));
     expect(
-      await screen.findByText("No pudimos consultar disponibilidad."),
+      await screen.findByText("Disponibilidad por confirmar"),
     ).toBeTruthy();
     expect(screen.queryByText(/Agotado/u)).toBeNull();
     expect(
-      document.querySelector('[data-error-code="INVENTORY_UNAVAILABLE"]'),
+      document.querySelector('[data-availability="UNDETERMINED"]'),
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Reintentar disponibilidad" }),
+      document.querySelector('[data-error-code="INVENTORY_UNAVAILABLE"]'),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Volver a consultar" }),
+    ).toBeTruthy();
+  });
+
+  it("un 502 de inventario sí se muestra como error", async () => {
+    render(commerce("producto-error-502-stock-mock", "PRD-X", false));
+    expect(
+      await screen.findByText("No pudimos consultar disponibilidad."),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('[data-error-code="INVENTORY_INVALID_RESPONSE"]'),
     ).toBeTruthy();
   });
 

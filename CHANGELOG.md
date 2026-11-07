@@ -1,3 +1,15 @@
+## [1.3.2](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.1...v1.3.2) (2026-11-07)
+
+### Bug Fixes
+
+* **f013:** conectar imagen de variante y SKU con galeria y carrito ([b8855e7](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/b8855e7ac9f04928d4fc13d10811d3a988390c3b))
+
+## [1.3.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.0...v1.3.1) (2026-11-06)
+
+### Bug Fixes
+
+* **catalog:** mostrar por confirmar ante 503 de precio y disponibilidad ([93eb248](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/93eb248f93ff5c203d030a7f41de0e3078a08745))
+
 ## [1.3.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.2.0...v1.3.0) (2026-11-05)
 
 ### Features

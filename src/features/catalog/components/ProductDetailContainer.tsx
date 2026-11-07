@@ -1,10 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
+import { withVariantImage } from "../galleryMedia";
 import { useProductDetail } from "../hooks/useProductDetail";
 import { sanitizeCatalogReturnTo, sanitizeReturnTo } from "../returnTo";
+import type { ProductMediaDTO } from "../types/product-detail.types";
+import type { VariantImageDTO } from "../types/product-variants.types";
 import { GalleryViewer } from "./GalleryViewer";
 import { ProductCommerce } from "./ProductCommerce";
 import { ProductGallery } from "./ProductGallery";
@@ -20,6 +23,9 @@ interface Props {
   returnTo?: string;
   showAddToCart?: boolean;
 }
+
+/** Identidad estable mientras la ficha no está lista (no reinicia la galería). */
+const EMPTY_MEDIA: ProductMediaDTO[] = [];
 
 /**
  * Ficha de producto con acción interactiva de carrito (habilitada en runtime/E2E).
@@ -46,6 +52,25 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
     viewerState.slug === slug
       ? viewerState
       : { slug, open: false, index: 0 };
+
+  // La imagen de la variante elegida (F-013) se eleva hasta aquí para que la
+  // galería y el visor compartan la misma lista: "Ampliar imagen" abre la vista
+  // que el usuario está viendo, incluida la de la variante.
+  const [variantImageState, setVariantImageState] = useState<{
+    slug: string;
+    image: VariantImageDTO | null;
+  }>({ slug, image: null });
+  const variantImage =
+    variantImageState.slug === slug ? variantImageState.image : null;
+  const onVariantImageChange = useCallback(
+    (image: VariantImageDTO | null) => setVariantImageState({ slug, image }),
+    [slug],
+  );
+  const productMedia = state.kind === "ready" ? state.data.media : EMPTY_MEDIA;
+  const galleryMedia = useMemo(
+    () => withVariantImage(productMedia, variantImage),
+    [productMedia, variantImage],
+  );
 
   if (state.kind === "loading") {
     return (
@@ -97,6 +122,8 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
   }
 
   const product = state.data;
+  // F-016 sólo se habilita con fuente MOCK: mientras I-01 no cierre, la ficha
+  // REAL no tiene precio/stock autoritativos y no debe permitir comprar.
   const canAddToCart = showCart && state.source === "MOCK";
 
   return (
@@ -119,7 +146,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
 
       <div className="detail-layout">
         <ProductGallery
-          media={product.media}
+          media={galleryMedia}
           onOpenViewer={(index) => setViewerState({ slug, open: true, index })}
         />
         <div className="detail-summary">
@@ -131,6 +158,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
             showCart={canAddToCart}
             busy={isBusy}
             onAdd={addItem}
+            onVariantImageChange={onVariantImageChange}
           />
           <TechnicalSpecifications
             specs={product.technicalSpecifications}
@@ -143,7 +171,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
 
       <GalleryViewer
         opened={viewer.open}
-        media={product.media}
+        media={galleryMedia}
         index={viewer.index}
         label={product.name}
         onClose={() => setViewerState({ slug, open: false, index: 0 })}

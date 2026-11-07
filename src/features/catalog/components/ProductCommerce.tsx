@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { AddToCartAction } from "@/features/cart/AddToCartAction";
 import type {
   AddToCartPayload,
@@ -8,6 +9,7 @@ import { useProductAvailability } from "../hooks/useProductAvailability";
 import { useProductPrice } from "../hooks/useProductPrice";
 import { useProductVariants } from "../hooks/useProductVariants";
 import type { ProductAvailabilityState } from "../types/product-availability.types";
+import type { VariantImageDTO } from "../types/product-variants.types";
 import { AvailabilityRegion } from "./AvailabilityRegion";
 import { ProductPriceRegion } from "./ProductPriceRegion";
 import { ProductVariantsRegion } from "./ProductVariantsRegion";
@@ -18,6 +20,8 @@ interface Props {
   showCart: boolean;
   busy: boolean;
   onAdd: (payload: AddToCartPayload) => void;
+  /** Imagen de la variante resuelta; la ficha la usa como vista principal. */
+  onVariantImageChange?: (image: VariantImageDTO | null) => void;
 }
 
 /**
@@ -37,6 +41,7 @@ export function ProductCommerce({
   showCart,
   busy,
   onAdd,
+  onVariantImageChange,
 }: Props) {
   const variants = useProductVariants(slug);
 
@@ -49,6 +54,13 @@ export function ProductCommerce({
 
   const selectedSku =
     variants.state.kind === "valid" ? variants.state.variant.sku : undefined;
+
+  // F-013 → F-011: la imagen de la combinación elegida se publica a la ficha.
+  const selectedVariantImage =
+    variants.state.kind === "valid" ? variants.state.variant.image : null;
+  useEffect(() => {
+    onVariantImageChange?.(selectedVariantImage);
+  }, [onVariantImageChange, selectedVariantImage]);
 
   const price = useProductPrice(slug, selectedSku, requiresVariant);
   const availability = useProductAvailability(
@@ -81,6 +93,7 @@ export function ProductCommerce({
         <div className="detail-cart-action-wrapper">
           <AddToCartAction
             productId={productId}
+            sku={selectedSku}
             availability={cartAvailability}
             priceReady={priceReady}
             busy={busy}

@@ -11,6 +11,7 @@ import type { AddToCartActionProps } from './types';
  */
 export function AddToCartAction({
   productId,
+  sku,
   availability,
   priceReady,
   busy,
@@ -26,7 +27,9 @@ export function AddToCartAction({
 
   const handleClick = () => {
     if (isActionDisabled || !productId) return;
-    onAdd({ productId, quantity: 1 });
+    // El SKU de la variante seleccionada viaja con el producto: sin él, el
+    // carrito no puede distinguir combinaciones del mismo producto (F-013).
+    onAdd({ productId, ...(sku ? { sku } : {}), quantity: 1 });
   };
 
   // Texto de ayuda descriptivo para accesibilidad
