@@ -45,7 +45,7 @@ El flag de lectura requiere además el sandbox development/test; no habilita aut
 
 Contrato exacto, ejemplos, errores, identidad y checklist: [FAVORITOS-FRONTEND-HANDOFF.md](FAVORITOS-FRONTEND-HANDOFF.md). El encargo actualizado está en [PROMPT-BACKEND-FAVORITOS.md](../PROMPT-BACKEND-FAVORITOS.md); no se escribe en el repositorio backend. Implementar backend no forma parte de este encargo de frontend.
 
-El contrato propuesto diferencia AVAILABLE, OUT_OF_STOCK y UNAVAILABLE. No deduce stock de precio ausente. Imagen y nombre de productos disponibles o agotados enlazan a `/productos/{slug}?returnTo=%2Ffavoritos`; los retirados no ofrecen ficha. En demo, `returnTo` conserva la ruta y el escenario de demostración.
+El contrato diferencia AVAILABLE, OUT_OF_STOCK, UNDETERMINED y UNAVAILABLE. UNDETERMINED se presenta como “Disponibilidad por confirmar”: conserva detalle y eliminación, pero no permite agregar al carrito. No se interpreta como agotado ni se deduce stock de precio ausente. Imagen y nombre de productos disponibles, agotados o por confirmar enlazan a `/productos/{slug}?returnTo=%2Ffavoritos`; los retirados no ofrecen ficha. En demo, `returnTo` conserva la ruta y el escenario de demostración.
 
 Al preparar el PR se integró `origin/develop`, que ya contiene `src/app/productos/[slug]/page.tsx` y `/carrito`. Las tarjetas ahora abren la ficha existente. La cabecera móvil permite abrir el carrito. El adaptador opcional agrega una unidad conservando el favorito; no modifica carrito.
 

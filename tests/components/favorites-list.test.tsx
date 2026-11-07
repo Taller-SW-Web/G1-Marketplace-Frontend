@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { FavoritesList, type FavoriteProduct } from "../../src/features/wishlist/FavoritesList";
+import { parseWishlist, toFavorite } from "../../src/features/wishlist/contract";
 
 const products: FavoriteProduct[] = [
   { productId: "one", name: "Zapatillas", slug: "zapatillas", categoryId: "shoes", brandId: "brand", image: { url: "/fixtures/product-0.svg", alt: "Zapatillas" }, availability: "in_stock" },
@@ -45,6 +46,29 @@ it("offers optional cart actions only for available products and explains uncert
   expect(screen.getByText("Revisa el carrito antes de volver a agregar este producto.").getAttribute("role")).toBe("status");
   rerender(<FavoritesList products={products} />);
   expect(screen.queryByRole("button", { name: /Agregar al carrito/ })).toBeNull();
+});
+
+it("keeps mixed AVAILABLE and UNDETERMINED responses visible and blocks only the unconfirmed cart action", () => {
+  const wire = [
+    { productId: "available", createdAt: "2026-11-07T01:00:00.000Z", name: "Disponible", slug: "disponible",
+      brand: null, image: null, price: { amount: 89.9, currency: "PEN" }, availability: "AVAILABLE" },
+    { productId: "pending", createdAt: "2026-11-07T00:00:00.000Z", name: "Por confirmar", slug: "por-confirmar",
+      brand: null, image: null, price: { amount: 79.9, currency: "PEN" }, availability: "UNDETERMINED" },
+  ];
+  const parsed = parseWishlist(wire);
+  expect(parsed).not.toBeNull();
+  const mixed = parsed!.map(toFavorite);
+  const add = vi.fn(); const remove = vi.fn();
+  render(<FavoritesList products={mixed} onAddToCart={add} onRemove={remove} />);
+
+  expect(screen.getByRole("heading", { name: "Disponible" })).toBeDefined();
+  expect(screen.getByRole("heading", { name: "Por confirmar" })).toBeDefined();
+  expect(screen.getByText("Disponibilidad por confirmar")).toBeDefined();
+  const pendingCart = screen.getByRole("button", { name: "Agregar al carrito: Por confirmar" }) as HTMLButtonElement;
+  expect(pendingCart.disabled).toBe(true);
+  fireEvent.click(pendingCart); expect(add).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Eliminar de favoritos: Por confirmar" }));
+  expect(remove).toHaveBeenCalledExactlyOnceWith(mixed[1]);
 });
 
 it("keeps retired items removable without a purchase link or a sold-out message", () => {

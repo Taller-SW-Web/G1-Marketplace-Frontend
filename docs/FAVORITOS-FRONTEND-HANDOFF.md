@@ -49,7 +49,7 @@ Respuesta `200`: arreglo (no envelope `data`). `[]` solo significa lista confirm
 | `brand` | String o null; no usar IDs internos como marca visible. |
 | `image` | Objeto `{url,alt}` o null. URL HTTPS; fixtures locales `/figma/...` o `/fixtures/...` solo en sandbox. |
 | `price` | Objeto `{amount,currency}` o null. Importe finito no negativo, moneda ISO de tres letras. Informativo; no recalcular compra. |
-| `availability` | `AVAILABLE`, `OUT_OF_STOCK` o `UNAVAILABLE`. Estado comercial de producto, no saldo numérico ni elegibilidad de una talla arbitraria. |
+| `availability` | `AVAILABLE`, `OUT_OF_STOCK`, `UNDETERMINED` o `UNAVAILABLE`. `UNDETERMINED` se muestra como “Disponibilidad por confirmar”, conserva el favorito y bloquea agregar al carrito sin asumir agotamiento. Estado comercial de producto, no saldo numérico ni elegibilidad de una talla arbitraria. |
 
 Para retirado sin datos: conservar productId/createdAt, campos de catálogo null, `UNAVAILABLE`. Frontend usa texto e imagen neutros; no borra intención. Si Catálogo falla globalmente o no permite una proyección coherente, responder `503 CATALOG_UNAVAILABLE`; jamás convertirlo en `[]`, agotado supuesto ni precio cero.
 

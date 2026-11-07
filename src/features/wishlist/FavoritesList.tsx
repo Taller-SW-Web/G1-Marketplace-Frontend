@@ -25,7 +25,10 @@ export function FavoritesList({ products, onRemove, removingProductId, returnPat
 
   function cards(items: FavoriteProduct[]) {
     return <ul className="favorites-grid">{items.map(product => {
-      const outOfStock = product.availability !== "in_stock";
+      const outOfStock = product.availability === "out_of_stock";
+      const undetermined = product.availability === "undetermined";
+      const unavailable = product.availability === "unavailable";
+      const cannotPurchase = product.availability !== "in_stock";
       const operation = Object.hasOwn(pending, product.productId) ? pending[product.productId] : undefined;
       const busy = !!operation || removingProductId === product.productId;
       const content = <>
@@ -41,15 +44,17 @@ export function FavoritesList({ products, onRemove, removingProductId, returnPat
           </div>
         </>;
       return <li key={product.productId}><article data-favorite-id={product.productId}
-        className={`favorites-card${outOfStock ? " favorites-card--unavailable" : ""}`}>
-        {product.slug && product.availability !== "unavailable" ? <Link className="favorites-card-link" href={`/productos/${encodeURIComponent(product.slug)}?returnTo=${encodeURIComponent(returnPath)}`}>{content}</Link>
+        className={`favorites-card${outOfStock || unavailable ? " favorites-card--unavailable" : ""}`}>
+        {product.slug && !unavailable ? <Link className="favorites-card-link" href={`/productos/${encodeURIComponent(product.slug)}?returnTo=${encodeURIComponent(returnPath)}`}>{content}</Link>
           : <div className="favorites-card-link">{content}</div>}
         <img className="favorites-card-heart" src="/figma/favorite-heart-19.svg" width="19" height="19" alt="" aria-hidden="true" />
         {product.price && <p className="favorites-card-price">{new Intl.NumberFormat("es-PE", {
           style: "currency", currency: product.price.currency,
         }).format(product.price.amount)}</p>}
-        <div className="favorites-stock-block"><p className="favorites-stock">{product.availability === "unavailable" ? "Producto no disponible" : outOfStock ? "Sin existencias" : "Disponible"}</p></div>
-        {onAddToCart && product.availability !== "unavailable" && <Button className={styles.cartAction} disabled={outOfStock || busy} loading={operation === "adding"}
+        <div className="favorites-stock-block"><p className="favorites-stock">{unavailable ? "Producto no disponible"
+          : outOfStock ? "Sin existencias" : undetermined ? "Disponibilidad por confirmar" : "Disponible"}</p></div>
+        {onAddToCart && !unavailable && <Button className={styles.cartAction} disabled={cannotPurchase || busy} loading={operation === "adding"}
+          title={undetermined ? "Disponibilidad por confirmar" : undefined}
           aria-label={`Agregar al carrito: ${product.name}`} onClick={() => onAddToCart(product)}>Agregar al carrito</Button>}
         {operation === "cart-uncertain" && <p className={styles.cartStatus} role="status">Revisa el carrito antes de volver a agregar este producto.</p>}
         <Button variant="tertiary" className="favorites-remove" disabled={!onRemove || busy}
