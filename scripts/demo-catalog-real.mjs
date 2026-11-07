@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { g6Origin } from './g6-origin.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -10,12 +11,13 @@ const SYSTEM_KEYS = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'USE
   'APPDATA', 'LOCALAPPDATA', 'COMSPEC', 'PATHEXT', 'NUMBER_OF_PROCESSORS', 'HOME', 'TMPDIR']);
 
 // Explicit local child environments: never forward a shell's service token or cloud origin.
-export function demoEnvironments(parent = process.env) {
+export function demoEnvironments(parent = process.env, options = {}) {
+  const origin = g6Origin(options.baseUrl);
   const system = Object.fromEntries(Object.entries(parent).filter(([key]) => SYSTEM_KEYS.has(key.toUpperCase())));
   return {
     backend: { ...system, NODE_ENV: 'test', PORT: '10640', CATALOG_SOURCE: 'real',
-      CATALOG_INTEGRATION_APPROVED: 'true', PRODUCTOS_BASE_URL: 'https://g6-productos-ofertas.duckdns.org',
-      PRODUCTOS_AUTH_MODE: 'demo-no-auth', PRODUCTOS_SERVICE_TOKEN: '',
+      CATALOG_INTEGRATION_APPROVED: 'true', PRODUCTOS_BASE_URL: origin,
+      PRODUCTOS_AUTH_MODE: 'public-read-only', PRODUCTOS_SERVICE_TOKEN: '',
       PRODUCTOS_CONTRACT_VERSION: '0.6.0-rc.1', PRODUCTOS_CONTRACT_SHA: 'f64bfe9a097b2a0f74c2600988305443d92f640e',
       PRODUCTOS_MEDIA_HOSTS: MEDIA_HOST, PRODUCTOS_TIMEOUT_MS: '15000',
       CATALOG_FEATURED_ENABLED: 'false', CATALOG_FEATURED_APPROVED: 'false',
@@ -33,8 +35,16 @@ export function demoEnvironments(parent = process.env) {
 }
 
 export function demoOptions(args) {
-  if (args.some(arg => !['--check', '--skip-build'].includes(arg))) throw new Error('REAL_DEMO_INVALID_ARGUMENT');
-  return { check: args.includes('--check'), skipBuild: args.includes('--skip-build') };
+  const options = { check: false, skipBuild: false, baseUrl: g6Origin() };
+  let explicitOrigin = false;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--check') options.check = true;
+    else if (args[i] === '--skip-build') options.skipBuild = true;
+    else if (args[i] === '--base-url' && !explicitOrigin && args[i + 1]) {
+      options.baseUrl = g6Origin(args[++i]); explicitOrigin = true;
+    } else throw new Error('REAL_DEMO_INVALID_ARGUMENT');
+  }
+  return options;
 }
 
 async function available(port) {
@@ -51,7 +61,7 @@ async function main() {
   const backend = fileURLToPath(new URL('../../G1-Marketplace-Backend/', import.meta.url));
   const npmCli = process.env.npm_execpath;
   if (!npmCli || !existsSync(backend + 'package.json')) throw new Error('REAL_DEMO_REQUIRES_SIBLING_BACKEND_AND_NPM');
-  const env = demoEnvironments();
+  const env = demoEnvironments(process.env, options);
   const children = [];
   function stop() {
     for (const child of children.toReversed()) if (child.pid && child.exitCode === null) {
@@ -81,7 +91,7 @@ async function main() {
   }
   try {
     await available(10640); await available(3540);
-    console.log('Catalogo REAL local -> G6 demo sin JWT. Ficha REAL pendiente; ficha MOCK en servicio separado.');
+    console.log('Catalogo REAL local -> gateway G6, public-read-only sin JWT. Precio y disponibilidad pueden seguir pendientes.');
     console.log('Host de imagen exacto, solo ensayo local; confirmacion G6 pendiente. Render no se modifica.');
     if (!options.skipBuild) { build(backend, env.backend); build(frontend, env.frontend); }
     if (!existsSync(backend + 'dist/main.js') || !existsSync(frontend + '.next/BUILD_ID')) throw new Error('REAL_DEMO_BUILD_MISSING');
