@@ -1,4 +1,5 @@
 import https from 'node:https';
+import { g6Origin } from './g6-origin.mjs';
 import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
@@ -11,10 +12,10 @@ export function networkError(error) {
   return { outcome: tls ? 'TLS_ERROR' : 'TRANSPORT_ERROR', codes };
 }
 
-export async function probeG6() {
+export async function probeG6(origin = g6Origin()) {
   const started = Date.now();
   const base = { schema: 1, timestampUtc: new Date().toISOString(), method: 'GET',
-    origin: 'https://g6-productos-ofertas.duckdns.org', requestId: randomUUID(),
+    origin: g6Origin(origin), requestId: randomUUID(),
     credentialsUsed: false, tlsValidationDisabled: false, nodeVersion: process.version };
   if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
     return { ...base, outcome: 'INVALID_LOCAL_CONFIG', codes: ['TLS_VALIDATION_MUST_BE_ENABLED'] };
