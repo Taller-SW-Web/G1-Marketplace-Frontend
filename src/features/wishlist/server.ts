@@ -1,4 +1,5 @@
 import "server-only";
+import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -100,10 +101,7 @@ export async function mutateWishlist(request: NextRequest, method: "POST" | "DEL
   if (!isProductId(productId)) return errorResponse("INVALID_PRODUCT_ID", 400);
   let base: URL;
   try {
-    base = new URL(process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:10000");
-    if (base.username || base.password || base.search || base.hash || base.pathname !== "/"
-      || !(base.protocol === "https:" || (base.protocol === "http:" && ["localhost", "127.0.0.1"].includes(base.hostname))))
-      throw new Error("Invalid base");
+    base = marketplaceApiUrl();
   } catch { return errorResponse("INTERNAL_ERROR", 500); }
   // Dot segments cannot be represented safely as standalone URL path segments.
   // Treat them as unavailable on this transport instead of normalizing to a different endpoint.
@@ -123,7 +121,7 @@ export async function mutateWishlist(request: NextRequest, method: "POST" | "DEL
       return errorResponse("RESULT_UNCERTAIN", 502);
     }
     const codes: Record<number, readonly string[]> = { 400: ["INVALID_REQUEST", "INVALID_PRODUCT_ID"],
-      401: ["UNAUTHORIZED"], 404: ["PRODUCT_NOT_AVAILABLE"], 503: ["CATALOG_UNAVAILABLE"], 500: ["INTERNAL_ERROR"] };
+      401: ["UNAUTHORIZED"], 404: ["PRODUCT_NOT_AVAILABLE"], 503: ["CATALOG_UNAVAILABLE", "AUTH_UNAVAILABLE"], 500: ["INTERNAL_ERROR"] };
     const body: unknown = await response.json();
     if (body && typeof body === "object" && "code" in body && typeof body.code === "string"
       && codes[response.status]?.includes(body.code)) {

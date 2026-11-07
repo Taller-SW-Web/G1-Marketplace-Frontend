@@ -1,6 +1,6 @@
 # Favoritos: vistas, pruebas y límites de integración
 
-Implementación de frontend para V-009, F-036/037/038, O-003/O-006. Figma gobierna presentación; las SPEC gobiernan comportamiento. No se alteran SPECS ni se cierran gates por esta entrega. El movimiento de favoritos al carrito (F-039) queda fuera de este corte.
+Implementación de frontend para V-009, F-036/037/038, O-003/O-006. Figma gobierna presentación; las SPEC gobiernan comportamiento. No se alteran SPECS ni se cierran gates por esta entrega. La adición desde favoritos al carrito se reabre como adaptador opcional, apagado por defecto; su integración completa sigue bloqueada. Ver [revisión de conexiones](REVISION-CONEXIONES-FAVORITOS.md).
 
 ## Probar sin backend
 
@@ -18,7 +18,7 @@ La demostración no requiere Docker ni modifica cuentas, favoritos o carritos re
 | `vacio` | Cero productos, CTA Explorar productos. También existe `/lista/vacia`. | F-037 |
 | `cargando` | Skeleton y progreso indeterminado; Completar operación simulada resuelve. | F-037 |
 | `error-catalogo` | Fallo inicial de consulta; Reintentar recupera la lista. | F-037 |
-| `agotados` | Producto sin existencias en sección propia, sin stock inventado, sí eliminación. | F-037 |
+| `agotados` | Producto sin existencias identificado en su tarjeta, sin stock inventado, sí eliminación. | F-037 |
 | `retirado` | Producto inactivo, sin imagen/slug/precio inventados y con eliminación. | F-037 |
 | `quitando` | Eliminación pendiente, sin deshacer antes del DELETE. Completar resuelve. | F-038 |
 | `error-quitar` | Rechazo restaura tarjeta y foco; Reintentar vuelve a eliminar. | F-038 |
@@ -32,23 +32,24 @@ Los escenarios inicializan el mismo controlador de estados que usa el adaptador 
 
 ## Uso de `/favoritos` e integración
 
-Sin sesión: panel discreto y botón Iniciar sesión deshabilitado, como pidió el usuario. Con sesión sandbox: consulta mediante BFF y muestra el resultado o error explícito. El backend actual no ofrece todavía el GET de la lista. El movimiento de favoritos al carrito (F-039) queda fuera de este corte.
+Sin sesión: panel discreto y botón Iniciar sesión deshabilitado, como pidió el usuario. Con sesión sandbox: consulta mediante BFF y muestra el resultado o error explícito. El backend local ya implementa GET; faltan sesión y productos compartidos. La adición desde favoritos al carrito se reabre como adaptador opcional, apagado por defecto; su integración completa sigue bloqueada. Ver [revisión de conexiones](REVISION-CONEXIONES-FAVORITOS.md).
 
 Configuración server-only:
 
 ```dotenv
 H3_WISHLIST_READ_ENABLED=false
+H3_WISHLIST_CART_ENABLED=false
 ```
 
 El flag de lectura requiere además el sandbox development/test; no habilita auth de producción. Un error o endpoint faltante nunca equivale a `[]` ni stock agotado. Las rutas públicas de Next son `/api/wishlist` (GET) y `/api/wishlist/items` (POST y DELETE); solo el servidor transmite Bearer a Nest.
 
-Contrato exacto, ejemplos, errores, identidad y checklist: [FAVORITOS-FRONTEND-HANDOFF.md](FAVORITOS-FRONTEND-HANDOFF.md). Se deja copia en `../G1-Marketplace-Backend/docs/FAVORITOS-FRONTEND-HANDOFF.md`. Implementar backend no forma parte de este encargo de frontend.
+Contrato exacto, ejemplos, errores, identidad y checklist: [FAVORITOS-FRONTEND-HANDOFF.md](FAVORITOS-FRONTEND-HANDOFF.md). El encargo actualizado está en [PROMPT-BACKEND-FAVORITOS.md](../PROMPT-BACKEND-FAVORITOS.md); no se escribe en el repositorio backend. Implementar backend no forma parte de este encargo de frontend.
 
-El contrato propuesto diferencia AVAILABLE, OUT_OF_STOCK y UNAVAILABLE. No deduce stock de precio ausente. Imagen y nombre de productos disponibles o agotados enlazan a `/productos/{slug}?returnTo=%2Ffavoritos`; los retirados no ofrecen ficha. En demo, `returnTo` conserva la ruta y el escenario de demostración.
+El contrato diferencia AVAILABLE, OUT_OF_STOCK, UNDETERMINED y UNAVAILABLE. UNDETERMINED se presenta como “Disponibilidad por confirmar”: conserva detalle y eliminación, pero no permite agregar al carrito. No se interpreta como agotado ni se deduce stock de precio ausente. Imagen y nombre de productos disponibles, agotados o por confirmar enlazan a `/productos/{slug}?returnTo=%2Ffavoritos`; los retirados no ofrecen ficha. En demo, `returnTo` conserva la ruta y el escenario de demostración.
 
-Al preparar el PR se integró `origin/develop`, que ya contiene `src/app/productos/[slug]/page.tsx` y `/carrito`. Las tarjetas ahora abren la ficha existente. La cabecera móvil permite abrir el carrito. La sección de favoritos no mueve productos al carrito.
+Al preparar el PR se integró `origin/develop`, que ya contiene `src/app/productos/[slug]/page.tsx` y `/carrito`. Las tarjetas ahora abren la ficha existente. La cabecera móvil permite abrir el carrito. El adaptador opcional agrega una unidad conservando el favorito; no modifica carrito.
 
-La ficha pertenece a otro integrante y todavía es un corte provisional con datos MOCK; no acredita detalle de catálogo homologado. Debe incorporar el retorno explícito a favoritos: validar `returnTo` como ruta interna permitida y ofrecer Volver a favoritos. No aceptar destinos externos ni URLs con `//`. El retorno enviado por favoritos no contiene identidad, token ni SKU. El botón Atrás del navegador permite regresar durante la prueba de navegación.
+La ficha pertenece a otro integrante y todavía es un corte provisional con datos MOCK; no acredita detalle de catálogo homologado. La ficha ya valida returnTo como ruta interna; su responsable debe revisar la etiqueta contextual y el retorno visible en todos los estados. No aceptar destinos externos ni URLs con `//`. El retorno enviado por favoritos no contiene identidad, token ni SKU. El botón Atrás del navegador permite regresar durante la prueba de navegación.
 
 Para entregar al cliente deben estar homologados la ficha, los endpoints nuevos y la sesión real. Actualmente la sesión del BFF es exclusivamente sandbox y se cierra en producción. No presentar la demo ni el build correcto como acreditación de estas integraciones. El PR se solicita para auditoría; no implica autorización de entrega a producción.
 
@@ -88,3 +89,16 @@ npm run test:e2e:wishlist:production
 La suite de vistas puede reutilizar el Next local de 3200; sin uno inicia el servidor de prueba con sandbox. No ejecuta ni limpia Docker/PostgreSQL. Pruebas de controlador verifican carreras, DELETE incierto y restauración, aislamiento y orden entre consultas y mutaciones. Handlers verifican flags, origen, sesión, sanitización y DTO. E2E de vistas usa adaptadores simulados e intercepta HTTP solo para probar el contenedor autenticado.
 
 Para acreditar integración nueva falta entregar endpoints, homologar DTO/identidad/idempotencia, activar flags y ejecutar E2E conectado sin interceptar HTTP sobre base de prueba. La prueba histórica `npm run test:e2e` depende de `src/server.js` del backend, que no está en la rama actual; no se usa como gate global de este corte.
+
+## F-037: orden y disponibilidad
+
+La lista conserva el orden global entregado por el BFF (`createdAt DESC`, incluido
+su desempate); el frontend no agrupa ni reordena por disponibilidad. Cada tarjeta
+distingue Disponible, Sin existencias o Producto no disponible. Los retirados se
+conservan, permiten quitar y no ofrecen ficha ni acción de compra. Una lista solo
+de retirados no se presenta como vacía ni como productos sin existencias.
+
+Esta entrega corresponde a Frontend #89 (interfaz) y #90 (QA funcional). Quitar y
+deshacer siguen trazados a F-038; agregar conservando el favorito sigue siendo un
+adaptador opcional de alcance diferente al traslado descrito por F-039. La sesión,
+el catálogo real y la revisión independiente siguen pendientes de evidencia.

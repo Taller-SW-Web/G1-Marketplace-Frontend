@@ -1,22 +1,24 @@
 # Encargo de integración de favoritos: F-037 y F-038
 
-Fecha: 2026-10-16. Estado: propuesta de contrato pendiente de implementación y validación en Backend. No acredita homologación de Productos/Seguridad, cierre de gates ni integración real. Frontend implementa las vistas y adaptadores; este encargo solicita los endpoints restantes. No implementar ficha, login ni vistas de carrito en este corte. El movimiento de favoritos al carrito (F-039) queda fuera de esta entrega: su contrato debe reespecificarse antes de reabrirse.
+> Revisión F-039 del 03/11/2026: [conexión con sesión web](F039-SESION-WEB.md). La operación ya puede reutilizar la sesión G1 con opt-in explícito; la homologación REAL y el cierre contractual siguen pendientes. Los apartados históricos que describen exclusivamente sandbox deben leerse con esta actualización.
+
+Actualizado el 17/10/2026. Backend local ya implementa lectura y adición al carrito; falta validar sesión, proyección y productos compartidos. Se reabre la preparación de adición exclusivamente dentro de favoritos, opcional y apagada por defecto. No se modifica ficha, login, carrito, backend ni configuración global. No acredita integración real. Ver [revisión](REVISION-CONEXIONES-FAVORITOS.md), el contrato de esta guía y el [prompt actualizado para backend](../PROMPT-BACKEND-FAVORITOS.md).
 
 ## Fuentes y decisiones
 
 - SPECS: `SPECS/funcional`, `SPECS/contrato-api`, `SPECS/componentes-react` F-036–038; `SPECS/ui/vistas/V-009-favoritos.md`; overlays O-003/O-006; `plan/DECISIONES-Y-BLOQUEOS.md` (I-01, G-AUTH, G-SKU, G-UNDO).
 - Figma: archivo `k6JZRdgbO7YtZXeFqygE8p`, página `1:4`; V-009 `206:3140`, `206:3224`, `206:3299`, `206:3362`, `206:3393`, `206:3483`, `206:3514`, `206:3599`, `206:3685`, `206:3761`; O-006 `215:2976`, `215:3135`.
 - Decisiones del usuario: SPEC funcional prevalece sobre Figma; favoritos por producto, nunca selección persistida de talla/SKU; agotados separados de retirados; no porcentajes ni reserva de 20 minutos ficticios. Deshacer mediante POST después de DELETE confirmado; puede fallar.
-- El módulo de carrito ya existe. Este corte no lo consume desde favoritos; movimiento de favoritos al carrito diferido.
+- El módulo de carrito ya existe. Favoritos prepara el consumo opcional de su endpoint existente, sin modificar el módulo de carrito.
 
 ## Operaciones requeridas
 
 | Backend | BFF Next | Situación |
 |---|---|---|
-| `GET /api/v1/wishlist` | `GET /api/wishlist` | Falta backend; lectura del titular, orden `createdAt DESC`. |
+| `GET /api/v1/wishlist` | `GET /api/wishlist` | Existente en backend local; pendiente validación de proyección e identidad, orden `createdAt DESC`. |
 | `POST /api/v1/wishlist/items` | `POST /api/wishlist/items` | Existente; conservar `{productId}` y `201/200`. También restaura tras quitar. |
 | `DELETE /api/v1/wishlist/items/{productId}` | DELETE equivalente | Existente; `204`, incluso ausente; aislado por titular. |
-| Movimiento al carrito (F-039) | — | Fuera de alcance de esta entrega; requiere contrato nuevo. |
+| Adición al carrito | `POST /api/wishlist/items/{productId}/add-to-cart` | Backend: `POST /api/v1/wishlist/items/{productId}/add-to-cart`; frontend opcional, apagado por defecto. |
 
 Ninguna operación recibe customerId del cliente. Backend deriva titular del JWT. BFF conserva tokens en servidor, usa cookie HttpOnly opaca y `Cache-Control: no-store, private`. El sandbox sigue limitado a development/test; no activar en producción para suplir G-AUTH.
 
@@ -47,13 +49,15 @@ Respuesta `200`: arreglo (no envelope `data`). `[]` solo significa lista confirm
 | `brand` | String o null; no usar IDs internos como marca visible. |
 | `image` | Objeto `{url,alt}` o null. URL HTTPS; fixtures locales `/figma/...` o `/fixtures/...` solo en sandbox. |
 | `price` | Objeto `{amount,currency}` o null. Importe finito no negativo, moneda ISO de tres letras. Informativo; no recalcular compra. |
-| `availability` | `AVAILABLE`, `OUT_OF_STOCK` o `UNAVAILABLE`. Estado comercial de producto, no saldo numérico ni elegibilidad de una talla arbitraria. |
+| `availability` | `AVAILABLE`, `OUT_OF_STOCK`, `UNDETERMINED` o `UNAVAILABLE`. `UNDETERMINED` se muestra como “Disponibilidad por confirmar”, conserva el favorito y bloquea agregar al carrito sin asumir agotamiento. Estado comercial de producto, no saldo numérico ni elegibilidad de una talla arbitraria. |
 
 Para retirado sin datos: conservar productId/createdAt, campos de catálogo null, `UNAVAILABLE`. Frontend usa texto e imagen neutros; no borra intención. Si Catálogo falla globalmente o no permite una proyección coherente, responder `503 CATALOG_UNAVAILABLE`; jamás convertirlo en `[]`, agotado supuesto ni precio cero.
 
-## Movimiento al carrito (F-039): diferido
+## Adición al carrito: preparación opcional
 
-El movimiento de favoritos al carrito no forma parte de esta entrega. No se define endpoint, cabecera de idempotencia, snapshot ni errores asociados: cualquier contrato anterior queda anulado y deberá reespecificarse junto con Backend y el módulo de carrito en un corte posterior. El BFF no expone ninguna ruta de movimiento y las vistas no ofrecen esa acción.
+POST sin cuerpo ni idempotency-key al endpoint existente. Respuesta 200 `{productId,cart}` con snapshot validado: cartId, version e items con sku, quantity y unitPrice opcional. Agrega una unidad y conserva el favorito. No es idempotente.
+
+`H3_WISHLIST_CART_ENABLED` queda false por defecto. Con `G1_AUTH_ENABLED=true` utiliza las cookies opacas de sesión G1 mediante el BFF compartido, con sandbox deshabilitado. Sin auth web requiere sandbox development/test. No activar para uso integrado hasta homologar los gates y validar proveedores REAL. En 422 VARIANT_SELECTION_REQUIRED ofrecer redirectUrl de ficha interna, con retorno a favoritos. En 409 manejar stock/conflicto. En pérdida de respuesta bloquear una nueva adición del producto durante la vida de la vista, incluso tras refrescar la lista o cerrar el aviso. No reintentar automáticamente. Salir o recargar reinicia ese bloqueo; la reconciliación autoritativa sigue pendiente.
 
 ## Errores públicos
 
@@ -67,7 +71,7 @@ Formato `{code,message}` con texto público, sin token, customerId, stack ni cue
 | `404 PRODUCT_NOT_AVAILABLE` | Producto inactivo/retirado; conservar intención, permitir quitar. |
 | `400 INVALID_PRODUCT_ID` / `INVALID_REQUEST` | Rechazo sin mutación. |
 
-`PRODUCT_NOT_AVAILABLE` se aplica al POST de restauración sobre un producto inactivo. No hay `redirectUrl` ni errores de movimiento: F-039 está fuera de alcance.
+`PRODUCT_NOT_AVAILABLE` se aplica al POST de restauración sobre un producto inactivo. La adición admite redirectUrl solo para seleccionar variante. Los errores de carrito e identidad se detallan en el prompt actualizado.
 
 ## Deshacer F-038/O-006
 
@@ -90,10 +94,11 @@ En Next, flags server-only inicialmente false:
 
 ```dotenv
 H3_WISHLIST_READ_ENABLED=false
+H3_WISHLIST_CART_ENABLED=false
 ```
 
 Activar lectura después de verificar GET/DTO. Requiere además la sesión sandbox explícita de H3; no es auth de producción. Las rutas devuelven indisponibilidad explícita mientras estén deshabilitadas.
 
 Backend debe devolver: rama/commit, OpenAPI, versión de DTO, comandos de prueba y fixtures, decisión de idempotencia/migración/retención, errores de favorito ausente, evidencia A/B y validación de gates. Después frontend ejecuta E2E conectado sin interceptar HTTP, consulta PostgreSQL de prueba y documenta limitaciones restantes.
 
-No se incluye código backend en esta entrega. No se crean ni publican commits automáticamente. La copia en Backend de este documento es el encargo de trabajo; los cambios de contrato deben acordarse antes de activar flags.
+No se incluye código backend en esta entrega. No se crean ni publican commits automáticamente. El prompt enlazado es el encargo de trabajo; los cambios de contrato deben acordarse antes de activar flags.

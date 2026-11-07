@@ -1,7 +1,7 @@
 import { isProductId } from "./types";
 
 // Proposed wire contract, documented in FAVORITOS-FRONTEND-HANDOFF.md.
-export type Availability = "AVAILABLE" | "OUT_OF_STOCK" | "UNAVAILABLE";
+export type Availability = "AVAILABLE" | "OUT_OF_STOCK" | "UNDETERMINED" | "UNAVAILABLE";
 export type WishlistItemDTO = {
   productId: string; createdAt: string; name: string | null; slug: string | null;
   brand: string | null; image: { url: string; alt: string } | null;
@@ -9,7 +9,7 @@ export type WishlistItemDTO = {
 };
 export type FavoriteProduct = {
   productId: string; name: string; slug: string | null; image: { url: string; alt: string } | null;
-  availability: "in_stock" | "out_of_stock" | "unavailable";
+  availability: "in_stock" | "out_of_stock" | "undetermined" | "unavailable";
   createdAt?: string; categoryId?: string; brandId?: string;
   description?: string; categoryLabel?: string; brandLabel?: string; color?: string;
   price?: { amount: number; currency: string };
@@ -29,7 +29,7 @@ export function parseWishlist(value: unknown): WishlistItemDTO[] | null {
   for (const item of value) {
     if (!record(item) || !isProductId(item.productId) || ids.has(item.productId)
       || typeof item.createdAt !== "string" || !/^\d{4}-\d\d-\d\dT/.test(item.createdAt) || !Number.isFinite(Date.parse(item.createdAt))
-      || !["AVAILABLE", "OUT_OF_STOCK", "UNAVAILABLE"].includes(String(item.availability))
+      || !["AVAILABLE", "OUT_OF_STOCK", "UNDETERMINED", "UNAVAILABLE"].includes(String(item.availability))
       || !(item.name === null || nonempty(item.name)) || !(item.brand === null || nonempty(item.brand))
       || !(item.slug === null || (typeof item.slug === "string" && slugPattern.test(item.slug)))
       || !(item.price === null || price(item.price))) return null;
@@ -50,5 +50,7 @@ export function parseWishlist(value: unknown): WishlistItemDTO[] | null {
 export function toFavorite(item: WishlistItemDTO): FavoriteProduct {
   return { productId: item.productId, createdAt: item.createdAt, name: item.name ?? "Producto no disponible", slug: item.slug,
     image: item.image, brandLabel: item.brand ?? undefined, price: item.price ?? undefined,
-    availability: item.availability === "AVAILABLE" ? "in_stock" : item.availability === "OUT_OF_STOCK" ? "out_of_stock" : "unavailable" };
+    availability: item.availability === "AVAILABLE" ? "in_stock"
+      : item.availability === "OUT_OF_STOCK" ? "out_of_stock"
+        : item.availability === "UNDETERMINED" ? "undetermined" : "unavailable" };
 }

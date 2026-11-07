@@ -16,6 +16,7 @@
     "test:server": "vitest run --config vitest.server.config.mts",
     "test:e2e:wishlist": "playwright test --config playwright.wishlist.config.ts",
     "test:e2e:wishlist:connected": "node scripts/h3-connected.mjs",
+    "test:e2e:h4:connected": "node scripts/h4-connected.mjs",
     "test:e2e:wishlist:production": "playwright test --config playwright.wishlist-production.config.ts",
     "demo:h3": "node scripts/h3-connected.mjs --demo",
     "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",

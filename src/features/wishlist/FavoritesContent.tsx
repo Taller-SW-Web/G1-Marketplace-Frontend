@@ -5,20 +5,20 @@ import { Button } from "@/shared/ui/Button";
 import { FavoritesExperience, FavoritesLoading } from "./FavoritesExperience";
 import { FavoritesHeading } from "./FavoritesHeading";
 import { useFavoritesController } from "./useFavoritesController";
-import { httpFavorites } from "./transport";
+import { httpFavorites, httpFavoritesWithCart } from "./transport";
 import { useWishlist } from "./WishlistProvider";
 import Link from "next/link";
 import { useAuth } from "@/features/auth/AuthProvider";
 
-function ConnectedFavorites() {
+function ConnectedFavorites({ cartEnabled }: { cartEnabled: boolean }) {
   const { confirm, confirmList, expireSession, revision } = useWishlist();
-  const { controller, state } = useFavoritesController(httpFavorites, { confirmed: confirm, listed: confirmList, expired: expireSession, revision });
+  const { controller, state } = useFavoritesController(cartEnabled ? httpFavoritesWithCart : httpFavorites, { confirmed: confirm, listed: confirmList, expired: expireSession, revision });
   return <FavoritesExperience state={state} controller={controller} />;
 }
-export function FavoritesContent() {
+export function FavoritesContent({ cartEnabled = false }: { cartEnabled?: boolean }) {
   const { session, sessionBusy, sessionMessage } = useWishlist();
   if (sessionBusy && !session.identity) return <FavoritesLoading />;
-  if (session.identity) return <ConnectedFavorites key={session.scope} />;
+  if (session.identity) return <ConnectedFavorites key={session.scope} cartEnabled={cartEnabled} />;
   return <FavoritesGuest message={sessionMessage} />;
 }
 function FavoritesGuest({ message }: { message: string }) {
