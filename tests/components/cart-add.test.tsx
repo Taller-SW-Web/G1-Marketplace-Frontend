@@ -26,6 +26,27 @@ describe('TASK-F016-FE-001 / CMP-F016-001: AddToCartAction', () => {
     expect(onAdd).toHaveBeenCalledWith({ productId: 'INKA-PRO-M', quantity: 1 });
   });
 
+  it('envía el SKU de la variante resuelta junto al producto (F-013)', () => {
+    const onAdd = vi.fn();
+    render(
+      <AddToCartAction
+        productId="PRD-VAR-MOCK-001"
+        sku="SKU-MOCK-VAR-1"
+        availability="AVAILABLE"
+        priceReady={true}
+        busy={false}
+        onAdd={onAdd}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
+    expect(onAdd).toHaveBeenCalledWith({
+      productId: 'PRD-VAR-MOCK-001',
+      sku: 'SKU-MOCK-VAR-1',
+      quantity: 1,
+    });
+  });
+
   it('RC-F-016-01: bloquea doble clic y muestra estado busy durante el envío', () => {
     const onAdd = vi.fn();
     const { rerender } = render(
