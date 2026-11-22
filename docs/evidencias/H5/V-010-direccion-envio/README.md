@@ -57,3 +57,20 @@ Comando: `npx vitest run tests/components/checkout` (6 archivos existentes + `ch
 - `V-010-OPEN-02`: departamento, provincia y distrito siguen como texto, porque no hay un contrato de maestros encadenados.
 - `V-010-OPEN-03`: el indicador de progreso compartido se dejó como estaba.
 - Prueba REAL contra el BFF y G7: depende de BE #114 y #115 (Codex 2).
+
+## E2E de navegador (Playwright) · MOCK
+
+Comando: `npm run test:e2e:direccion` (Edge local / Chromium en CI; desktop 1440 y mobile 390). La UI corre en modo `backend-mock` y `/api/checkout/*` y `/api/cart/current` se responden con `page.route` según el contrato F-022. No hay Backend, Seguridad ni base de datos. Con `E2E_EVIDENCE=1` guarda capturas en `e2e/`. Los videos de los casos clave están en `e2e/video/`.
+
+| Caso | Verificación | Resultado |
+|---|---|---|
+| Sólo direcciones del titular | Se muestran exactamente las que el BFF devolvió para la sesión; un `?customerId=` en la URL no se propaga; el GET va sin query; teléfono enmascarado; nada en almacenamiento web | Pasa |
+| Seleccionar existente | Elegir «Trabajo» y cotizar con `{ addressId: "ADR-A-2", cartVersion: 4 }` | Pasa |
+| Validación en línea | Teléfono inválido al salir del campo; envío incompleto sin llamada y con foco en el primer error; valores válidos conservados | Pasa |
+| `400` del servidor | Marca sólo `street` y conserva el resto | Pasa |
+| Crear y usar | `201` deja la nueva dirección seleccionada; el body sólo lleva los campos de dirección (sin `customerId`) y la cotización usa la nueva | Pasa |
+| Sin direcciones / `401` | Formulario abierto con explicación; con `401` no se muestra ninguna dirección | Pasa |
+
+Resultado local del 21/11: **8/8 pasan** (4 casos × desktop y mobile). El CLI de Next 16.4.1 a veces detiene el servidor de desarrollo para mostrar un aviso de actualización (solo en entornos de agente); al repetir la corrida pasa.
+
+La titularidad real (que el token de A nunca reciba direcciones de B) la garantiza el BFF y queda para la prueba REAL de BE #114/#115. CI: paso agregado en `.github/workflows/e2e.yml` (commit local, pendiente de aprobación de Jim).

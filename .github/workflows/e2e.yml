@@ -56,6 +56,11 @@ jobs:
           cd frontend
           npx playwright install --with-deps msedge chromium
 
+      - name: E2E de navegador V-010 Dirección de envío (MOCK, sin Backend)
+        run: |
+          cd frontend
+          npm run test:e2e:direccion
+
       - name: Setup and Start Backend Services
         env:
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/marketplace_db?schema=public
