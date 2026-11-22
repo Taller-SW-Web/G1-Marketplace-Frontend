@@ -39,3 +39,33 @@ Los estados de carga (política de contraseña, "Autenticando") y los de error r
 - `npm run lint` ✔ · `npx tsc --noEmit` ✔ · `npm run build` ✔
 - `npx vitest run`: 45 archivos y 392 pruebas ✔ · servidor: 81 ✔
 - `npx playwright test --config playwright.auth-ui.config.ts` (accesibilidad y logout de auth): 10/10 ✔
+
+## Ajuste pedido por Jim (21/11): validación de contraseña en V-002
+
+- Se quitó el checklist «Cumplido / Pendiente / Formato comprobado / Coinciden» (componente `PasswordRules`).
+- Ahora aparece **un mensaje rojo bajo el campo por cada regla incumplida** de la política que publica Seguridad (`/api/v1/password/politica`: longitud mínima, mayúscula, minúscula, número y carácter especial, solo si la política lo exige). Cada mensaje desaparece al cumplirse su regla; con todas cumplidas no queda texto.
+- La contraseña y la confirmación muestran mensajes desde la primera escritura; nombres, apellidos, correo y celular, al salir del campo. Al enviar, se marcan todos los campos inválidos y el foco va al primero.
+- Confirmación: «Las contraseñas no coinciden.» mientras no coincidan.
+- Mejoras UX: aviso discreto de «Bloq Mayús está activado.», `inputmode` en correo y celular, validación del correo al salir del campo también en V-001, el botón muestra «Creando cuenta…» y no permite un doble envío, y la lista de mensajes vive en una región `aria-live="polite"` enlazada por `aria-describedby`.
+- Bug corregido: Edge dibujaba su propio botón de «ojo» junto a «Mostrar» en los campos de contraseña.
+- **V-004:** en G1 no hay formulario de nueva contraseña. Por la decisión del PO del 26/10, el restablecimiento ocurre en la SPA de Seguridad (G7), así que este patrón debe aplicarlo G7. **V-010** ya seguía el mismo estilo (mensaje rojo bajo el campo que desaparece al corregir) y no se cambió.
+- Capturas del ajuste en `e2e/`: `*-V002-contrasena-vacia.png`, `*-V002-contrasena-debil.png`, `*-V002-contrasena-un-mensaje.png`, `*-V002-contrasena-valida.png` y `*-V002-confirmacion-no-coincide.png` (desktop y mobile).
+
+## E2E de navegador (Playwright) · MOCK
+
+Comando: `npm run test:e2e:cuenta` (Edge local / Chromium en CI; proyectos desktop 1440 y mobile 390). Con `E2E_EVIDENCE=1` guarda capturas en `e2e/` y video. Solo se copiaron a `e2e/video/` los videos de los casos clave. No se usan trazas ni HAR porque incluirían cuerpos de autenticación.
+
+**MOCK:** el BFF `/api/v1/*` se responde con `page.route`, usando los códigos del contrato G7 (`catalogo-errores.md`). No se usó el mock Prism: sus respuestas son estáticas por ruta y no pueden producir, desde el navegador y a través del BFF y el Backend, estados por caso como «cuenta bloqueada» o «límite de intentos». La cadena completa queda para la prueba REAL. La SPA G7 se simula con una página stub en `127.0.0.1:4011`.
+
+| Flujo | Casos (desktop y mobile) | Resultado |
+|---|---|---|
+| V-002 Registro | validación al enviar con foco en el primer error; mensajes por regla que desaparecen; confirmación que no coincide; `409` neutral que conserva datos; `201` sin sesión iniciada | Pasa |
+| V-001 Login | validación local; credenciales válidas con retorno interno; inválida, sin verificar y bloqueada con el **mismo** mensaje (sin enumeración); `429` al superar el límite; MFA sin sesión antes del código, código inválido y luego válido; `returnTo` externo descartado; sin tokens en `localStorage`, `sessionStorage` ni `document.cookie` | Pasa |
+| V-003 / V-004 | enlace a G7 con `canal=MARKETPLACE`, sin datos del formulario ni `Referer`; `/recuperar-contrasena` descarta parámetros; enlace heredado válido, vencido o usado: el token no queda en URL, HTML ni historial, no se reenvía y no hay sesión automática | Pasa |
+| Cierre de sesión | logout invalida la sesión; «Volver atrás» no la recupera | Pasa |
+
+Resultado local del 21/11: **22/22 pasan**. En algunas corridas, el CLI de Next 16.4.1 detiene el servidor de desarrollo para mostrar un aviso de actualización de seguridad (solo en entornos de agente) y los casos fallan con `ERR_CONNECTION_REFUSED`. Al repetir la corrida pasan. No es un fallo de las vistas.
+
+CI: se agregó el paso a `.github/workflows/auth-h4.yml`, que ya instala Chromium para Playwright. Está en un commit local, pendiente de aprobación de Jim.
+
+Pendiente: REAL de G7 (validez del enlace vencido o usado en la SPA G7, bloqueo y límite reales) y revisión independiente.

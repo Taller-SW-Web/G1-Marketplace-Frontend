@@ -28,6 +28,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Keyboard and account state checks with browser-only fixtures
         run: npx playwright test --config playwright.auth-ui.config.ts
+      - name: E2E de navegador V-001 a V-004 y cierre de sesión (MOCK)
+        run: npx playwright test --config playwright.e2e-cuenta.config.ts
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
