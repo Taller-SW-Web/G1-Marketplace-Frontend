@@ -2920,10 +2920,6 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
 .auth-consent { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; line-height: 20px; color: var(--text-secondary); }
 .auth-consent input { flex: 0 0 20px; width: 20px; height: 20px; margin: 12px; accent-color: var(--action-primary); }
 .auth-consent a { font-weight: 600; color: var(--text-primary); text-decoration: underline; }
-.password-rules { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-subtle); font-size: 14px; line-height: 20px; }
-.password-rules > p:not(:first-child) { display: flex; align-items: center; gap: 8px; }
-.password-rules img { flex: 0 0 17.6px; width: 17.6px; height: 17.6px; }
-.password-rules small { color: var(--text-secondary); }
 .auth-policy-message { color: var(--text-secondary); font-size: 14px; line-height: 20px; }
 @media (max-width: 600px) {
   .auth-page--account .auth-card { padding: 32px; }
@@ -3100,3 +3096,12 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   font-weight: 500;
   display: inline-block;
 }
+
+/* Ajuste Jim 21/11 · V-002: un mensaje rojo por requisito incumplido, sin checklist. */
+.field-errors { list-style: none; margin: 0; padding: 0; }
+.field-errors .field-error { animation: field-error-in .15s ease-out; }
+.field-caps-lock { color: var(--warning-text, #8a4b00); font-weight: 600; }
+@keyframes field-error-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .field-errors .field-error { animation: none; } }
+/* Edge/IE dibujan su propio "ojo" en campos password; ya existe el botón Mostrar/Ocultar. */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }

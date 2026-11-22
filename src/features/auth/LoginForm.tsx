@@ -199,6 +199,10 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
               setCorreo(event.target.value);
               if (emailError) setEmailError("");
             }}
+            onBlur={() => {
+              if (correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) setEmailError("Ingresa un correo electrónico válido.");
+            }}
+            inputMode="email"
             error={emailError}
             readOnly={busy}
             required
