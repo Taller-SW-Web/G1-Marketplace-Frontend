@@ -2932,6 +2932,29 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   .auth-card--wide { width: min(100%, 356px); padding: 32px; }
 }
 
+/* H5 UX-010 · V-001…V-004 con DS-001 (sin mockups aprobados de UX-001; ajustar aquí al recibirlos). */
+.auth-page { flex-direction: column; gap: 16px; background: var(--surface-subtle); }
+.auth-back-link { width: min(100%, 496px); min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.auth-back-link:hover { text-decoration: underline; }
+.auth-page--registration .auth-back-link { width: min(100%, 800px); }
+.auth-card { background: #fff; border-color: var(--border); box-shadow: 0 8px 28px #1b18120d; }
+.auth-page h1, .auth-page--account h1 { text-transform: uppercase; font-size: 32px; line-height: 40px; }
+.auth-heading h1[tabindex="-1"]:focus { outline: none; }
+.auth-heading p { max-width: 42ch; }
+.auth-card .field-control { background: #fff; }
+.auth-card .field-control:focus-within { border-color: var(--accent-signal); box-shadow: 0 0 0 1px var(--accent-signal); }
+.auth-card .field-control.has-error { box-shadow: none; }
+.auth-feedback { color: var(--text-primary); }
+.auth-small-copy { color: var(--text-secondary); text-align: center; }
+.auth-card > .auth-text-link { align-self: center; }
+@media (max-width: 575px) {
+  /* V-001…V-004 §10 mobile: una columna sin tarjeta flotante. */
+  .auth-page, .auth-page--registration { justify-content: flex-start; padding: 8px 16px 32px; background: #fff; }
+  .auth-card, .auth-card--wide, .auth-page--account .auth-card { width: 100%; padding: 8px 0 0; border: 0; border-radius: 0; box-shadow: none; }
+  .auth-back-link, .auth-page--registration .auth-back-link { width: 100%; }
+  .auth-page h1, .auth-page--account h1 { font-size: 28px; line-height: 36px; }
+}
+
 
 /* --- F-012…F-015 · Región comercial de la ficha --- */
 .product-commerce { display: flex; flex-direction: column; gap: var(--spacing-md); margin-block: var(--spacing-lg); }
