@@ -107,7 +107,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createAddress.mockRejectedValueOnce(new CheckoutApiError(400, "ADDRESS_VALIDATION_ERROR", ["street", "customerId", "unknown"]));
     render(<CheckoutFlow />);
     fireEvent.click(await screen.findByRole("button", { name: "Agregar nueva dirección" }));
-    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
+    fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Casa nueva" } });
     fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
     fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
@@ -116,19 +116,19 @@ describe("Checkout address and benefit acceptance", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar y usar esta dirección" }));
 
     const fieldError = await screen.findByText("Revisa este campo.");
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).value).toBe("Casa nueva");
     expect((screen.getByLabelText("Dirección") as HTMLInputElement).value).toBe("Calle 1");
     const street = screen.getByLabelText("Dirección") as HTMLInputElement;
     expect(street.getAttribute("aria-invalid")).toBe("true");
     expect(street.getAttribute("aria-describedby")?.split(" ")).toContain(fieldError.id);
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).getAttribute("aria-invalid")).not.toBe("true");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).getAttribute("aria-invalid")).not.toBe("true");
     expect(api.createAddress).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.getByRole("button", { name: "Guardar y usar esta dirección" })).toBeDefined());
 
     fireEvent.change(street, { target: { value: "Calle corregida" } });
     expect(street.getAttribute("aria-invalid")).not.toBe("true");
     expect(screen.queryByText("Revisa este campo.")).toBeNull();
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).value).toBe("Casa nueva");
   });
 
   it("returns focus to the add-address action after cancelling the form", async () => {
@@ -146,7 +146,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createAddress.mockResolvedValueOnce(createdAddress);
     render(<CheckoutFlow />);
     fireEvent.click(await screen.findByRole("button", { name: "Agregar nueva dirección" }));
-    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
+    fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Casa nueva" } });
     fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
     fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });

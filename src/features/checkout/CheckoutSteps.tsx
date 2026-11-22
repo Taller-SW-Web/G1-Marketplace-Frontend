@@ -46,8 +46,9 @@ export function DeliveryAddressPicker({ addresses, selectedId, loading, disabled
         <span className="checkout-address-body">
           <strong>{address.label || "Dirección"}</strong>
           <span>{address.street}, {address.district}, {address.province}</span>
-          <small className="checkout-muted">{address.department} · <span aria-hidden="true">Tel. {maskPhone(address.phone)}</span>
-            <span className="sr-only">Teléfono terminado en {address.phone.slice(-3)}</span></small>
+          {/* The BFF (BE #331) does not return phone: omit the whole block, visual and accessible. */}
+          <small className="checkout-muted">{address.department}{address.phone && <> · <span aria-hidden="true">Tel. {maskPhone(address.phone)}</span>
+            <span className="sr-only">Teléfono terminado en {address.phone.slice(-3)}</span></>}</small>
         </span>
       </label>;
     })}
@@ -66,7 +67,7 @@ type NewDeliveryAddressFormProps = {
 };
 
 const fieldCopy: Record<DeliveryAddressField, { label: string; hint?: string; type?: string; autoComplete?: string; required: boolean }> = {
-  label: { label: "Etiqueta", hint: "Un nombre breve para reconocerla, por ejemplo «Casa».", required: true },
+  label: { label: "Etiqueta (opcional)", hint: "Un nombre breve para reconocerla, por ejemplo «Casa».", required: false },
   street: { label: "Dirección", hint: "Calle o avenida, número y, si aplica, dpto. o interior.", autoComplete: "address-line1", required: true },
   department: { label: "Departamento", autoComplete: "address-level1", required: true },
   province: { label: "Provincia", autoComplete: "address-level2", required: true },
@@ -111,7 +112,7 @@ export function NewDeliveryAddressForm({ values, error, fieldErrors, busy, first
   return <form ref={formRef} className="checkout-form" onSubmit={submit} noValidate aria-busy={busy || undefined}>
     <h3 ref={headingRef} tabIndex={-1}>Nueva dirección</h3>
     {firstAddress && <p>Aún no tienes direcciones guardadas. Registra una para continuar con tu compra.</p>}
-    <p className="checkout-muted">Todos los campos son obligatorios, salvo la referencia.</p>
+    <p className="checkout-muted">Todos los campos son obligatorios, salvo la etiqueta y la referencia.</p>
     {field("label")}
     {field("street")}
     <div className="checkout-form-row">{field("department")}{field("province")}{field("district")}</div>
@@ -215,7 +216,7 @@ type CheckoutOrderSummaryProps = {
 
 export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryProps) {
   return <>
-    <p>{address?.label}: {address?.street}, {address?.district}</p>
+    <p>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
     <h3>Productos ({quote.lines.length})</h3>
     <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
     <dl className="checkout-totals">

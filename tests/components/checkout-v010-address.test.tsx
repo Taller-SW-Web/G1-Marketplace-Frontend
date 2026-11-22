@@ -30,7 +30,7 @@ const address = {
 };
 
 function fillValidForm() {
-  fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Oficina" } });
+  fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Oficina" } });
   fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
   fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
   fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
@@ -45,9 +45,9 @@ beforeEach(() => {
 });
 
 describe("V-010 local validation rules", () => {
-  it("requires every field except the reference and rejects whitespace-only values", () => {
-    const errors = validateAddressDraft({ label: " ", street: "", department: "", province: "", district: "", reference: "", phone: "" });
-    expect(Object.keys(errors).sort()).toEqual(["department", "district", "label", "phone", "province", "street"]);
+  it("requires every field except label and reference and rejects whitespace-only values", () => {
+    const errors = validateAddressDraft({ label: " ", street: " ", department: "", province: "", district: "", reference: "", phone: "" });
+    expect(Object.keys(errors).sort()).toEqual(["department", "district", "phone", "province", "street"]);
   });
 
   it("checks phone format and location letters, and masks the phone", () => {
@@ -89,14 +89,14 @@ describe("V-010 Dirección de envío (MOCK)", () => {
   it("blocks an incomplete submit locally, focuses the first error and keeps valid values", async () => {
     render(<CheckoutFlow />);
     fireEvent.click(await screen.findByRole("button", { name: "Agregar nueva dirección" }));
-    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa playa" } });
+    fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Casa playa" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar y usar esta dirección" }));
 
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Dirección")));
     expect(api.createAddress).not.toHaveBeenCalled();
     expect(screen.getByText("Ingresa la dirección.")).toBeDefined();
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa playa");
-    expect(screen.getByLabelText("Etiqueta").getAttribute("aria-invalid")).not.toBe("true");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).value).toBe("Casa playa");
+    expect(screen.getByLabelText("Etiqueta (opcional)").getAttribute("aria-invalid")).not.toBe("true");
   });
 
   it("sends only the address fields, never an editable identity (RC-F-022-04)", async () => {
@@ -140,6 +140,36 @@ describe("V-010 Dirección de envío (MOCK)", () => {
     expect(screen.queryByRole("radio")).toBeNull();
     expect(screen.queryByLabelText("Dirección")).toBeNull();
     expect(screen.queryByRole("button", { name: "Continuar al resumen" })).toBeNull();
+  });
+
+  it("works with the exact BFF shape: no phone block and optional label; a created address is selected", async () => {
+    // BE #331 / SPECS #19: G7 has no phone, so neither GET nor the POST 201 return it.
+    api.listAddresses.mockResolvedValueOnce([
+      { addressId: "a1b2c3d4-0000-4000-8000-000000000001", street: "Av. Larco 1234", district: "Miraflores", province: "Lima", department: "Lima", label: "Casa" },
+      { addressId: "a1b2c3d4-0000-4000-8000-000000000002", street: "Av. Javier Prado Este 560", district: "San Isidro", province: "Lima", department: "Lima" },
+    ]);
+    api.createAddress.mockResolvedValueOnce({ addressId: "a1b2c3d4-0000-4000-8000-000000000003", street: "Calle 1", district: "Surco", province: "Lima", department: "Lima" });
+    render(<CheckoutFlow />);
+    const casa = await screen.findByRole("radio", { name: /Casa/ });
+    const sinEtiqueta = screen.getByRole("radio", { name: /Av\. Javier Prado Este 560/ });
+    for (const radio of [casa, sinEtiqueta]) {
+      expect(radio.closest("label")?.textContent).not.toMatch(/Tel\.|Teléfono/);
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Agregar nueva dirección" }));
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).required).toBe(false);
+    fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
+    fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
+    fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
+    fireEvent.change(screen.getByLabelText("Distrito"), { target: { value: "Surco" } });
+    fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "987654321" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar y usar esta dirección" }));
+
+    await screen.findByText("La dirección «Calle 1» se guardó y quedó seleccionada.");
+    expect(api.createAddress).toHaveBeenCalledWith({ street: "Calle 1", district: "Surco", province: "Lima", department: "Lima", phone: "987654321" });
+    const created = screen.getByRole("radio", { name: /Calle 1/ }) as HTMLInputElement;
+    expect(created.checked).toBe(true);
+    expect(created.closest("label")?.textContent).not.toMatch(/Tel\.|Teléfono/);
   });
 
   it("blocks Continue and points back to the cart when the cart is empty", async () => {

@@ -301,8 +301,9 @@ export function CheckoutFlow() {
       return;
     }
     const reference = addressDraft.reference.trim();
+    const label = addressDraft.label.trim();
     const address = {
-      label: addressDraft.label.trim(), street: addressDraft.street.trim(), district: addressDraft.district.trim(),
+      ...(label ? { label } : {}), street: addressDraft.street.trim(), district: addressDraft.district.trim(),
       province: addressDraft.province.trim(), department: addressDraft.department.trim(),
       ...(reference ? { reference } : {}), phone: addressDraft.phone.replace(/[\s-]/g, ""),
     };

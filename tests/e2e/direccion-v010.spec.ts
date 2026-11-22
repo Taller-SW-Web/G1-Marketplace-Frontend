@@ -6,11 +6,19 @@ import { expect, test, type Page } from "@playwright/test";
 // identidad editable y que sólo muestra lo que el BFF devolvió para la sesión.
 // Con E2E_EVIDENCE=1 guarda capturas en docs/evidencias/H5/V-010-direccion-envio/e2e.
 
-type Address = { addressId: string; label: string; street: string; district: string; province: string; department: string; phone: string; reference?: string };
+// Forma exacta del BFF de BE #331 / SPECS #19: G7 no tiene teléfono; label y reference son opcionales.
+type Address = { addressId: string; label?: string; street: string; district: string; province: string; department: string; reference?: string };
 const titular: Address[] = [
-  { addressId: "ADR-A-1", label: "Casa", street: "Av. Lima 123", district: "Miraflores", province: "Lima", department: "Lima", phone: "900000123" },
-  { addressId: "ADR-A-2", label: "Trabajo", street: "Jr. Comercio 450", district: "San Isidro", province: "Lima", department: "Lima", phone: "900000456" },
+  { addressId: "ADR-A-1", label: "Casa", street: "Av. Lima 123", district: "Miraflores", province: "Lima", department: "Lima", reference: "Dpto. 402" },
+  { addressId: "ADR-A-2", label: "Trabajo", street: "Jr. Comercio 450", district: "San Isidro", province: "Lima", department: "Lima" },
+  { addressId: "ADR-A-4", street: "Av. Brasil 900", district: "Pueblo Libre", province: "Lima", department: "Lima" },
 ];
+// El 201 del BFF devuelve la dirección sin el teléfono que recibió en el alta.
+const bffCreated = (body: Record<string, unknown>, addressId: string) => {
+  const { phone: _phone, ...rest } = body;
+  void _phone;
+  return { ...rest, addressId };
+};
 const cart = { cartId: "cart-a", version: 4, items: [{ sku: "SKU-MOCK-001", quantity: 2 }] };
 
 async function mockCheckout(page: Page, { list = titular, create }: { list?: Address[]; create?: (body: Record<string, unknown>) => { status: number; json: unknown } } = {}) {
@@ -24,7 +32,7 @@ async function mockCheckout(page: Page, { list = titular, create }: { list?: Add
     }
     const body = route.request().postDataJSON() as Record<string, unknown>;
     state.created.push(body);
-    const response = create?.(body) ?? { status: 201, json: { data: { ...body, addressId: "ADR-A-3" } } };
+    const response = create?.(body) ?? { status: 201, json: { data: bffCreated(body, "ADR-A-3") } };
     return route.fulfill(response);
   });
   await page.route("**/api/checkout/quotes", async route => {
@@ -50,12 +58,13 @@ const continueButton = (page: Page) => page.getByRole("button", { name: "Continu
 test("muestra sólo las direcciones que el BFF devolvió para la sesión, sin enviar identidad", async ({ page }) => {
   const state = await mockCheckout(page);
   await page.goto("/checkout/direccion?customerId=OTRO-CLIENTE");
-  await expect(page.getByRole("radio")).toHaveCount(2);
+  await expect(page.getByRole("radio")).toHaveCount(3);
   await expect(page.getByRole("radio", { name: /Casa/ })).toBeChecked();
-  await expect(page.getByText("900000123")).toHaveCount(0);
-  await expect(page.getByText(/Teléfono terminado en 123/)).toBeAttached();
+  await expect(page.getByRole("radio", { name: /Av\. Brasil 900/ })).toBeVisible();
+  // Sin teléfono en la respuesta: no hay bloque visual ni accesible de teléfono.
+  await expect(page.getByText(/Tel\.|Teléfono terminado/)).toHaveCount(0);
   for (const url of state.listRequests) expect(new URL(url).search).toBe("");
-  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }))).not.toMatch(/ADR-|Av\. Lima|900000/);
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }))).not.toMatch(/ADR-|Av\. Lima/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await evidence(page, "01-con-direcciones");
 });
@@ -75,7 +84,7 @@ test("errores de validación en línea, 400 del servidor y creación seleccionad
   let reject = true;
   const state = await mockCheckout(page, { create: body => reject
     ? { status: 400, json: { error: { code: "ADDRESS_VALIDATION_ERROR", fields: ["street"] } } }
-    : { status: 201, json: { data: { ...body, addressId: "ADR-A-3" } } } });
+    : { status: 201, json: { data: bffCreated(body, "ADR-A-3") } } });
   await page.goto("/checkout/direccion");
   await page.getByRole("button", { name: "Agregar nueva dirección" }).click();
   await expect(page.getByRole("heading", { name: "Nueva dirección" })).toBeFocused();
@@ -108,6 +117,7 @@ test("errores de validación en línea, 400 del servidor y creación seleccionad
   await save.click();
   await expect(page.getByText("La dirección «Oficina» se guardó y quedó seleccionada.")).toBeVisible();
   await expect(page.getByRole("radio", { name: /Oficina/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /Oficina/ }).locator("xpath=ancestor::label")).not.toContainText("Tel.");
   expect(state.created).toHaveLength(2);
   for (const body of state.created) {
     expect(Object.keys(body).sort()).toEqual(["department", "district", "label", "phone", "province", "street"]);

@@ -17,7 +17,6 @@ export const addressFieldLimits: Record<DeliveryAddressField, number> = {
 };
 
 const requiredMessages: Partial<Record<DeliveryAddressField, string>> = {
-  label: "Ingresa un nombre para reconocerla, por ejemplo «Casa».",
   street: "Ingresa la dirección.",
   department: "Ingresa el departamento.",
   province: "Ingresa la provincia.",

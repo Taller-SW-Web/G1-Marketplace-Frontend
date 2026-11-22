@@ -21,7 +21,7 @@ Fecha: 21/11/2026. Rama: `feat/f022-v010-direccion-envio`.
 | # | Estado | Desktop | Mobile |
 |---|---|---|---|
 | 01 | Cargando (skeleton y Continuar inactivo) | `desktop-01-cargando.png` | `mobile-01-cargando.png` |
-| 02 | Con direcciones (teléfono enmascarado) | `desktop-02-con-direcciones.png` | `mobile-02-con-direcciones.png` |
+| 02 | Con direcciones (forma del BFF: sin teléfono; una sin etiqueta) | `desktop-02-con-direcciones.png` | `mobile-02-con-direcciones.png` |
 | 03 | Sin direcciones (formulario abierto con explicación) | `desktop-03-sin-direcciones.png` | `mobile-03-sin-direcciones.png` |
 | 04 | Validación en línea (blur y envío incompleto) | `desktop-04-validacion-en-linea.png` | `mobile-04-validacion-en-linea.png` |
 | 05 | Guardando (CTA no repetible) | `desktop-05-guardando.png` | `mobile-05-guardando.png` |
@@ -47,13 +47,13 @@ Comando: `npx vitest run tests/components/checkout` (6 archivos existentes + `ch
 | `503` al crear | Datos conservados; reintento manual sin repetición automática | `checkout-v010-address` · *preserves the typed address…* | Pasa |
 | Error de carga | Distinto de "vacío", con reintento manual | `checkout-address-benefits` · *keeps a failed address load distinct from empty…* | Pasa |
 | Cargando | Skeleton anunciado y Continuar deshabilitado | `checkout-v010-address` · *shows a skeleton…* | Pasa |
-| Teléfono enmascarado | La tarjeta y el lector solo exponen los últimos 3 dígitos | `checkout-v010-address` · *masks the phone…* | Pasa |
+| Teléfono enmascarado | Si una respuesta trae teléfono, la tarjeta y el lector solo exponen los últimos 3 dígitos; si no lo trae (forma del BFF), se omite el bloque | `checkout-v010-address` · *masks the phone…* y *works with the exact BFF shape…* | Pasa |
 | Carrito inválido | Continuar bloqueado y enlace a `/carrito` | `checkout-v010-address` · *blocks Continue…* | Pasa |
 | Foco al cancelar | Vuelve a "Agregar nueva dirección" | `checkout-address-benefits` · *returns focus to the add-address action…* | Pasa |
 
 ## Pendientes (no se inventan)
 
-- `V-010-OPEN-01`: los límites de los campos no están confirmados por Seguridad. La validación local (obligatorios, máximos de 40/180/60/120/15 caracteres y teléfono de 6 a 15 dígitos) es solo una ayuda y el `400` del servidor sigue mandando. El esquema `Direccion` de G7 no tiene `telefono`; el contrato Marketplace sí lo pide.
+- `V-010-OPEN-01`: los límites de los campos no están confirmados por Seguridad. La validación local (obligatorios salvo etiqueta y referencia, máximos de 40/180/60/120/15 caracteres y teléfono de 6 a 15 dígitos) es solo una ayuda y el `400` del servidor sigue mandando.
 - `V-010-OPEN-02`: departamento, provincia y distrito siguen como texto, porque no hay un contrato de maestros encadenados.
 - `V-010-OPEN-03`: el indicador de progreso compartido se dejó como estaba.
 - Prueba REAL contra el BFF y G7: depende de BE #114 y #115 (Codex 2).
@@ -64,7 +64,7 @@ Comando: `npm run test:e2e:direccion` (Edge local / Chromium en CI; desktop 1440
 
 | Caso | Verificación | Resultado |
 |---|---|---|
-| Sólo direcciones del titular | Se muestran exactamente las que el BFF devolvió para la sesión; un `?customerId=` en la URL no se propaga; el GET va sin query; teléfono enmascarado; nada en almacenamiento web | Pasa |
+| Sólo direcciones del titular | Se muestran exactamente las que el BFF devolvió para la sesión; un `?customerId=` en la URL no se propaga; el GET va sin query; sin bloque de teléfono (el BFF no lo devuelve); nada en almacenamiento web | Pasa |
 | Seleccionar existente | Elegir «Trabajo» y cotizar con `{ addressId: "ADR-A-2", cartVersion: 4 }` | Pasa |
 | Validación en línea | Teléfono inválido al salir del campo; envío incompleto sin llamada y con foco en el primer error; valores válidos conservados | Pasa |
 | `400` del servidor | Marca sólo `street` y conserva el resto | Pasa |
@@ -74,3 +74,14 @@ Comando: `npm run test:e2e:direccion` (Edge local / Chromium en CI; desktop 1440
 Resultado local del 21/11: **8/8 pasan** (4 casos × desktop y mobile). El CLI de Next 16.4.1 a veces detiene el servidor de desarrollo para mostrar un aviso de actualización (solo en entornos de agente); al repetir la corrida pasa.
 
 La titularidad real (que el token de A nunca reciba direcciones de B) la garantiza el BFF y queda para la prueba REAL de BE #114/#115. CI: paso agregado en `.github/workflows/e2e.yml` (commit local, pendiente de aprobación de Jim).
+
+## Ajustes de la revisión (22/11) · alineación con BE #331 y SPECS #19
+
+Decisiones de Jim: el frontend **acepta direcciones sin teléfono** (el contrato del backend no cambia) y la **etiqueta es opcional** en la vista.
+
+- **Lectura y alta separadas:** `CheckoutAddress` (lo que devuelve el BFF: `addressId`, `street`, `district`, `province`, `department` y, si G7 los trae, `label` y `reference`) y `CheckoutAddressInput` (payload de alta: el BFF sigue validando `phone` en el formulario y `label` es opcional).
+- El parser de `api.ts` admite respuestas sin `phone` (lo rechaza solo si llega y no es texto) y la tarjeta omite el bloque de teléfono, visual y accesible, cuando falta. El resumen no deja un «:» suelto si no hay etiqueta.
+- El campo pasa a llamarse «Etiqueta (opcional)» y no se envía `label` si queda vacío.
+- Pruebas nuevas con la forma exacta del BFF: GET y POST en `checkout-api.test.ts`, el flujo completo (lista sin teléfono, alta sin etiqueta con la nueva dirección seleccionada) en `checkout-v010-address.test.tsx`, y el E2E `direccion-v010.spec.ts` con fixtures sin teléfono y una dirección sin etiqueta.
+- Se regeneraron las capturas de la carpeta y de `e2e/`, y los dos videos clave.
+- **Alcance REAL:** Seguridad REAL cubre el alta y el listado de direcciones; **la cotización sigue simulada** (gate separado en BE #331). Todo lo de esta carpeta sigue siendo MOCK.
