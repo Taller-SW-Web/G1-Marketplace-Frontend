@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./e2e/csp-guard";
 
 test("checkout local fixtures cover coupon, consent, and clearly labeled paid fixture", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");

@@ -21,6 +21,7 @@
     "demo:h3": "node scripts/h3-connected.mjs --demo",
     "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",
     "test:e2e:cuenta": "playwright test --config playwright.e2e-cuenta.config.ts",
+    "test:e2e:csp": "playwright test --config playwright.e2e-csp.config.ts",
     "demo:favoritos": "node scripts/favorites-demo.mjs",
     "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs",
     "demo:catalogo:featured": "node scripts/demo-catalog-h4.mjs --featured",

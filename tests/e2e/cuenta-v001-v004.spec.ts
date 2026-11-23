@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test } from "./csp-guard";
+import type { Page, Route } from "@playwright/test";
 
 // H5 · E2E de navegador V-001..V-004 + cierre de sesión. **MOCK**: el BFF /api/v1/* se
 // responde con page.route usando los códigos del contrato G7 (catalogo-errores.md). No hay
@@ -8,7 +9,8 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 const policy = { longitudMinima: 12, historial: 5, requiereMayuscula: true, requiereMinuscula: true,
   requiereDigito: true, requiereCaracterEspecial: true, rechazaComunes: true, rechazaDatosPersonales: true };
 const user = { id: "11111111-1111-4111-8111-111111111111", nombreCompleto: "Cliente fixture", roles: ["CLIENTE"] };
-const G7 = "http://127.0.0.1:4011";
+// En producción G1 solo acepta G7 por https (playwright.e2e-csp.config.ts usa un origen fixture).
+const G7 = process.env.E2E_G7_ORIGIN ?? "http://127.0.0.1:4011";
 const invalidCredentials = "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
 
 type Bff = { authenticated: boolean; logins: number; logouts: number; login?: (route: Route, body: Record<string, unknown>) => Promise<void> | void };

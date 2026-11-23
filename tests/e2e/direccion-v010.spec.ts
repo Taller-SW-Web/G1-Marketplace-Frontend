@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "./csp-guard";
+import type { Page } from "@playwright/test";
 
 // H5 · E2E de navegador V-010 Dirección de envío. **MOCK**: /api/checkout/* y /api/cart/current
 // se responden con page.route según SPECS/contrato-api/F-022. La titularidad la resuelve el
