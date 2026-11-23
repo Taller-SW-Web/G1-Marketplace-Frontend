@@ -45,8 +45,64 @@ describe("G1 account UI with contract fixtures", () => {
     fireEvent.change(screen.getByLabelText("Confirmar contraseña", { exact: true }), { target: { value: "Different-fixture!" } });
     fireEvent.click(button);
     expect(await screen.findByText("Debes aceptar los términos y la política de privacidad.")).toBeTruthy();
-    expect(screen.getByText("Las contraseñas deben coincidir.")).toBeTruthy();
+    expect(screen.getByText("Las contraseñas no coinciden.")).toBeTruthy();
     expect(fetcher.mock.calls.filter(([path]) => path.endsWith("/auth/registro"))).toHaveLength(0);
+  });
+  it("shows one red message per unmet policy rule and removes each as it is met, without a checklist", async () => {
+    registration(); const button = screen.getByRole("button", { name: "Crear cuenta" });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    const password = screen.getByLabelText("Contraseña", { exact: true });
+    expect(password.getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByText(/Debe /)).toBeNull();
+    fireEvent.change(password, { target: { value: "abc" } });
+    expect(screen.getByText("Debe tener al menos 12 caracteres.")).toBeTruthy();
+    expect(screen.getByText("Debe incluir una letra mayúscula.")).toBeTruthy();
+    expect(screen.getByText("Debe incluir un número.")).toBeTruthy();
+    expect(screen.queryByText("Debe incluir una letra minúscula.")).toBeNull();
+    // requiereCaracterEspecial is false in this policy: never ask for it.
+    expect(screen.queryByText(/carácter especial/)).toBeNull();
+    expect(password.getAttribute("aria-invalid")).toBe("true");
+    const list = screen.getByText("Debe tener al menos 12 caracteres.").closest("ul")!;
+    expect(list.getAttribute("aria-live")).toBe("polite");
+    expect(password.getAttribute("aria-describedby")?.split(" ")).toContain(list.id);
+    fireEvent.change(password, { target: { value: "Abcdefghijkl" } });
+    expect(screen.queryByText("Debe tener al menos 12 caracteres.")).toBeNull();
+    expect(screen.queryByText("Debe incluir una letra mayúscula.")).toBeNull();
+    expect(screen.getByText("Debe incluir un número.")).toBeTruthy();
+    fireEvent.change(password, { target: { value: "Abcdefghijk1" } });
+    expect(screen.queryByText(/Debe /)).toBeNull();
+    expect(password.getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByText(/Cumplido|Pendiente|Formato comprobado|Coinciden/)).toBeNull();
+    const confirmation = screen.getByLabelText("Confirmar contraseña", { exact: true });
+    fireEvent.change(confirmation, { target: { value: "Abcdefghijk" } });
+    expect(screen.getByText("Las contraseñas no coinciden.")).toBeTruthy();
+    fireEvent.change(confirmation, { target: { value: "Abcdefghijk1" } });
+    expect(screen.queryByText("Las contraseñas no coinciden.")).toBeNull();
+  });
+  it("validates other fields only after leaving them and clears the message once corrected", async () => {
+    registration(); await waitFor(() => expect((screen.getByRole("button", { name: "Crear cuenta" }) as HTMLButtonElement).disabled).toBe(false));
+    const email = screen.getByLabelText("Correo electrónico", { exact: true });
+    fireEvent.change(email, { target: { value: "nombre@" } });
+    expect(screen.queryByText("Ingresa un correo electrónico válido.")).toBeNull();
+    fireEvent.blur(email);
+    expect(screen.getByText("Ingresa un correo electrónico válido.")).toBeTruthy();
+    fireEvent.change(email, { target: { value: "nombre@fixture.test" } });
+    expect(screen.queryByText("Ingresa un correo electrónico válido.")).toBeNull();
+    expect(email.getAttribute("autocomplete")).toBe("email");
+    expect(screen.getByLabelText("Contraseña", { exact: true }).getAttribute("autocomplete")).toBe("new-password");
+  });
+  it("warns discreetly while Caps Lock is on in password fields", async () => {
+    registration();
+    const password = screen.getByLabelText("Contraseña", { exact: true });
+    const key = (type: string, capsLock: boolean) => {
+      const event = new KeyboardEvent(type, { key: "a", bubbles: true });
+      Object.defineProperty(event, "getModifierState", { value: (name: string) => name === "CapsLock" && capsLock });
+      return event;
+    };
+    fireEvent(password, key("keydown", true));
+    expect(screen.getByText("Bloq Mayús está activado.")).toBeTruthy();
+    fireEvent(password, key("keyup", false));
+    expect(screen.queryByText("Bloq Mayús está activado.")).toBeNull();
   });
   it("keeps registration disabled without published terms/privacy or a current password policy", async () => {
     render(<RegistrationForm />); await screen.findByText(/Los documentos de términos/);

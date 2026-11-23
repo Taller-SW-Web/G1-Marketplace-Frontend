@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { AuthBackLink } from "./AuthShell";
 import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
 import { AccessError, announceSessionChange, authCall, safeReturn } from "./client";
@@ -149,6 +150,7 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
 
   return (
     <section className="auth-page" aria-labelledby="auth-title">
+      <AuthBackLink />
       <div className="auth-card">
         <div className="auth-intro">
           <div className="auth-logo">
@@ -197,6 +199,10 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
               setCorreo(event.target.value);
               if (emailError) setEmailError("");
             }}
+            onBlur={() => {
+              if (correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) setEmailError("Ingresa un correo electrónico válido.");
+            }}
+            inputMode="email"
             error={emailError}
             readOnly={busy}
             required
