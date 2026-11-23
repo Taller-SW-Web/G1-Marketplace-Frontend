@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // El BFF solo devuelve JSON; las páginas reciben su CSP con nonce desde src/proxy.ts.
+        source: "/api/:path*",
+        headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; frame-ancestors 'none'; base-uri 'none'" }],
+      },
+      {
         source: "/restablecer-contrasena",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }, { key: "Cache-Control", value: "no-store, private" }],
       },
