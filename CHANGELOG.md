@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.0...v1.4.1) (2026-11-23)
+
+### Bug Fixes
+
+* **seguridad:** agregar Content-Security-Policy con nonce al frontend ([edc470b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/edc470b579ab031dbee32b71c4d82e92ac078f5e))
+
 ## [1.4.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.2...v1.4.0) (2026-11-23)
 
 ### Features
