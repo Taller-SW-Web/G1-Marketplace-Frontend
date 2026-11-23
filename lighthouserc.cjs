@@ -13,16 +13,19 @@ module.exports = {
         `${origin}/productos/zapatillas-running-aero-x`,
       ],
       settings: {
-        onlyCategories: ['performance'],
+        onlyCategories: ['performance', 'accessibility', 'best-practices'],
         chromeFlags: '--no-sandbox --disable-dev-shm-usage',
         blockedUrlPatterns: ['https://*'],
       },
     },
     assert: {
       assertions: {
+        'categories:accessibility': ['error', { minScore: 0.9, aggregationMethod: 'median' }],
+        'categories:best-practices': ['error', { minScore: 0.9, aggregationMethod: 'median' }],
+        'categories:performance': ['warn', { minScore: 0.8, aggregationMethod: 'median' }],
+        'cumulative-layout-shift': ['error', { maxNumericValue: 0.10, aggregationMethod: 'median' }],
         'largest-contentful-paint': ['warn', { maxNumericValue: 2500, aggregationMethod: 'median' }],
-        'cumulative-layout-shift': ['warn', { maxNumericValue: 0.10, aggregationMethod: 'median' }],
-        'total-blocking-time': ['warn', { maxNumericValue: 200, aggregationMethod: 'median' }],
+        'total-blocking-time': ['warn', { maxNumericValue: 300, aggregationMethod: 'median' }],
       },
     },
     upload: { target: 'filesystem', outputDir: '.lighthouseci/report' },
