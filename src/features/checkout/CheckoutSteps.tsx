@@ -1,12 +1,22 @@
-import { useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
+import { LoadingState, Skeleton } from "../../shared/ui/Skeleton";
 import { formatCheckoutMoney, type CheckoutAddress, type CheckoutQuote } from "./fixtures";
+import {
+  addressFieldLimits,
+  addressFieldOrder,
+  maskPhone,
+  validateAddressField,
+  type DeliveryAddressDraft,
+  type DeliveryAddressField,
+  type DeliveryAddressFieldErrors,
+} from "./address-validation";
+
+export type { DeliveryAddressDraft, DeliveryAddressField, DeliveryAddressFieldErrors } from "./address-validation";
 
 type CartStatus = "loading" | "ready" | "empty" | "error";
-export type DeliveryAddressField = "label" | "street" | "district" | "province" | "department" | "reference" | "phone";
-export type DeliveryAddressFieldErrors = Partial<Record<DeliveryAddressField, string>>;
 
 type DeliveryAddressPickerProps = {
   addresses: CheckoutAddress[];
@@ -17,55 +27,101 @@ type DeliveryAddressPickerProps = {
 };
 
 export function DeliveryAddressPicker({ addresses, selectedId, loading, disabled, onSelect }: DeliveryAddressPickerProps) {
-  return <>
-    {loading ? <p role="status">Cargando tus direcciones…</p> : addresses.length === 0 ? <p>Aún no tienes direcciones guardadas.</p> :
-      <fieldset className="checkout-addresses">
-        <legend>Elige dónde recibir tu pedido</legend>
-        {addresses.map((address) => <label className="checkout-address" key={address.addressId}>
-          <input type="radio" name="address" checked={selectedId === address.addressId} disabled={disabled}
-            onChange={() => onSelect(address.addressId)} />
-          <span><strong>{address.label}</strong><br />{address.street}, {address.district}, {address.province}<br />
-            <small>Teléfono terminado en {address.phone.slice(-3)}</small></span>
-        </label>)}
-      </fieldset>}
-  </>;
+  if (loading) {
+    return <LoadingState label="Cargando tus direcciones…" className="checkout-address-skeletons">
+      {[0, 1].map((key) => <div className="checkout-address checkout-address--skeleton" key={key}>
+        <Skeleton variant="circle" className="checkout-skeleton-radio" />
+        <div><Skeleton variant="line" className="checkout-skeleton-line short" /><Skeleton variant="line" className="checkout-skeleton-line" /></div>
+      </div>)}
+    </LoadingState>;
+  }
+  if (addresses.length === 0) return <p>Aún no tienes direcciones guardadas.</p>;
+  return <fieldset className="checkout-addresses">
+    <legend>Direcciones guardadas</legend>
+    {addresses.map((address) => {
+      const selected = selectedId === address.addressId;
+      return <label className={`checkout-address${selected ? " is-selected" : ""}`} key={address.addressId}>
+        <input type="radio" name="address" checked={selected} disabled={disabled}
+          onChange={() => onSelect(address.addressId)} />
+        <span className="checkout-address-body">
+          <strong>{address.label || "Dirección"}</strong>
+          <span>{address.street}, {address.district}, {address.province}</span>
+          {/* The BFF (BE #331) does not return phone: omit the whole block, visual and accessible. */}
+          <small className="checkout-muted">{address.department}{address.phone && <> · <span aria-hidden="true">Tel. {maskPhone(address.phone)}</span>
+            <span className="sr-only">Teléfono terminado en {address.phone.slice(-3)}</span></>}</small>
+        </span>
+      </label>;
+    })}
+  </fieldset>;
 }
 
 type NewDeliveryAddressFormProps = {
+  values: DeliveryAddressDraft;
   error: string;
   fieldErrors: DeliveryAddressFieldErrors;
   busy: boolean;
   firstAddress: boolean;
-  onFieldChange: (field: DeliveryAddressField) => void;
+  onChange: (field: DeliveryAddressField, value: string) => void;
   onCancel: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSave: () => void;
 };
 
-export function NewDeliveryAddressForm({ error, fieldErrors, busy, firstAddress, onFieldChange, onCancel, onSubmit }: NewDeliveryAddressFormProps) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { headingRef.current?.focus(); }, []);
+const fieldCopy: Record<DeliveryAddressField, { label: string; hint?: string; type?: string; autoComplete?: string; required: boolean }> = {
+  label: { label: "Etiqueta (opcional)", hint: "Un nombre breve para reconocerla, por ejemplo «Casa».", required: false },
+  street: { label: "Dirección", hint: "Calle o avenida, número y, si aplica, dpto. o interior.", autoComplete: "address-line1", required: true },
+  department: { label: "Departamento", autoComplete: "address-level1", required: true },
+  province: { label: "Provincia", autoComplete: "address-level2", required: true },
+  district: { label: "Distrito", autoComplete: "address-level3", required: true },
+  reference: { label: "Referencia (opcional)", hint: "Ayuda para encontrar el lugar. No incluyas datos personales.", required: false },
+  phone: { label: "Teléfono", hint: "Contacto para la entrega. Solo números, por ejemplo 987654321.", type: "tel", autoComplete: "tel", required: true },
+};
 
-  return <form className="checkout-form" onSubmit={onSubmit}>
+export function NewDeliveryAddressForm({ values, error, fieldErrors, busy, firstAddress, onChange, onCancel, onSave }: NewDeliveryAddressFormProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [touched, setTouched] = useState<Partial<Record<DeliveryAddressField, boolean>>>({});
+  const [submitAttempt, setSubmitAttempt] = useState(0);
+  useLayoutEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => {
+    if (submitAttempt === 0) return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [submitAttempt, fieldErrors]);
+
+  // Server errors (400) win; otherwise inline help appears once the buyer leaves the field
+  // or tries to save, and disappears as soon as the value becomes valid.
+  const shownError = (field: DeliveryAddressField) =>
+    fieldErrors[field] ?? (touched[field] ? validateAddressField(field, values[field]) : undefined);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setTouched(Object.fromEntries(addressFieldOrder.map((field) => [field, true])));
+    setSubmitAttempt((attempt) => attempt + 1);
+    onSave();
+  }
+
+  const field = (name: DeliveryAddressField) => {
+    const copy = fieldCopy[name];
+    return <TextField key={name} label={copy.label} name={name} type={copy.type} autoComplete={copy.autoComplete}
+      required={copy.required} aria-required={copy.required} maxLength={addressFieldLimits[name]} disabled={busy}
+      value={values[name]} hint={copy.hint} error={shownError(name)}
+      onChange={(event) => onChange(name, event.target.value)}
+      onBlur={() => setTouched((current) => current[name] ? current : { ...current, [name]: true })} />;
+  };
+
+  return <form ref={formRef} className="checkout-form" onSubmit={submit} noValidate aria-busy={busy || undefined}>
     <h3 ref={headingRef} tabIndex={-1}>Nueva dirección</h3>
     {firstAddress && <p>Aún no tienes direcciones guardadas. Registra una para continuar con tu compra.</p>}
-    <TextField label="Etiqueta" name="label" required maxLength={80} disabled={busy}
-      error={fieldErrors.label} onChange={() => onFieldChange("label")} />
-    <TextField label="Dirección" name="street" required maxLength={180} disabled={busy}
-      error={fieldErrors.street} onChange={() => onFieldChange("street")} />
-    <TextField label="Departamento" name="department" required maxLength={100} disabled={busy}
-      error={fieldErrors.department} onChange={() => onFieldChange("department")} />
-    <TextField label="Provincia" name="province" required maxLength={100} disabled={busy}
-      error={fieldErrors.province} onChange={() => onFieldChange("province")} />
-    <TextField label="Distrito" name="district" required maxLength={100} disabled={busy}
-      error={fieldErrors.district} onChange={() => onFieldChange("district")} />
-    <TextField label="Referencia (opcional)" name="reference" maxLength={180} disabled={busy}
-      error={fieldErrors.reference} onChange={() => onFieldChange("reference")} />
-    <TextField label="Teléfono" name="phone" type="tel" required maxLength={40} disabled={busy}
-      error={fieldErrors.phone} onChange={() => onFieldChange("phone")} />
-    {error && <p role="alert" className="checkout-error">{error}</p>}
+    <p className="checkout-muted">Todos los campos son obligatorios, salvo la etiqueta y la referencia.</p>
+    {field("label")}
+    {field("street")}
+    <div className="checkout-form-row">{field("department")}{field("province")}{field("district")}</div>
+    {field("reference")}
+    {field("phone")}
+    {error && <div role="alert" className="checkout-error checkout-error-box"><p>{error}</p><p>Tus datos se conservaron; puedes intentarlo de nuevo.</p></div>}
     <div className="checkout-actions">
-      <Button type="button" variant="tertiary" disabled={busy} onClick={onCancel}>Cancelar</Button>
-      <Button type="submit" loading={busy} disabled={busy}>Guardar dirección</Button>
+      {!firstAddress && <Button type="button" variant="tertiary" disabled={busy} onClick={onCancel}>Cancelar</Button>}
+      <Button type="submit" loading={busy} loadingLabel="Guardando dirección…" disabled={busy}>Guardar y usar esta dirección</Button>
     </div>
   </form>;
 }
@@ -81,6 +137,7 @@ type AddressStepContainerProps = {
   addresses: CheckoutAddress[];
   selectedId: string;
   addingAddress: boolean;
+  addressDraft: DeliveryAddressDraft;
   addressError: string;
   addressFieldErrors: DeliveryAddressFieldErrors;
   addressStatusMessage: string;
@@ -88,17 +145,17 @@ type AddressStepContainerProps = {
   onRetryCart: () => void;
   onRetryAddresses: () => void;
   onSelectAddress: (addressId: string) => void;
-  onAddressFieldChange: (field: DeliveryAddressField) => void;
+  onAddressDraftChange: (field: DeliveryAddressField, value: string) => void;
   onAddAddress: () => void;
   onCancelAddress: () => void;
-  onSaveAddress: (event: FormEvent<HTMLFormElement>) => void;
+  onSaveAddress: () => void;
   onContinue: () => void;
 };
 
 export function AddressStepContainer(props: AddressStepContainerProps) {
   const { backendMockEnabled, cartStatus, cartCount, cartError, addressLoading, addressLoadError,
-    addressRequiresAuthentication, addresses, selectedId, addingAddress, addressError, addressFieldErrors,
-    addressStatusMessage, busy, onRetryCart, onRetryAddresses, onSelectAddress, onAddressFieldChange,
+    addressRequiresAuthentication, addresses, selectedId, addingAddress, addressDraft, addressError, addressFieldErrors,
+    addressStatusMessage, busy, onRetryCart, onRetryAddresses, onSelectAddress, onAddressDraftChange,
     onAddAddress, onCancelAddress, onSaveAddress, onContinue } = props;
   const selectedAddress = addresses.some((address) => address.addressId === selectedId);
   const addAddressButtonRef = useRef<HTMLButtonElement>(null);
@@ -115,31 +172,42 @@ export function AddressStepContainer(props: AddressStepContainerProps) {
     onCancelAddress();
   }
 
-  return <section className="checkout-card" aria-labelledby="address-title">
-    <h2 id="address-title">Dirección de envío</h2>
-    {backendMockEnabled && cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
-    {backendMockEnabled && cartStatus === "ready" && <p className="checkout-muted">Se encontraron {cartCount} productos para esta compra.</p>}
-    {backendMockEnabled && cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. <Link href="/carrito">Volver al carrito</Link></p>}
-    {backendMockEnabled && cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={onRetryCart}>Reintentar consulta del carrito</Button></div>}
-    {addressStatusMessage && <p role="status" className="checkout-muted">{addressStatusMessage}</p>}
-    {addressLoadError ? <div role="alert" className="checkout-error">
-      <p>{addressLoadError}</p>
-      {addressRequiresAuthentication
-        ? <Link className="button button--secondary button--md" href="/login?returnTo=%2Fcheckout">Iniciar sesión</Link>
-        : <Button variant="secondary" disabled={busy || addressLoading} onClick={onRetryAddresses}>Reintentar carga de direcciones</Button>}
-    </div> : addingAddress ? <NewDeliveryAddressForm error={addressError} fieldErrors={addressFieldErrors}
-      busy={busy} firstAddress={addresses.length === 0} onFieldChange={onAddressFieldChange}
-      onCancel={cancelAddressForm} onSubmit={onSaveAddress} /> : <>
-        <DeliveryAddressPicker addresses={addresses} selectedId={selectedId} loading={addressLoading} disabled={busy}
-          onSelect={onSelectAddress} />
-        <div className="checkout-actions">
-          <Button ref={addAddressButtonRef} variant="secondary" disabled={busy || addressLoading} onClick={onAddAddress}>Agregar dirección</Button>
-          <Button onClick={onContinue} loading={busy}
-            disabled={!selectedAddress || busy || addressLoading || (backendMockEnabled && cartStatus !== "ready")}>Continuar</Button>
-        </div>
-      </>}
+  const cartBlocked = backendMockEnabled && cartStatus !== "ready";
+
+  return <section className="checkout-card checkout-address-step" aria-labelledby="address-title">
+    <div className="checkout-address-main">
+      <h2 id="address-title">¿Dónde entregamos tu pedido?</h2>
+      {addressStatusMessage && <p role="status" className="checkout-success-box">{addressStatusMessage}</p>}
+      {addressLoadError ? <div role="alert" className="checkout-error checkout-error-box">
+        <p>{addressLoadError}</p>
+        {addressRequiresAuthentication
+          ? <Link className="button button--secondary button--md" href="/login?returnTo=%2Fcheckout">Iniciar sesión</Link>
+          : <Button variant="secondary" disabled={busy || addressLoading} onClick={onRetryAddresses}>Reintentar carga de direcciones</Button>}
+      </div> : addingAddress ? <NewDeliveryAddressForm values={addressDraft} error={addressError} fieldErrors={addressFieldErrors}
+        busy={busy} firstAddress={addresses.length === 0} onChange={onAddressDraftChange}
+        onCancel={cancelAddressForm} onSave={onSaveAddress} /> : <>
+          <DeliveryAddressPicker addresses={addresses} selectedId={selectedId} loading={addressLoading} disabled={busy}
+            onSelect={onSelectAddress} />
+          {!addressLoading && <Button ref={addAddressButtonRef} className="checkout-add-address" variant="secondary"
+            disabled={busy} onClick={onAddAddress}>Agregar nueva dirección</Button>}
+        </>}
+    </div>
+    <aside className="checkout-cart-summary" aria-labelledby="cart-summary-title">
+      <h3 id="cart-summary-title">Tu pedido</h3>
+      {backendMockEnabled && cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
+      {cartStatus === "ready" && <p>Se encontraron {cartCount} productos para esta compra.</p>}
+      {backendMockEnabled && cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. No puedes continuar hasta revisarlo.</p>}
+      {backendMockEnabled && cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={onRetryCart}>Reintentar consulta del carrito</Button></div>}
+      <p className="checkout-muted">El envío y el total se calculan en el siguiente paso.</p>
+    </aside>
+    <div className="checkout-actions checkout-address-actions">
+      <Link className="button button--tertiary button--md" href="/carrito">Volver al carrito</Link>
+      {!addingAddress && !addressLoadError && <Button onClick={onContinue} loading={busy}
+        disabled={!selectedAddress || busy || addressLoading || cartBlocked}>Continuar al resumen</Button>}
+    </div>
   </section>;
 }
+
 
 type CheckoutOrderSummaryProps = {
   quote: CheckoutQuote;
@@ -148,7 +216,7 @@ type CheckoutOrderSummaryProps = {
 
 export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryProps) {
   return <>
-    <p>{address?.label}: {address?.street}, {address?.district}</p>
+    <p>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
     <h3>Productos ({quote.lines.length})</h3>
     <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
     <dl className="checkout-totals">

@@ -48,7 +48,7 @@ const quote = (quoteId: string) => ({
 async function reachOrderForm() {
   render(<CheckoutFlow />);
   await screen.findByText(/Se encontraron 2 productos/);
-  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
   await screen.findByRole("heading", { name: "Resumen de envío" });
   fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
   await screen.findByRole("heading", { name: "Pago simulado" });
@@ -174,7 +174,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -204,7 +204,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -231,7 +231,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     api.createQuote.mockResolvedValueOnce(quote("Q-1")).mockResolvedValueOnce(quote("Q-2"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -243,7 +243,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Volver al resumen" }));
     fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -264,7 +264,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     api.removeBenefit.mockResolvedValueOnce(quote("Q-3"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -354,7 +354,7 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     api.prepare.mockImplementationOnce(() => new Promise((resolve) => { resolvePreparation = resolve; }));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
