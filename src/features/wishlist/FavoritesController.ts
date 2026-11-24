@@ -2,7 +2,7 @@ import { WishlistError } from "./api";
 import type { FavoriteProduct } from "./contract";
 import type { FavoritesTransport } from "./transport";
 
-export type ItemOperation = "removing" | "restoring" | "remove-uncertain" | "restore-uncertain";
+export type ItemOperation = "adding" | "cart-uncertain" | "removing" | "restoring" | "remove-uncertain" | "restore-uncertain";
 export type Notice = {
   id: string; kind: "info" | "success" | "error" | "warning"; title: string; message: string;
   productId?: string; action?: "remove" | "restore" | "catalog"; redirectUrl?: string;
@@ -96,6 +96,28 @@ export class FavoritesController {
       if (request.signal.aborted || this.disposed || this.handleExpired(error)) return;
       this.patch({ status: "error", queryError: error instanceof Error ? error.message : "No pudimos cargar tus favoritos." });
     }
+  }
+  get canAddToCart() { return Boolean(this.transport.addToCart); }
+  async addToCart(id: string) {
+    const item = this.state.items.find(product => product.productId === id);
+    if (!this.transport.addToCart || item?.availability !== "in_stock") return;
+    const request = this.start(id, "adding", false); if (!request) return;
+    this.dismiss(`cart:${id}`);
+    try {
+      await this.transport.addToCart(id, request.signal);
+      if (request.signal.aborted || this.disposed) return;
+      this.pending(id);
+      this.notice({ id: `cart:${id}`, kind: "success", title: "Producto agregado",
+        message: "Agregamos una unidad. El producto continúa en tus favoritos." });
+    } catch (error) {
+      if (request.signal.aborted || this.disposed || this.handleExpired(error)) return;
+      const uncertain = !(error instanceof WishlistError) || ["CART_RESULT_UNCERTAIN", "RESULT_UNCERTAIN"].includes(error.code);
+      this.pending(id, uncertain ? "cart-uncertain" : undefined);
+      this.notice({ id: `cart:${id}`, kind: "error", title: uncertain ? "Adición sin confirmar" : "No pudimos agregar el producto",
+        message: uncertain ? "Revisa el carrito antes de realizar otra adición. No repetiremos esta solicitud automáticamente."
+          : error instanceof Error ? error.message : "No pudimos agregar el producto.",
+        redirectUrl: error instanceof WishlistError ? error.redirectUrl : undefined });
+    } finally { this.finish(id, request); }
   }
   async remove(id: string, retry = false) {
     const item = this.state.items.find(product => product.productId === id) ?? this.removed.get(id)?.product;

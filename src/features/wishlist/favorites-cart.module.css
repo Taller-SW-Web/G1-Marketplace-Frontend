@@ -1,0 +1,12 @@
+.cartAction {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  justify-self: start;
+  max-width: 100%;
+}
+.cartStatus {
+  grid-column: 1 / -1;
+  grid-row: 6;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}

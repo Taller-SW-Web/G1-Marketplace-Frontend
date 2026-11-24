@@ -1,0 +1,95 @@
+{
+  "source_secret_scan_exit": 0,
+  "source_findings": [],
+  "source_files": 345,
+  "sast": {
+    "findings": 0,
+    "errors": 0,
+    "scanned_files": 140,
+    "rules": 4,
+    "scope": "src/scripts; reglas locales, sin certificación exhaustiva"
+  },
+  "sca_all": {
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 11,
+      "high": 0,
+      "critical": 0,
+      "total": 11
+    },
+    "findings": [
+      {
+        "package": "@eslint-community/eslint-utils",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@eslint/config-array",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@eslint/js",
+        "severity": "moderate",
+        "direct": true
+      },
+      {
+        "package": "@typescript-eslint/eslint-plugin",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@typescript-eslint/parser",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@typescript-eslint/type-utils",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@typescript-eslint/typescript-estree",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "@typescript-eslint/utils",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "eslint",
+        "severity": "moderate",
+        "direct": true
+      },
+      {
+        "package": "minimatch",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "typescript-eslint",
+        "severity": "moderate",
+        "direct": true
+      }
+    ]
+  },
+  "sca_runtime": {
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "findings": []
+  },
+  "artifact": {
+    "findings": 0,
+    "publicExposureFindings": [],
+    "policy": "Política existente: claves exactas en metadatos privados de Next 16.4.1; cache dev trasladado fuera del artefacto desplegable."
+  }
+}
