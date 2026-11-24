@@ -26,6 +26,9 @@ export default defineConfig({
       MOCK_SALES_OUTCOME: "PAID",
       MARKETPLACE_API_URL: "http://127.0.0.1:10000",
       MOCK_AUTH_URL: "http://127.0.0.1:4010",
+      // El catálogo MOCK del Backend (BFF_MODE=mock) usa imágenes de placehold.co; la CSP por
+      // defecto solo admite el host real de G6, así que este entorno de prueba lo declara.
+      CSP_IMG_HOSTS: "slzglmtiyrzygpkiuthf.supabase.co,placehold.co",
     },
     reuseExistingServer: false,
     timeout: 120000,

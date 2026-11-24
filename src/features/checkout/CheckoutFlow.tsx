@@ -12,6 +12,7 @@ import {
   type DeliveryAddressField,
   type DeliveryAddressFieldErrors,
 } from "./CheckoutSteps";
+import { emptyAddressDraft, validateAddressDraft, type DeliveryAddressDraft } from "./address-validation";
 import {
   applyFixtureCoupon,
   checkoutFixtureAddresses,
@@ -81,6 +82,7 @@ export function CheckoutFlow() {
   const [addressRequiresAuthentication, setAddressRequiresAuthentication] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
+  const [addressDraft, setAddressDraft] = useState<DeliveryAddressDraft>(emptyAddressDraft);
   const [addressFieldErrors, setAddressFieldErrors] = useState<DeliveryAddressFieldErrors>({});
   const [addressStatusMessage, setAddressStatusMessage] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
@@ -133,6 +135,7 @@ export function CheckoutFlow() {
     setAddresses([]);
     setSelectedId("");
     setAddingAddress(false);
+    setAddressDraft(emptyAddressDraft);
     setAddressError("");
     setAddressFieldErrors({});
     setAddressStatusMessage("");
@@ -196,6 +199,11 @@ export function CheckoutFlow() {
     setAddressLoadError("");
     setAddressRequiresAuthentication(false);
     setAddressReloadKey((key) => key + 1);
+  }
+
+  function changeAddressDraft(field: DeliveryAddressField, value: string) {
+    setAddressDraft((current) => ({ ...current, [field]: value }));
+    clearAddressFieldError(field);
   }
 
   function clearAddressFieldError(field: DeliveryAddressField) {
@@ -283,28 +291,21 @@ export function CheckoutFlow() {
     }
   }
 
-  function saveAddress(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function saveAddress() {
+    if (busy) return;
     setAddressError("");
     setAddressStatusMessage("");
-    const data = new FormData(event.currentTarget);
-    const values = Object.fromEntries(data.entries());
-    const fields = ["label", "street", "district", "province", "department", "phone"];
-    const missingFields = fields.filter((key) => !String(values[key] ?? "").trim());
-    if (missingFields.length > 0) {
-      const fieldErrors: DeliveryAddressFieldErrors = {};
-      for (const field of missingFields) {
-        if (addressFormFields.has(field as DeliveryAddressField)) {
-          fieldErrors[field as DeliveryAddressField] = "Completa este campo.";
-        }
-      }
-      setAddressFieldErrors(fieldErrors);
+    const localErrors = validateAddressDraft(addressDraft);
+    if (Object.keys(localErrors).length > 0) {
+      setAddressFieldErrors(localErrors);
       return;
     }
+    const reference = addressDraft.reference.trim();
+    const label = addressDraft.label.trim();
     const address = {
-      label: String(values.label), street: String(values.street), district: String(values.district),
-      province: String(values.province), department: String(values.department),
-      reference: String(values.reference || ""), phone: String(values.phone),
+      ...(label ? { label } : {}), street: addressDraft.street.trim(), district: addressDraft.district.trim(),
+      province: addressDraft.province.trim(), department: addressDraft.department.trim(),
+      ...(reference ? { reference } : {}), phone: addressDraft.phone.replace(/[\s-]/g, ""),
     };
     setBusy(true);
     const requestId = ++quoteRequest.current;
@@ -318,7 +319,8 @@ export function CheckoutFlow() {
       setSelectedId(saved.addressId);
       setAddressError("");
       setAddressFieldErrors({});
-      setAddressStatusMessage("La dirección se guardó y quedó seleccionada.");
+      setAddressStatusMessage(`La dirección «${saved.label || saved.street}» se guardó y quedó seleccionada.`);
+      setAddressDraft(emptyAddressDraft);
       setAddingAddress(false);
     }).catch((error: unknown) => {
       if (error instanceof CheckoutApiError && error.status === 401) {
@@ -612,6 +614,7 @@ export function CheckoutFlow() {
         addresses={addresses}
         selectedId={selectedId}
         addingAddress={addingAddress}
+        addressDraft={addressDraft}
         addressError={addressError}
         addressFieldErrors={addressFieldErrors}
         addressStatusMessage={addressStatusMessage}
@@ -619,8 +622,9 @@ export function CheckoutFlow() {
         onRetryCart={retryCartLoad}
         onRetryAddresses={retryAddressLoad}
         onSelectAddress={(addressId) => { setSelectedId(addressId); invalidateQuote(); }}
-        onAddressFieldChange={clearAddressFieldError}
+        onAddressDraftChange={changeAddressDraft}
         onAddAddress={() => {
+          setAddressDraft(emptyAddressDraft);
           setAddingAddress(true);
           setAddressError("");
           setAddressFieldErrors({});
@@ -628,6 +632,7 @@ export function CheckoutFlow() {
         }}
         onCancelAddress={() => {
           setAddingAddress(false);
+          setAddressDraft(emptyAddressDraft);
           setAddressError("");
           setAddressFieldErrors({});
           setAddressStatusMessage("");

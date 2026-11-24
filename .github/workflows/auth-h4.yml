@@ -38,6 +38,11 @@ jobs:
         env:
           AUTH_SECURITY_BASE: ${{ github.event.pull_request.base.sha }}
         run: python scripts/security-check.py --base "$AUTH_SECURITY_BASE" --artifact .next
+      # Después del escaneo: `next dev` deja claves efímeras en .next/dev que no son del build auditado.
+      - name: E2E de navegador V-001 a V-004 y cierre de sesión (MOCK)
+        run: npx playwright test --config playwright.e2e-cuenta.config.ts
+      - name: CSP en modo producción, sin violaciones en rutas principales y de cuenta (MOCK)
+        run: npm run test:e2e:csp
       - name: Sanitized security metadata only
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

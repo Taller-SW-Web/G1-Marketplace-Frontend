@@ -45,7 +45,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createQuote.mockRejectedValueOnce(new CheckoutApiError(401, "UNAUTHORIZED"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
 
     await screen.findByRole("link", { name: "Iniciar sesión" });
     expect(screen.queryByText("Casa")).toBeNull();
@@ -61,7 +61,7 @@ describe("Checkout address and benefit acceptance", () => {
     expect(heading.textContent).toBe("Nueva dirección");
     expect(document.activeElement).toBe(heading);
     expect(screen.getByText("Aún no tienes direcciones guardadas. Registra una para continuar con tu compra.")).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Agregar dirección" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Agregar nueva dirección" })).toBeNull();
   });
 
   it("does not treat an unauthenticated address load as an empty address list", async () => {
@@ -91,7 +91,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.applyBenefit.mockRejectedValueOnce(new CheckoutApiError(422, "COUPON_NOT_APPLICABLE"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     const totalBefore = screen.getByText(/Total estimado/).parentElement?.textContent;
 
@@ -106,55 +106,55 @@ describe("Checkout address and benefit acceptance", () => {
   it("retains address fields after a rejected create request", async () => {
     api.createAddress.mockRejectedValueOnce(new CheckoutApiError(400, "ADDRESS_VALIDATION_ERROR", ["street", "customerId", "unknown"]));
     render(<CheckoutFlow />);
-    fireEvent.click(await screen.findByRole("button", { name: "Agregar dirección" }));
-    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Agregar nueva dirección" }));
+    fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Casa nueva" } });
     fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
     fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Distrito"), { target: { value: "Surco" } });
     fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar dirección" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar y usar esta dirección" }));
 
     const fieldError = await screen.findByText("Revisa este campo.");
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).value).toBe("Casa nueva");
     expect((screen.getByLabelText("Dirección") as HTMLInputElement).value).toBe("Calle 1");
     const street = screen.getByLabelText("Dirección") as HTMLInputElement;
     expect(street.getAttribute("aria-invalid")).toBe("true");
     expect(street.getAttribute("aria-describedby")?.split(" ")).toContain(fieldError.id);
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).getAttribute("aria-invalid")).not.toBe("true");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).getAttribute("aria-invalid")).not.toBe("true");
     expect(api.createAddress).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Guardar dirección" })).toBeDefined());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Guardar y usar esta dirección" })).toBeDefined());
 
     fireEvent.change(street, { target: { value: "Calle corregida" } });
     expect(street.getAttribute("aria-invalid")).not.toBe("true");
     expect(screen.queryByText("Revisa este campo.")).toBeNull();
-    expect((screen.getByLabelText("Etiqueta") as HTMLInputElement).value).toBe("Casa nueva");
+    expect((screen.getByLabelText("Etiqueta (opcional)") as HTMLInputElement).value).toBe("Casa nueva");
   });
 
   it("returns focus to the add-address action after cancelling the form", async () => {
     render(<CheckoutFlow />);
-    const addButton = await screen.findByRole("button", { name: "Agregar dirección" });
+    const addButton = await screen.findByRole("button", { name: "Agregar nueva dirección" });
     fireEvent.click(addButton);
     await screen.findByRole("heading", { name: "Nueva dirección" });
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Agregar dirección" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Agregar nueva dirección" }));
   });
 
   it("announces a created address and selects the confirmed response", async () => {
     const createdAddress = { ...address, addressId: "ADR-2", label: "Casa nueva", street: "Calle 1" };
     api.createAddress.mockResolvedValueOnce(createdAddress);
     render(<CheckoutFlow />);
-    fireEvent.click(await screen.findByRole("button", { name: "Agregar dirección" }));
-    fireEvent.change(screen.getByLabelText("Etiqueta"), { target: { value: "Casa nueva" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Agregar nueva dirección" }));
+    fireEvent.change(screen.getByLabelText("Etiqueta (opcional)"), { target: { value: "Casa nueva" } });
     fireEvent.change(screen.getByLabelText("Dirección"), { target: { value: "Calle 1" } });
     fireEvent.change(screen.getByLabelText("Departamento"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Provincia"), { target: { value: "Lima" } });
     fireEvent.change(screen.getByLabelText("Distrito"), { target: { value: "Miraflores" } });
     fireEvent.change(screen.getByLabelText("Teléfono"), { target: { value: "999999999" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar dirección" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar y usar esta dirección" }));
 
-    expect(await screen.findByText("La dirección se guardó y quedó seleccionada.")).toBeDefined();
+    expect(await screen.findByText(/se guardó y quedó seleccionada/)).toBeDefined();
     expect((screen.getByRole("radio", { name: /Casa nueva/ }) as HTMLInputElement).checked).toBe(true);
   });
 
@@ -165,11 +165,11 @@ describe("Checkout address and benefit acceptance", () => {
     api.createQuote.mockResolvedValueOnce(quote).mockResolvedValueOnce({ ...quote, quoteId: "Q-2", addressId: "ADR-2" });
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
     fireEvent.click(screen.getByRole("radio", { name: /Trabajo/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
 
     await screen.findByRole("heading", { name: "Resumen de envío" });
     expect(api.createQuote).toHaveBeenLastCalledWith("ADR-2", 7);
@@ -180,7 +180,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createQuote.mockRejectedValueOnce(new CheckoutApiError(503, "QUOTE_UNAVAILABLE"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
 
     await screen.findByText("No se pudo calcular el envío.");
     expect(screen.queryByRole("heading", { name: "Resumen de envío" })).toBeNull();
@@ -191,7 +191,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createQuote.mockRejectedValueOnce(new CheckoutApiError(409, "CART_CHANGED"));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
 
     await screen.findByText("Tu carrito cambió. Vuelve al carrito y actualiza el resumen.");
     expect(screen.queryByRole("heading", { name: "Resumen de envío" })).toBeNull();
@@ -201,7 +201,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.createQuote.mockResolvedValueOnce({ ...quote, expiresAt: Date.now() - 10_000 });
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Continuar al pago simulado" }).hasAttribute("disabled")).toBe(true), { timeout: 2500 });
@@ -220,7 +220,7 @@ describe("Checkout address and benefit acceptance", () => {
     api.removeBenefit.mockResolvedValueOnce(quote);
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "SAVE20" } });
     fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
@@ -242,13 +242,13 @@ describe("Checkout address and benefit acceptance", () => {
     api.applyBenefit.mockImplementationOnce(() => new Promise((resolve) => { resolveBenefit = resolve; }));
     render(<CheckoutFlow />);
     await screen.findByText(/Se encontraron 2 productos/);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.change(screen.getByLabelText("Código promocional"), { target: { value: "SAVE20" } });
     fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
     fireEvent.click(screen.getByRole("button", { name: "Volver a dirección" }));
     fireEvent.click(screen.getByRole("radio", { name: /Trabajo/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByText(/Jr\. Comercio 450/);
     resolveBenefit({ ...quote, quoteId: "Q-LATE", total: 1, selectedBenefit: { type: "COUPON", id: "OLD", discount: 354 } });
 

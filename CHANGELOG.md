@@ -1,3 +1,22 @@
+## [1.4.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.0...v1.4.1) (2026-11-23)
+
+### Bug Fixes
+
+* **seguridad:** agregar Content-Security-Policy con nonce al frontend ([edc470b](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/edc470b579ab031dbee32b71c4d82e92ac078f5e))
+
+## [1.4.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.2...v1.4.0) (2026-11-23)
+
+### Features
+
+* **auth:** unificar V-001 a V-004 con DS-001 para H5 ([ab2d110](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/ab2d11023ecaa0c957cdee0e38a02e6356a6ac55)), closes [#150](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/150)
+* **f022:** vista V-010 de dirección de envío con validación en línea ([31980af](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/31980af1c8be79fa0431803fb470300ddb50ad3f)), closes [#148](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/148) [#59](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/59) [#60](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/60)
+
+### Bug Fixes
+
+* **auth:** mensajes rojos por requisito de contraseña en el registro ([2c265c8](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/2c265c81372f8aad4da06793108822f806e48c0f)), closes [#150](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/150)
+* **auth:** separar los mensajes de requisitos de contraseña del campo ([8f35cec](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/8f35cec2295f5b2fe87667aea3fbf3376b2b78a0)), closes [#150](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/150)
+* **f022:** aceptar direcciones sin teléfono y etiqueta opcional ([878591d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/878591dbe43bc6b827eae74fc3662cd0f0fd1fa0)), closes [#331](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/331) [#19](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/19) [#148](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/148) [#59](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/59) [#60](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/60)
+
 ## [1.3.2](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.3.1...v1.3.2) (2026-11-07)
 
 ### Bug Fixes

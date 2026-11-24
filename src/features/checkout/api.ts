@@ -1,4 +1,4 @@
-import type { CheckoutAddress, CheckoutQuote } from "./fixtures";
+import type { CheckoutAddress, CheckoutAddressInput, CheckoutQuote } from "./fixtures";
 
 type Envelope<T> = { data: T };
 export type CheckoutOperation = {
@@ -31,7 +31,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseAddress(value: unknown): CheckoutAddress {
   if (!isRecord(value) || typeof value.addressId !== "string" || typeof value.street !== "string" ||
       typeof value.district !== "string" || typeof value.province !== "string" ||
-      typeof value.department !== "string" || typeof value.phone !== "string" ||
+      typeof value.department !== "string" ||
+      (value.phone !== undefined && typeof value.phone !== "string") ||
       (value.label !== undefined && typeof value.label !== "string") ||
       (value.reference !== undefined && typeof value.reference !== "string")) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
@@ -42,7 +43,7 @@ function parseAddress(value: unknown): CheckoutAddress {
     district: value.district,
     province: value.province,
     department: value.department,
-    phone: value.phone,
+    ...(typeof value.phone === "string" ? { phone: value.phone } : {}),
     ...(typeof value.label === "string" ? { label: value.label } : {}),
     ...(typeof value.reference === "string" ? { reference: value.reference } : {}),
   };
@@ -300,7 +301,7 @@ export const checkoutApi = {
     if (!Array.isArray(addresses)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
     return addresses.map(parseAddress);
   },
-  async createAddress(address: Omit<CheckoutAddress, "addressId">) {
+  async createAddress(address: CheckoutAddressInput) {
     return parseAddress(await request("delivery-addresses", "POST", address));
   },
   async createQuote(addressId: string, cartVersion: number) {

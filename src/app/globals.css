@@ -2920,16 +2920,35 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
 .auth-consent { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; line-height: 20px; color: var(--text-secondary); }
 .auth-consent input { flex: 0 0 20px; width: 20px; height: 20px; margin: 12px; accent-color: var(--action-primary); }
 .auth-consent a { font-weight: 600; color: var(--text-primary); text-decoration: underline; }
-.password-rules { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-subtle); font-size: 14px; line-height: 20px; }
-.password-rules > p:not(:first-child) { display: flex; align-items: center; gap: 8px; }
-.password-rules img { flex: 0 0 17.6px; width: 17.6px; height: 17.6px; }
-.password-rules small { color: var(--text-secondary); }
 .auth-policy-message { color: var(--text-secondary); font-size: 14px; line-height: 20px; }
 @media (max-width: 600px) {
   .auth-page--account .auth-card { padding: 32px; }
   .auth-field-row { grid-template-columns: minmax(0, 1fr); }
   .auth-page--registration { align-items: flex-start; padding-inline: 16px; }
   .auth-card--wide { width: min(100%, 356px); padding: 32px; }
+}
+
+/* H5 UX-010 · V-001…V-004 con DS-001 (sin mockups aprobados de UX-001; ajustar aquí al recibirlos). */
+.auth-page { flex-direction: column; gap: 16px; background: var(--surface-subtle); }
+.auth-back-link { width: min(100%, 496px); min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.auth-back-link:hover { text-decoration: underline; }
+.auth-page--registration .auth-back-link { width: min(100%, 800px); }
+.auth-card { background: #fff; border-color: var(--border); box-shadow: 0 8px 28px #1b18120d; }
+.auth-page h1, .auth-page--account h1 { text-transform: uppercase; font-size: 32px; line-height: 40px; }
+.auth-heading h1[tabindex="-1"]:focus { outline: none; }
+.auth-heading p { max-width: 42ch; }
+.auth-card .field-control { background: #fff; }
+.auth-card .field-control:focus-within { border-color: var(--accent-signal); box-shadow: 0 0 0 1px var(--accent-signal); }
+.auth-card .field-control.has-error { box-shadow: none; }
+.auth-feedback { color: var(--text-primary); }
+.auth-small-copy { color: var(--text-secondary); text-align: center; }
+.auth-card > .auth-text-link { align-self: center; }
+@media (max-width: 575px) {
+  /* V-001…V-004 §10 mobile: una columna sin tarjeta flotante. */
+  .auth-page, .auth-page--registration { justify-content: flex-start; padding: 8px 16px 32px; background: #fff; }
+  .auth-card, .auth-card--wide, .auth-page--account .auth-card { width: 100%; padding: 8px 0 0; border: 0; border-radius: 0; box-shadow: none; }
+  .auth-back-link, .auth-page--registration .auth-back-link { width: 100%; }
+  .auth-page h1, .auth-page--account h1 { font-size: 28px; line-height: 36px; }
 }
 
 
@@ -3077,3 +3096,13 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   font-weight: 500;
   display: inline-block;
 }
+
+/* Ajuste Jim 21/11 · V-002: un mensaje rojo por requisito incumplido, sin checklist. */
+.field-errors { list-style: none; margin: var(--spacing-sm) 0 0; padding: 0; }
+.field-errors .field-error:first-child { margin-top: 0; }
+.field-errors .field-error { animation: field-error-in .15s ease-out; }
+.field-caps-lock { color: var(--warning-text, #8a4b00); font-weight: 600; }
+@keyframes field-error-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .field-errors .field-error { animation: none; } }
+/* Edge/IE dibujan su propio "ojo" en campos password; ya existe el botón Mostrar/Ocultar. */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
