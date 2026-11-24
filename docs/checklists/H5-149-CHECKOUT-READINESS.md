@@ -1,28 +1,30 @@
-# H5-149 — preparación del checkout V-011–V-014
+# H5-149 — checkout V-011–V-014 readiness
 
-**Estado: auditoría/preparación solamente.** Según el estado recibido, #141 sigue abierto y no tiene aprobación PO. No se implementa UI ni se generan capturas antes del gate. Las specs V-011–V-014 y un registro de aprobación final de DS-001 v0.2.0 no están en este árbol local; confirmar esos estados con la fuente autoritativa. Este documento registra el estado local observado; no aprueba diseño ni autoriza cambios de UI o capturas.
+**Estado: implementación y verificación local completadas; aceptación/integración REAL pendiente.** Se conserva la dirección visual ya aprobada en #141; no se vuelve a solicitar una aprobación visual general. Los documentos detallados V-011–V-014/DS-001 no están incluidos en este worktree, por lo que estas capturas no se presentan como certificación de cada criterio de aceptación.
 
-## Inventario y brechas observadas
+## Trabajo local
 
-| Vista | Ruta y componentes actuales | Observaciones para contrastar después de #141 | Cobertura/capturas pendientes |
-|---|---|---|---|
-| V-011 — Resumen, envío y beneficio | `/checkout` (estado interno `summary`); `CheckoutQuoteContainer`, `CheckoutOrderSummary`, `CouponForm`, `SelectedBenefit` (`CheckoutSteps.tsx`). | El resumen actual es una tarjeta en columna, no una región fija; las líneas muestran SKU/cantidad. La fixture local por defecto no aplica promoción automática; la UI muestra `quote.selectedBenefit` (incluido `PROMOTION`) si viene en la cotización y presenta el ID completo. No hay skeleton de cotización. No decidir composición desktop/mobile ni presentación de estados antes de la spec aprobada. | `checkout-address-benefits.test.tsx` cubre cupón aplicado/no aplicable/eliminado, cambio de dirección, `CART_CHANGED`, fallo de cotización y vencimiento; `checkout-recovery.test.tsx` cubre revalidación y `STOCK_NOT_AVAILABLE`. No encontré pruebas separadas de zona sin cobertura, línea individual no disponible ni de la presentación de carga de la cotización. Capturas desktop/mobile sólo tras aprobación. |
-| V-012 — Pago simulado | `/checkout` (estado interno `prepare`); `PreparationOutcome`, que renderiza `PaymentSimulationForm` (`CheckoutComponents.tsx`). | Al recibir `PREPARED`, el flujo avanza al estado de creación de orden (`order`) sin un estado preparado separado. No alterar el flujo ni añadir motion por inferencia; contrastar jerarquía, resumen y acciones con diseño aprobado. | Hay pruebas de consentimiento y doble envío; `checkout-recovery.test.tsx` cubre la transición `PREPARED`, recuperación, vencimiento de cotización, revalidación, stock y error recuperable. Falta una aserción explícita de la presentación visual mientras la preparación sigue pendiente. Capturas después del gate. |
-| V-013 — Creación de orden | `/checkout` (estado interno `order`); `OrderCreationForm`, `OrderSubmissionStatus` (`CheckoutComponents.tsx`). | El formulario presenta todos los campos de contacto, no sólo los faltantes; se distinguen rechazo y envío incierto y se conserva la operación. No modificar contenido/composición antes de aprobación. | `checkout-recovery.test.tsx` cubre validación, recuperación e idempotencia; `checkout-payment-confirmation.test.tsx` distingue `SUBMITTED` de pago y comprueba el bloqueo de doble envío. Capturas de listo, validación, envío y resultado incierto después del gate. |
-| V-014 — Pedido confirmado | Ruta real `/checkout/confirmado/[orderId]`; `OrderConfirmationLookup` (`app/checkout/confirmado/[orderId]/page.tsx`). `OrderConfirmationSummary` se usa en la confirmación inline de `CheckoutFlow`, no en esta ruta de consulta. | En Backend MOCK, la ruta de consulta sólo presenta éxito pagado tras verificar `SUCCEEDED/PAGADO` para el mismo `orderId`; el flujo de fixtures local muestra un resultado etiquetado como fixture, no una verificación del Backend. En Backend MOCK, `operationId` es opcional para cargar la ruta, pero necesario para verificar: si falta, la pantalla muestra error. La referencia a V-014-OPEN-01 proviene de la auditoría y no está documentada en este árbol. El resumen inline muestra SKU/cantidad; la consulta profunda no muestra líneas de productos. La spec no define animación; resolver su mención en #149 contra la spec vigente y movimiento reducido antes de decidirla. | `checkout-payment-confirmation.test.tsx` cubre mismatch pedido/operación, operación ausente y fallback de portapapeles; `checkout-api.test.ts` cubre respuesta pendiente del adaptador, no su presentación en la UI. Ya hay errores de consulta probados para mismatch y operación ausente; falta cobertura UI explícita de carga, pendiente y reintento. Capturas desktop/mobile de esos estados tras aprobación. |
+- Progreso accesible con Dirección, Resumen, Pago y Confirmación; el paso en curso lleva `aria-current="step"` y los anteriores se marcan como completos.
+- Resumen responsivo y visible durante pago simulado/creación de orden: lateral en desktop y antes del formulario en móvil.
+- Encabezado y explicación contextual por paso, controles responsivos y datos MOCK/fixture identificados.
+- El formulario de contacto conserva errores inline y añade resumen enlazado, foco tras envío inválido y relaciones accesibles campo/error.
+- La confirmación enfoca su título y diferencia explícitamente resultado de fixture de estado verificado por Backend.
 
-## Estados compartidos y evidencia
+## Evidencia y pruebas locales
 
-- El progreso actual tiene cuatro etiquetas: Dirección, Resumen, Preparación y Pedido. En `confirmed` todas quedan activas y ninguna tiene `aria-current="step"`; contrastar con la dirección aprobada antes de cambiar.
-- Hay componentes compartidos `Skeleton`/`LoadingState` y `EmptyState`, pero Checkout usa principalmente texto/alertas y estilos locales. La prueba E2E responsive (`checkout.spec.ts`) comprueba sólo dirección y resumen a 375×812 y 1280×900, además de desbordamiento; no comprueba fidelidad visual ni los estados de preparación, creación de orden y confirmación.
-- Según el criterio de #149 recibido para esta tarea, se requieren capturas desktop y móvil de cada uno de los cuatro pasos: **al menos ocho capturas**, sólo tras aprobar #141 y la spec aplicable. No se generaron capturas en esta auditoría.
-- Casos de entrada de `/checkout` (carrito y dirección) son dependencias de contexto; mantener separados sus estados de carga, vacío, error y reintento, y confirmar su alcance visual aprobado.
+Hay ocho capturas en [`docs/evidencias/H5/V-011-014-checkout/`](../evidencias/H5/V-011-014-checkout/README.md): desktop/móvil de V-011 resumen, V-012 consentimiento de pago simulado, V-013 formulario de creación de orden y V-014 confirmación fixture. Fueron tomadas con build de producción local y datos de fixture. Un doble HTTP de catálogo en loopback devolvió sólo una fixture vacía para impedir el 503 del proxy de catálogo; no se llamó al backend de negocio. La V-014 es `PED-MOCK-*`, sin pedido real ni cobro.
 
-## Condición para pasar a implementación
+| Validación | Resultado | Clasificación |
+|---|---:|---|
+| `npm run typecheck` | PASS | local |
+| `npm run test:components -- --run tests/components/checkout-flow.test.tsx` | 4/4 PASS | unit/componentes locales; fixtures |
+| `npm run build` | PASS | build local |
+| Capturas V-011–V-014, desktop/móvil | 8/8 | evidencia visual local/fixture, no aceptación REAL |
 
-1. Obtener aprobación PO de #141 y de las specs V-011–V-014 aplicables; verificar esos estados con la fuente autoritativa y resolver diferencias de composición y V-014-OPEN-01.
-2. Congelar los criterios visuales por viewport, estados, accesibilidad y movimiento reducido.
-3. Implementar sólo entonces en la rama de #149; ejecutar pruebas existentes y añadir las brechas de la matriz.
-4. Capturar desktop/móvil por paso y por los estados aprobados; identificar claramente datos MOCK frente a cualquier integración REAL.
+## Límites pendientes
 
-Esta auditoría no demuestra integración REAL ni reemplaza las capturas de aceptación. No se modificó código, estilos, specs ni tokens.
+- No hay integración Checkout→Ventas demostrada: los datos persistidos no contienen todavía la identidad/precio por línea, desglose y dirección requeridos por M1; la clave idempotente no tiene lookup GET en el contrato fijado. El provider G5 local sigue aislado.
+- Los screenshots muestran el flujo de fixture, no persistencia real, cobro, estado autoritativo `PAGADO`, ni consulta REAL de `/checkout/confirmado/[orderId]`.
+- Los estados de error/reintento de la consulta profunda, aprobación formal de las capturas y criterios detallados que no están versionados en este árbol siguen fuera de esta evidencia. No inventar esos criterios ni volver a pedir aprobación visual general.
+
+Esta checklist no autoriza despliegue, credenciales, sandbox o llamadas a APIs de negocio. La clasificación de toda captura es LOCAL/FIXTURE.

@@ -23,11 +23,11 @@ import {
   type CheckoutQuote,
 } from "./fixtures";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
-import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome, type ContactField, type ContactFieldErrors } from "./CheckoutComponents";
+import { CheckoutProgress, CheckoutSummaryAside, OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome, type ContactField, type ContactFieldErrors } from "./CheckoutComponents";
 import "./checkout.css";
+import "./checkout-h5.css";
 
 type Step = "address" | "summary" | "prepare" | "order" | "confirmed";
-const progress = ["Dirección", "Resumen", "Preparación", "Pedido"];
 const contextFailureCodes = new Set([
   "QUOTE_EXPIRED",
   "REVALIDATION_CHANGED",
@@ -112,10 +112,27 @@ export function CheckoutFlow() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [now, setNow] = useState(0);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousStep = useRef(step);
+  const currentProgressStep = step === "address" ? 0 : step === "summary" ? 1 : step === "prepare" ? 2 : 3;
+  const pageHeading = step === "summary" ? "Revisa tu pedido"
+    : step === "prepare" ? "Pago simulado"
+      : step === "order" ? "Confirma y crea tu pedido"
+        : "Finaliza tu compra";
+  const pageDescription = step === "summary" ? "Verifica tus productos, dirección y plazo estimado antes de continuar con la compra simulada."
+    : step === "prepare" ? "Revisa tu cotización y confirma que comprendes la simulación antes de preparar tu compra."
+      : step === "order" ? "Completa tus datos de contacto para registrar el pedido de prueba."
+        : "Datos de prueba · no se realizan cobros reales";
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      headingRef.current?.focus();
+      previousStep.current = step;
+    }
+  }, [step]);
   const invalidateQuote = useCallback(() => {
     quoteRequest.current += 1;
     benefitRequest.current += 1;
@@ -591,18 +608,13 @@ export function CheckoutFlow() {
 
   return (
     <main className="checkout-page container">
-      <header className="checkout-heading">
+      <CheckoutProgress currentStep={currentProgressStep} />
+      {step !== "confirmed" && <header className="checkout-heading">
         <p className="checkout-eyebrow">{backendMockEnabled ? "Backend MOCK · entorno local" : "Fixtures locales"}</p>
-        <h1>Finaliza tu compra</h1>
-        <p>Datos de prueba · no se realizan cobros reales</p>
-      </header>
-      {notice && step !== "order" && <p role="alert" className="checkout-error">{notice}</p>}
-      <nav className="checkout-progress" aria-label="Progreso de compra">
-        {progress.map((label, index) => {
-          const current = ["address", "summary", "prepare", "order", "confirmed"].indexOf(step);
-          return <span key={label} aria-current={current === index ? "step" : undefined} className={current >= index ? "is-active" : ""}>{index + 1}. {label}</span>;
-        })}
-      </nav>
+        <h1 ref={headingRef} tabIndex={-1}>{pageHeading}</h1>
+        <p className="checkout-heading-description">{pageDescription}</p>
+      </header>}
+      {notice && step !== "order" && step !== "confirmed" && <p role="alert" className="checkout-error">{notice}</p>}
       {step === "address" && <AddressStepContainer
         backendMockEnabled={backendMockEnabled}
         cartStatus={cartStatus}
@@ -654,19 +666,25 @@ export function CheckoutFlow() {
           <Button onClick={() => { setConsented(false); setStep("prepare"); }} disabled={expired || quoteInvalid || busy}>Continuar al pago simulado</Button>
         </div>
       </CheckoutQuoteContainer>}
-        {step === "prepare" && quote && <PreparationOutcome quote={quote} consented={consented} busy={busy} expired={expired} quoteInvalid={quoteInvalid} hasPreparationAttempt={hasPreparationAttempt} onConsentChange={setConsented} onSubmit={prepare} onBack={returnToSummaryDuringPreparation} />}
-      {step === "order" && <section className="checkout-card" aria-labelledby="order-title">
-        <h2 id="order-title">Confirma y crea tu pedido</h2>
-        <p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>
-        {orderSubmission === "UNCERTAIN" || orderSubmission === "REJECTED"
-          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
-          : <>
-            {notice && <p role="status" className="checkout-notice">{notice}</p>}
-            <OrderCreationForm contact={contact} errors={contactFieldErrors} busy={busy}
-              focusErrorRequest={contactErrorFocusRequest} onContactChange={updateContact}
-              onSubmit={createOrder} onBack={() => setStep("summary")} />
-          </>}
-      </section>}
+      {step === "prepare" && quote && <div className="checkout-step-layout">
+        <PreparationOutcome quote={quote} consented={consented} busy={busy} expired={expired} quoteInvalid={quoteInvalid} hasPreparationAttempt={hasPreparationAttempt} onConsentChange={setConsented} onSubmit={prepare} onBack={returnToSummaryDuringPreparation} />
+        <CheckoutSummaryAside quote={quote} address={selectedAddress} />
+      </div>}
+      {step === "order" && quote && <div className="checkout-step-layout">
+        <section className="checkout-card" aria-labelledby="order-title">
+          <h2 id="order-title">Datos de contacto</h2>
+          <p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>
+          {orderSubmission === "UNCERTAIN" || orderSubmission === "REJECTED"
+            ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
+            : <>
+              {notice && <p role="status" className="checkout-notice">{notice}</p>}
+              <OrderCreationForm contact={contact} errors={contactFieldErrors} busy={busy}
+                focusErrorRequest={contactErrorFocusRequest} onContactChange={updateContact}
+                onSubmit={createOrder} onBack={() => setStep("summary")} />
+            </>}
+        </section>
+        <CheckoutSummaryAside quote={quote} address={selectedAddress} />
+      </div>}
       {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
     </main>
   );
