@@ -7,6 +7,7 @@ import "@fontsource/oswald/700.css";
 import "@fontsource/roboto-condensed/800.css";
 import "@fontsource/roboto-condensed/900.css";
 import "./globals.css";
+import "../shared/ui/shell.css";
 import { Header } from "@/shared/ui/Header";
 import { Footer } from "@/shared/ui/Footer";
 import { WishlistProvider } from "@/features/wishlist/WishlistProvider";
@@ -35,7 +36,7 @@ export default function RootLayout({
       <body>
         <AuthProvider enabled={authWebEnabled()}>
         <WishlistProvider enabled={sandboxEnabled() || authWebEnabled()} realAuth={authWebEnabled()}>
-          <SiteChrome header={<Header />} footer={<Footer />}>{children}</SiteChrome>
+          <SiteChrome header={<Header />} checkoutHeader={<Header reduced />} footer={<Footer />}>{children}</SiteChrome>
         </WishlistProvider>
         </AuthProvider>
       </body>
