@@ -1,5 +1,18 @@
+// Read model returned by the BFF (BE #331 / SPECS #19): G7 has no phone, so the BFF
+// never returns it; label and reference only come when G7 has them.
 export type CheckoutAddress = {
   addressId: string;
+  label?: string;
+  street: string;
+  district: string;
+  province: string;
+  department: string;
+  reference?: string;
+  phone?: string;
+};
+
+// Create payload: the BFF still validates phone as part of the form (DTO), label is optional.
+export type CheckoutAddressInput = {
   label?: string;
   street: string;
   district: string;

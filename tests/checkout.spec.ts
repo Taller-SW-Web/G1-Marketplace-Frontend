@@ -1,10 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./e2e/csp-guard";
 
 test("checkout local fixtures cover coupon, consent, and clearly labeled paid fixture", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
   await page.goto("/checkout");
   await expect(page.getByText("Fixtures locales")).toBeVisible();
-  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Continuar al resumen" }).click();
   await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
   await page.getByLabel("Código promocional").fill("SAVE20");
   await page.getByRole("button", { name: "Aplicar" }).click();
@@ -28,15 +28,15 @@ test("checkout local fixtures cover coupon, consent, and clearly labeled paid fi
 test("address form validates required fields and saves a local fixture address", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
   await page.goto("/checkout");
-  await page.getByRole("button", { name: "Agregar dirección" }).click();
+  await page.getByRole("button", { name: "Agregar nueva dirección" }).click();
   await page.getByLabel("Etiqueta").fill("Nueva casa");
   await page.getByRole("textbox", { name: "Dirección" }).fill("Av. Prueba 10");
   await page.getByRole("textbox", { name: "Departamento" }).fill("Lima");
   await page.getByRole("textbox", { name: "Provincia" }).fill("Lima");
   await page.getByRole("textbox", { name: "Distrito" }).fill("Surco");
   await page.getByRole("textbox", { name: "Teléfono" }).fill("977777777");
-  await page.getByRole("button", { name: "Guardar dirección" }).click();
-  await expect(page.getByText("Nueva casa")).toBeVisible();
+  await page.getByRole("button", { name: "Guardar y usar esta dirección" }).click();
+  await expect(page.getByRole("radio", { name: /Nueva casa/ })).toBeChecked();
   await expect(page.getByText("Av. Prueba 10, Surco, Lima")).toBeVisible();
 });
 
@@ -45,8 +45,8 @@ test("address and quote summary remain usable at mobile and desktop widths", asy
   for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/checkout");
-    await expect(page.getByRole("heading", { name: "Dirección de envío" })).toBeVisible();
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "¿Dónde entregamos tu pedido?" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar al resumen" }).click();
     await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Continuar al pago simulado" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -81,7 +81,7 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
   );
   await page.goto("/checkout");
   await expect(page.getByText(/Se encontraron 1 productos para esta compra/)).toBeVisible();
-  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Continuar al resumen" }).click();
   const quoteResponse = await quoteResponsePromise;
   expect(quoteResponse.ok()).toBeTruthy();
   const quote = (await quoteResponse.json()).data as {
