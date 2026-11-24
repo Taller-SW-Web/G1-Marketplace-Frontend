@@ -469,6 +469,13 @@
     font-size: 11px;
   }
 
+  .checkout-progress li > .checkout-progress-label {
+    width: 100%;
+    min-width: 0;
+    font-size: inherit;
+    overflow-wrap: anywhere;
+  }
+
   .checkout-progress-marker {
     width: 24px;
     height: 24px;
