@@ -1,3 +1,16 @@
+## [1.5.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.1...v1.5.0) (2026-11-24)
+
+### Features
+
+* **csat:** presentar evaluacion postentrega para revision local ([224ec35](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/224ec35c5b605150e50b5e47227b15283c3bec91))
+* **favoritos:** agregar al carrito conservando el favorito ([0ba4518](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0ba451825b583b17056327394a75afe3e82cd780))
+* **h4:** integrar favoritos y experiencia de CSAT ([cd7525e](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/cd7525e566600e4c12cc673abe85f2cb89f06e46))
+
+### Bug Fixes
+
+* **favoritos:** conectar sesión web y verificar QA de Diego ([1647c1a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/1647c1ab24b9ae2f4377f83b7b2c61f3ee9a76c7))
+* **favoritos:** conservar disponibilidad indeterminada ([f7c95a0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f7c95a07d45da5bbee658cbbe6998934301a6ca7))
+
 ## [1.4.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.0...v1.4.1) (2026-11-23)
 
 ### Bug Fixes
