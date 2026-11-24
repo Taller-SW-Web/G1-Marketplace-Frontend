@@ -1,6 +1,6 @@
 # Frontend H3 de Diego — guía de implementación
 
-Este documento registra el corte conectado original F-036/F-038. La ampliación vigente de vistas, Deshacer, navegación y pendientes está en [FAVORITOS-VISTAS.md](FAVORITOS-VISTAS.md); las limitaciones históricas sobre ausencia de lista o Deshacer no describen la interfaz actual.
+Este documento registra el corte conectado original F-036/F-038. La ampliación vigente de vistas, Deshacer, navegación y pendientes está en [FAVORITOS-VISTAS.md](FAVORITOS-VISTAS.md); las limitaciones históricas sobre ausencia de lista o Deshacer no describen la interfaz actual. La [revisión de conexiones](REVISION-CONEXIONES-FAVORITOS.md) registra endpoints, identidad, productos y carrito vigentes.
 
 Alcance registrado antes del código: F-036/F-038, avance preparatorio H3. Base: `origin/develop`, `0f47537`; rama `feat/s1-f036-f038-frontend`. Conservar el prompt local y trabajo ajeno. Sin cambios al backend/SPECS, publicación ni cierre de tareas oficiales.
 
@@ -40,7 +40,7 @@ docker compose -f docker-compose.test.yml exec -T postgres-test psql -U h3_test 
 - `/demo/h3/favoritos/lista`: vista previa con productos, precios y existencias ficticios. Tarjetas horizontales en escritorio y compactas en móvil, con imagen completa, marca, variante, disponibilidad, precio y acciones; secciones separadas para disponibles y agotados.
 - `/demo/h3/favoritos/lista/vacia`: vista previa de usuario con sesión y lista vacía, con enlace para explorar catálogo.
 
-Las dos vistas previas requieren el sandbox local habilitado, igual que la demo original. No autentican usuarios ni cargan listas persistidas. Detalle y carrito están pendientes de integración: los enlaces siguen el patrón del catálogo, pero la pantalla de detalle no existe en esta rama; agregar al carrito queda deshabilitado sin adaptador. Estas vistas amplían la interfaz preparatoria, no el contrato del backend.
+Las dos vistas previas requieren el sandbox local habilitado, igual que la demo original. No autentican usuarios ni cargan listas persistidas. La ficha existe en develop y recibe los enlaces con returnTo. El adaptador opcional de carrito de favoritos queda apagado por defecto; sesión y productos compartidos siguen pendientes de validación. Estas vistas amplían la interfaz preparatoria, no el contrato del backend.
 
 Referencia visual verificada mediante el MCP oficial de Figma: página [Carrito y favoritos](https://www.figma.com/design/k6JZRdgbO7YtZXeFqygE8p/Mockups?node-id=1-4), frames `206:3140` (escritorio), `206:3224` (móvil), `206:3362` (vacío) y `206:3393` (producto no disponible). Recursos originales descargados a `public/figma/favorite-*`; procedencia, dimensiones y hashes en `favorites-manifest.json`. Las imágenes de producto siguen siendo props dinámicas; estas fotografías solo se usan en la demostración. La sección aparte de agotados conserva la petición del usuario. Cabecera/pie compartidos y tipografías Inter/Oswald del proyecto se conservan: la referencia usa otra cabecera y Roboto Condensed, por lo que se declara adaptación del contenido de favoritos, no identidad visual de toda la pantalla. Condiciones de envío/cambios del mockup solo se muestran como ejemplo en la demo. El botón de eliminación requiere `onRemove` y queda deshabilitado sin integración.
 
