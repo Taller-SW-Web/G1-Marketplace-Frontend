@@ -60,6 +60,22 @@ async function webStorage(page: Page) {
   return page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));
 }
 
+async function openHeaderAccount(page: Page, authenticated = true) {
+  const header = page.getByRole("banner");
+  if (authenticated) {
+    await expect(header.locator(".account-menu").first()).toBeAttached();
+  } else {
+    await expect(header.locator(".account-action").filter({ hasText: "Iniciar sesión" }).first()).toBeAttached();
+  }
+  const menu = page.getByRole("button", { name: "Abrir menú" });
+  if (await menu.isVisible()) {
+    const drawer = page.getByRole("dialog", { name: "Menú" });
+    if (!await drawer.isVisible()) await menu.click();
+    return drawer.getByRole("navigation", { name: "Categorías y cuenta" });
+  }
+  return page.getByRole("group", { name: "Cuenta y compras" });
+}
+
 test.describe("V-002 Registro", () => {
   test("valida en línea, conserva datos ante 409 neutral y acepta la solicitud sin iniciar sesión", async ({ page }) => {
     let status = 409;
@@ -183,7 +199,8 @@ test.describe("V-001 Inicio de sesión", () => {
       await page.getByLabel("Código de verificación").fill("123456");
       await page.getByRole("button", { name: "Verificar código", exact: true }).click();
       await expect(page).toHaveURL("/");
-      await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toBeVisible();
+      const account = await openHeaderAccount(page);
+      await expect(account.getByRole("button", { name: "Cerrar sesión", exact: true })).toBeVisible();
       expect(await webStorage(page)).not.toMatch(/eyJ|token|contrasena|Fixture-only/i);
       expect(await page.evaluate(() => document.cookie)).not.toMatch(/token|session/i);
     });
@@ -203,7 +220,8 @@ test.describe("V-001 Inicio de sesión", () => {
     await noHorizontalScroll(page);
     await fillLogin(page, "cliente@fixture.test");
     await expect(page).toHaveURL("/carrito");
-    await expect(page.getByText("Cliente fixture")).toBeVisible();
+    const account = await openHeaderAccount(page);
+    await expect(account.getByText("Cliente fixture")).toBeVisible();
   });
 });
 
@@ -271,7 +289,8 @@ test.describe("Cierre de sesión", () => {
   test("invalida la sesión y volver atrás no la recupera", async ({ page }) => {
     const state = await mockBff(page, { authenticated: true });
     await page.goto("/carrito");
-    const logout = page.getByRole("button", { name: "Cerrar sesión", exact: true });
+    const account = await openHeaderAccount(page);
+    const logout = account.getByRole("button", { name: "Cerrar sesión", exact: true });
     await expect(logout).toBeVisible();
     await evidence(page, "logout-antes");
     await logout.click();
@@ -281,9 +300,10 @@ test.describe("Cierre de sesión", () => {
     await evidence(page, "logout-cerrada");
     await page.goBack();
     await expect(page).toHaveURL("/carrito");
-    await expect(page.getByRole("link", { name: "Iniciar sesión" }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
-    await expect(page.getByText("Cliente fixture")).toHaveCount(0);
+    const signedOut = await openHeaderAccount(page, false);
+    await expect(signedOut.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
+    await expect(signedOut.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
+    await expect(signedOut.getByText("Cliente fixture")).toHaveCount(0);
     expect((await page.evaluate(() => fetch("/api/v1/auth/session").then(r => r.json()))).authenticated).toBe(false);
     await evidence(page, "logout-volver-atras");
   });
