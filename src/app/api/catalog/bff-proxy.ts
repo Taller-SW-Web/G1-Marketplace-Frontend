@@ -16,16 +16,29 @@ import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
 
 export const dynamic = "force-dynamic";
 
-// Rutas permitidas del proxy: home | products | products/{slug} (F-011).
+// Rutas permitidas del proxy:
+//   home | products | products/{slug}                       (F-011)
+//   products/{slug}/price | variants | availability | recommendations
+//                                                          (F-012…F-015)
 // El slug se valida con el patrón canónico del contrato antes de salir.
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const isAllowedPath = (path: string[]): boolean =>
-  path.length === 1
-    ? ["home", "products"].includes(path[0])
-    : path.length === 2 &&
-      path[0] === "products" &&
-      path[1].length <= 120 &&
-      SLUG_PATTERN.test(path[1]);
+const COMMERCE_SUBPATHS = [
+  "price",
+  "variants",
+  "availability",
+  "recommendations",
+] as const;
+const isProductSlug = (segment: string): boolean =>
+  segment.length <= 120 && SLUG_PATTERN.test(segment);
+const isAllowedPath = (path: string[]): boolean => {
+  if (path.length === 1) return ["home", "products", "filters"].includes(path[0]);
+  if (path[0] !== "products" || !isProductSlug(path[1] ?? "")) return false;
+  if (path.length === 2) return true;
+  return (
+    path.length === 3 &&
+    (COMMERCE_SUBPATHS as readonly string[]).includes(path[2])
+  );
+};
 
 /** Correlación (API-F011 §3): id opaco de 1–64 caracteres seguros. */
 const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/u;
@@ -67,6 +80,16 @@ function resolveRequestId(request: Request): string {
   return SAFE_REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
 }
 
+// Server-only runtime budget. Keep the normal 8s limit unless explicitly set.
+function catalogBffTimeoutMs(): number {
+  const configured = process.env.CATALOG_BFF_TIMEOUT_MS ?? "";
+  if (!/^\d+$/.test(configured)) return 8000;
+  const timeout = Number(configured);
+  return Number.isSafeInteger(timeout) && timeout >= 1000 && timeout <= 30000
+    ? timeout
+    : 8000;
+}
+
 /** Reenvía la petición al BFF y normaliza la respuesta hacia el navegador. */
 export async function catalogProxyGet(
   request: Request,
@@ -84,15 +107,17 @@ export async function catalogProxyGet(
       requestId,
     });
 
+  let timeoutSignal: AbortSignal | undefined;
   try {
     const base = marketplaceApiUrl();
     const url = new URL(`/api/v1/catalog/${path.join("/")}`, base);
     url.search = new URL(request.url).search;
+    timeoutSignal = AbortSignal.timeout(catalogBffTimeoutMs());
     const response = await fetch(url, {
       cache: "no-store",
       redirect: "error",
       headers: { Accept: "application/json", "X-Request-Id": requestId },
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
+      signal: AbortSignal.any([request.signal, timeoutSignal]),
     });
     const body = await response.text();
     JSON.parse(body); // Un cuerpo no-JSON del BFF es un fallo del proxy.
@@ -110,11 +135,13 @@ export async function catalogProxyGet(
         "X-Request-Id": response.headers.get("x-request-id") || requestId,
       },
     });
-  } catch {
+  } catch (error: unknown) {
+    const timedOut = !request.signal.aborted && (timeoutSignal?.aborted ||
+      (typeof error === "object" && error !== null && "name" in error && error.name === "TimeoutError"));
     return problemResponse({
       status: 503,
-      code: "CATALOG_UNAVAILABLE",
-      title: "No pudimos cargar el catálogo.",
+      code: timedOut ? "CATALOG_TIMEOUT" : "CATALOG_UNAVAILABLE",
+      title: timedOut ? "El catálogo tardó demasiado en responder." : "No pudimos cargar el catálogo.",
       instance,
       requestId,
     });

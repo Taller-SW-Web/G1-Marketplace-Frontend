@@ -8,8 +8,8 @@ describe("CheckoutFlow local fixtures", () => {
   it("runs address, quote, preparation and order to a clearly labeled fixture result", async () => {
     render(<CheckoutFlow />);
 
-    expect(screen.getByRole("heading", { name: "Dirección de envío" })).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByRole("heading", { name: "¿Dónde entregamos tu pedido?" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
 
     fireEvent.change(screen.getByLabelText("Código promocional"), {
@@ -62,7 +62,7 @@ describe("CheckoutFlow local fixtures", () => {
 
   it("does not create a preparation until the no-charge consent is checked", async () => {
     render(<CheckoutFlow />);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
     await screen.findByRole("heading", { name: "Pago simulado" });
@@ -72,7 +72,7 @@ describe("CheckoutFlow local fixtures", () => {
 
   it("keeps the current quote when a local coupon is not applicable", async () => {
     render(<CheckoutFlow />);
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
     await screen.findByRole("heading", { name: "Resumen de envío" });
     const totalBefore = screen.getByText(/Total estimado/).parentElement?.textContent;
 

@@ -23,7 +23,7 @@ class NextArtifactPolicyTests(unittest.TestCase):
         self.metadata = self.artifact / "server/server-reference-manifest.json"
         self.key = base64.b64encode(secrets.token_bytes(32)).decode("ascii")
         self.metadata.write_text(json.dumps({"node": {}, "edge": {}, "encryptionKey": self.key}))
-        (self.root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/next": {"version": "16.4.1"}}}))
+        (self.root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/next": {"version": "16.4.5"}}}))
 
     def scan(self, config):
         binary = os.environ.get("H3_GITLEAKS") or shutil.which("gitleaks")
@@ -71,7 +71,7 @@ class NextArtifactPolicyTests(unittest.TestCase):
         (self.root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/next": {"version": "99.0.0"}}}))
         with self.assertRaises(ValueError):
             self.policy()
-        (self.root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/next": {"version": "16.4.1"}}}))
+        (self.root / "package-lock.json").write_text(json.dumps({"packages": {"node_modules/next": {"version": "16.4.5"}}}))
         self.metadata.write_text(json.dumps({"encryptionKey": "not-a-generated-key"}))
         with self.assertRaises(ValueError):
             self.policy()

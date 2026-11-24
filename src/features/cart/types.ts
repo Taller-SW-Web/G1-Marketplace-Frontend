@@ -62,6 +62,8 @@ export interface AddToCartPayload {
 
 export interface AddToCartActionProps {
   productId?: string;
+  /** SKU de la variante resuelta (F-013); se envía junto al producto. */
+  sku?: string;
   availability: AvailabilityState;
   priceReady: boolean;
   busy: boolean;

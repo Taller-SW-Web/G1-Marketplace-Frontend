@@ -23,8 +23,16 @@ export function policyRequirements(policy: PasswordPolicy) {
     ...(policy.requiereMinuscula ? ["una minúscula"] : []), ...(policy.requiereDigito ? ["un dígito"] : []),
     ...(policy.requiereCaracterEspecial ? ["un carácter especial"] : [])].join(", ");
 }
+// One message per unmet rule of the published Seguridad policy; empty when all pass.
+export function passwordIssues(policy: PasswordPolicy, value: string) {
+  return [
+    ...([...value].length < policy.longitudMinima ? [`Debe tener al menos ${policy.longitudMinima} caracteres.`] : []),
+    ...(policy.requiereMayuscula && !/\p{Lu}/u.test(value) ? ["Debe incluir una letra mayúscula."] : []),
+    ...(policy.requiereMinuscula && !/\p{Ll}/u.test(value) ? ["Debe incluir una letra minúscula."] : []),
+    ...(policy.requiereDigito && !/\p{Nd}/u.test(value) ? ["Debe incluir un número."] : []),
+    ...(policy.requiereCaracterEspecial && !/[^\p{L}\p{N}\s]/u.test(value) ? ["Debe incluir un carácter especial, por ejemplo ! o #."] : []),
+  ];
+}
 export function formatMatches(policy: PasswordPolicy, value: string) {
-  return [...value].length >= policy.longitudMinima
-    && (!policy.requiereMayuscula || /\p{Lu}/u.test(value)) && (!policy.requiereMinuscula || /\p{Ll}/u.test(value))
-    && (!policy.requiereDigito || /\p{Nd}/u.test(value)) && (!policy.requiereCaracterEspecial || /[^\p{L}\p{N}\s]/u.test(value));
+  return passwordIssues(policy, value).length === 0;
 }

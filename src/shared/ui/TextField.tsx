@@ -6,6 +6,8 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "children"> & {
   labelHidden?: boolean;
   hint?: ReactNode;
   error?: string;
+  /** Several live messages under the field (e.g. one per unmet password rule). */
+  errors?: string[];
   startAdornment?: ReactNode;
   endAdornment?: ReactNode;
   wrapperClassName?: string;
@@ -17,6 +19,7 @@ export function TextField({
   labelHidden = false,
   hint,
   error,
+  errors,
   id,
   type = "text",
   startAdornment,
@@ -32,8 +35,10 @@ export function TextField({
   const inputId = id || `field-${generatedId}`;
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
+  const errorsId = `${inputId}-errors`;
+  const invalid = Boolean(error) || Boolean(errors?.length);
   const description =
-    [describedBy, hint ? hintId : undefined, error ? errorId : undefined]
+    [describedBy, hint ? hintId : undefined, error ? errorId : undefined, errors?.length ? errorsId : undefined]
       .filter(Boolean)
       .join(" ") || undefined;
   return (
@@ -45,7 +50,7 @@ export function TextField({
         {label}
       </label>
       <div
-        className={`field-control${error ? " has-error" : ""} ${controlClassName}`.trim()}
+        className={`field-control${invalid ? " has-error" : ""} ${controlClassName}`.trim()}
       >
         {startAdornment && (
           <span className="field-adornment" aria-hidden="true">
@@ -57,8 +62,8 @@ export function TextField({
           id={inputId}
           type={type}
           aria-describedby={description}
-          aria-invalid={error ? true : ariaInvalid}
-          aria-errormessage={error ? errorId : ariaErrorMessage}
+          aria-invalid={invalid ? true : ariaInvalid}
+          aria-errormessage={error ? errorId : errors?.length ? errorsId : ariaErrorMessage}
         />
         {endAdornment && <div className="field-actions">{endAdornment}</div>}
       </div>
@@ -71,6 +76,11 @@ export function TextField({
         <p id={errorId} className="field-error" role="alert">
           {error}
         </p>
+      )}
+      {errors && (
+        <ul id={errorsId} className="field-errors" aria-live="polite">
+          {errors.map((message) => <li key={message} className="field-error">{message}</li>)}
+        </ul>
       )}
     </div>
   );

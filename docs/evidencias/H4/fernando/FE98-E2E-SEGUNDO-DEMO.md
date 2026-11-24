@@ -8,7 +8,8 @@
 - Rama: `test/fe98-e2e-segundo-demo-fernando`
 - Commit SHA de implementación E2E: `8f4fab6`
 - PR hacia `develop`: [#129](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/129)
-- Fecha/hora de la ejecución FE #98 (America/Lima): `2026-11-04 22:55:37 UTC−05:00` (marca temporal del resultado Playwright local)
+- Fecha/hora de la última ejecución FE #98 (America/Lima): `2026-11-05 01:26:32 UTC−05:00` (marca temporal del resultado Playwright local)
+- SHAs validados en esa ejecución: Frontend `develop` `9ee0b46`; Backend `develop` `6c03a4e`.
 - Responsable / revisor: Fernando Saire / Jim Segovia
 
 ## Entorno del recorrido unificado FE #98
@@ -70,6 +71,21 @@ Running 1 test using 1 worker
 ```
 
 La suite de autenticación G7 se ejecutó aparte con `playwright.auth.config.ts`, fixture local y PostgreSQL desechable: **3/3 pasaron** en la ejecución registrada arriba. No se conserva el stdout original de esa ejecución; por eso se informa el resultado sin reconstruir una salida de terminal. No corresponde a G7 productivo.
+
+### Reejecución tras FE #107 y BE #232 — 05/11/2026
+
+Se actualizaron/verificaron ambos repositorios en `develop` antes de ejecutar la prueba: Frontend `9ee0b46` y Backend `6c03a4e`.
+
+```text
+$ npx playwright test --config playwright.fe98.config.ts
+
+Running 1 test using 1 worker
+  ok 1 tests\fe98-second-demo.e2e.spec.ts:14:5 › FE #98: catálogo MOCK → ficha → carrito → favoritos (16.3s)
+
+1 passed (43.0s)
+```
+
+La prueba pasó con los cambios de FE #107 y BE #232 presentes en `develop`; no fue necesario modificar el test.
 
 El recorrido principal une Catálogo/Ficha/Carrito/Favoritos en UI con stubs para Carrito/Favoritos; la autenticación se valida aparte con el BFF real local y fixture G7. No se afirma todavía un único recorrido con alta/lista persistente de favoritos bajo sesión G7.
 

@@ -1,3 +1,5 @@
+[Guia publica: catalogo REAL local G6 y ficha MOCK](docs/CATALOGO-REAL-LOCAL.md) - `npm run demo:catalogo:real`.
+
 <!-- CATALOGO-S1 -->
 
 > **Entorno actual solicitado: Docker local.** Render queda como referencia futura. Consultar [Docker H3](docs/DOCKER-H3.md) para levantar los tres servicios. No se ha desplegado en Render.

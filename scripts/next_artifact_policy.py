@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import re
 
-NEXT_VERSION = "16.4.1"
+NEXT_VERSION = "16.4.5"
 FIELDS = {
     "cache/.rscinfo": [("encryption.key",)],
     "cache/.previewinfo": [("previewModeSigningKey",), ("previewModeEncryptionKey",)],

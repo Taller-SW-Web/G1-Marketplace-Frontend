@@ -3,6 +3,7 @@ import type {
   HomeDTO,
   CatalogSource,
   ProductCardDTO,
+  CatalogFiltersDTO,
 } from "./types";
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -36,7 +37,9 @@ export function isHome(value: unknown): value is HomeDTO {
       (item) => record(item) && text(item.categoryId) && text(item.name),
     ) &&
     Array.isArray(value.featuredProducts) &&
-    value.featuredProducts.every(product)
+    value.featuredProducts.every(product) &&
+    new Set(value.categories.map(item => item.categoryId)).size === value.categories.length &&
+    new Set(value.featuredProducts.map(item => item.productId)).size === value.featuredProducts.length
   );
 }
 export function isCatalogPage(value: unknown): value is CatalogPageDTO {
@@ -47,6 +50,8 @@ export function isCatalogPage(value: unknown): value is CatalogPageDTO {
     !record(value.page)
   )
     return false;
+  // During the additive rollout, accept an older BFF without sort; validate it when present.
+  if (value.sort !== undefined && value.sort !== null && value.sort !== "NAME_ASC" && value.sort !== "NAME_DESC") return false;
   const page = value.page;
   return (
     ["number", "size", "totalElements", "totalPages"].every(
@@ -54,8 +59,18 @@ export function isCatalogPage(value: unknown): value is CatalogPageDTO {
     ) &&
     Number(page.size) >= 1 &&
     Number(page.size) <= 48 &&
-    value.data.length <= Number(page.size)
+    value.data.length <= Number(page.size) &&
+    page.totalPages === Math.ceil(Number(page.totalElements) / Number(page.size)) &&
+    value.data.length === Math.max(0, Math.min(Number(page.size), Number(page.totalElements) - Number(page.number) * Number(page.size))) &&
+    new Set(value.data.map(item => item.productId)).size === value.data.length
   );
+}
+export function isCatalogFilters(value: unknown): value is CatalogFiltersDTO {
+  return record(value) && Array.isArray(value.categories) && Array.isArray(value.brands) &&
+    value.categories.every(item => record(item) && text(item.categoryId) && text(item.name)) &&
+    value.brands.every(item => record(item) && text(item.brandId) && text(item.name)) &&
+    new Set(value.categories.map(item => item.categoryId)).size === value.categories.length &&
+    new Set(value.brands.map(item => item.brandId)).size === value.brands.length;
 }
 export class CatalogRequestError extends Error {
   constructor(
@@ -74,18 +89,30 @@ export async function readCatalog<T>(
     signal,
     cache: "no-store",
   });
-  const payload: unknown = await response.json();
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    // A cancelled body belongs to the old request, never to a new catalog error.
+    signal.throwIfAborted();
+    if (response.ok) throw new CatalogRequestError(
+      "INVALID_RESPONSE", "No pudimos cargar el catálogo. Inténtalo nuevamente.",
+    );
+    payload = null;
+  }
   if (!response.ok) {
     const code =
       record(payload) && typeof payload.code === "string"
         ? payload.code
-        : "CATALOG_UNAVAILABLE";
+        : response.status === 504 ? "CATALOG_TIMEOUT" : "CATALOG_UNAVAILABLE";
     const message =
-      code === "INVALID_SEARCH_QUERY"
+      code === "CATALOG_TIMEOUT"
+        ? "El catálogo tardó demasiado en responder. Inténtalo nuevamente."
+        : code === "INVALID_SEARCH_QUERY"
         ? "Escribe entre 2 y 120 caracteres para buscar."
         : code === "INVALID_PAGE"
           ? "No encontramos esa página del catálogo. Vuelve a la primera página."
-          : ["INVALID_PARAMETERS", "INVALID_FILTER", "INVALID_SORT"].includes(
+          : ["INVALID_PARAMETERS", "INVALID_FILTER", "INVALID_SORT", "INVALID_PRICE_RANGE"].includes(
                 code,
               )
             ? "Revisa los criterios del enlace o vuelve al catálogo."
