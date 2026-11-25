@@ -74,7 +74,8 @@ jobs:
             detect --source=/repo \
             --report-format=sarif \
             --report-path=/repo/gitleaks.sarif \
-            --redact
+            --redact \
+            --verbose
       - name: Gate SCA (npm audit producción HIGH/CRITICAL) y Licencias
         run: npm audit --omit=dev --audit-level=high && node scripts/check-licenses.mjs
       - name: Gate OSV-Scanner sobre package-lock.json (CVSS >= 7.0)
