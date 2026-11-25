@@ -154,7 +154,6 @@ main:has(> .h5-home) { background: white; }
   object-fit: contain;
 }
 
-.h5-featured-placeholder { color: var(--text-secondary); font-size: 13px; }
 .h5-home .product-card--featured .product-info { flex: 1; padding: 12px 14px 14px; }
 
 .h5-featured-meta {

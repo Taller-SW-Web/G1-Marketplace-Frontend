@@ -50,7 +50,7 @@ test('H4 unavailable brands do not block category and price, then retry restores
   await form.getByRole('button', { name: 'Aplicar filtros' }).click();
   await expect(page).toHaveURL(url => url.searchParams.get('categoryIds') === 'running' && !url.searchParams.has('page'));
   await expect(page.locator('.product-card')).toHaveCount(2);
-  await expect(page.locator('.product-card h2')).toHaveText(['Short de running 04', 'Zapatillas de running 01']);
+  await expect(page.locator('.product-card').getByRole('heading', { level: 2 })).toHaveText(['Short de running 04', 'Zapatillas de running 01']);
   await expect(page.getByRole('button', { name: 'Quitar categoría Running' })).toBeVisible();
   await form.getByLabel('Precio mínimo', { exact: true }).fill('15');
   failed = false;
@@ -110,10 +110,11 @@ test('H4 ordering is global across pages and page recovery keeps criteria', asyn
   await expect(page.locator('.product-card')).toHaveCount(4);
   expect(new URL(page.url()).searchParams.get('q')).toBe('running');
   await page.getByLabel('Ordenar por').selectOption('NAME_ASC');
-  const first = await page.locator('.product-card h2').allTextContents();
+  const productNames = page.locator('.product-card').getByRole('heading', { level: 2 });
+  const first = await productNames.allTextContents();
   await page.getByRole('button', { name: 'Siguiente →' }).click();
   await expect(page).toHaveURL(/page=1/);
-  const second = await page.locator('.product-card h2').allTextContents();
+  const second = await productNames.allTextContents();
   expect([...first, ...second]).toEqual([...first, ...second].sort((a, b) => a.localeCompare(b, 'es')));
   await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
   await expect(page).toHaveURL(url => url.searchParams.get('sort') === 'NAME_DESC' && !url.searchParams.has('page'));

@@ -6,7 +6,11 @@ import { FavoriteToggle } from "./FavoriteToggle";
 import { useWishlist } from "./WishlistProvider";
 import { getItemState } from "./types";
 
-export function FavoriteControl({ productId, announce = true }: { productId: string; announce?: boolean }) {
+export function FavoriteControl({ productId, announce = true, compact = false }: {
+  productId: string;
+  announce?: boolean;
+  compact?: boolean;
+}) {
   const { session, sessionBusy, items, mutate } = useWishlist();
   const state = getItemState(items, productId);
   const [authOpen, setAuthOpen] = useState(false);
@@ -21,10 +25,12 @@ export function FavoriteControl({ productId, announce = true }: { productId: str
   if (!session.enabled) return null;
   return <div className="favorite-control">
     <FavoriteToggle productId={productId} confirmed={state.confirmed} uncertain={state.uncertain}
-      busy={sessionBusy || !!state.pending} authenticated={!!session.identity}
+      busy={sessionBusy || !!state.pending} authenticated={!!session.identity} compact={compact}
       onSave={id => { void mutate(id, "save"); }} onRemove={id => { void mutate(id, "remove"); }}
       onRequireAuth={() => { invoker.current = document.activeElement as HTMLElement; setAuthOpen(true); }} />
-    {state.confirmed === "unknown" && !state.message && <p className="wishlist-hint">Estado aún no consultable; guardar es una acción idempotente.</p>}
+    {state.confirmed === "unknown" && !state.message && (!compact || session.identity) &&
+      <p className="wishlist-hint">{compact ? "No pudimos confirmar si está en tus favoritos."
+        : "Estado aún no consultable; guardar es una acción idempotente."}</p>}
     {state.message && <p {...(announce ? { role: state.error ? "alert" : "status" } : {})} className="wishlist-message">{state.message}</p>}
     {state.retry && <Button variant="tertiary" disabled={sessionBusy || !!state.pending}
       onClick={() => { void mutate(productId, state.retry!); }}>Reintentar {state.retry === "save" ? "guardado" : "eliminación"}</Button>}

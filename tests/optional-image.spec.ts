@@ -30,7 +30,7 @@ test("home and catalog retain products without images and load a local placehold
   await expect(page.locator(".product-card")).toHaveCount(2);
   await expect(page.getByRole("status")).toHaveText("2 productos");
   await expect(page.getByRole("img", { name: "Imagen del producto" })).toHaveAttribute("src", "/fixtures/product-0.svg");
-  await expect(page.locator(".product-card").first().getByRole("link"))
+  await expect(page.locator(".product-card").first().getByRole("link", { name: "Ver opciones de Producto sin imagen" }))
     .toHaveAttribute("href", "/productos/producto-sin-imagen?returnTo=%2Fcatalogo");
   await page.screenshot({ path: "test-results/catalogo-imagen-opcional.png", fullPage: true });
 });

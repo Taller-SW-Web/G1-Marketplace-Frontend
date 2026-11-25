@@ -61,6 +61,9 @@ function CatalogResults({
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
   const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
+  const activeCategories = filters.state.status === "ready" ? filters.state.data.categories
+    : categories.state.status === "ready" ? categories.state.data.categories : [];
+  const categoryNames = new Map(activeCategories.map(({ categoryId, name }) => [categoryId, name]));
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -149,6 +152,7 @@ function CatalogResults({
                       key={product.productId}
                       product={product}
                       returnPath={returnPath}
+                      categoryName={categoryNames.get(product.categoryId)}
                     />
                   ))}
                 </div>

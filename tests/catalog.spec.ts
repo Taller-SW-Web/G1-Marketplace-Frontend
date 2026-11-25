@@ -67,10 +67,14 @@ test("query 1/121 characters never requests products", async ({ page }) => {
 test("search returns real fixture matches and does not invent prices or stock", async ({
   page,
 }) => {
+  await page.route("**/api/catalog/products/*/price", route =>
+    route.fulfill({ status: 503, json: { code: "PRICING_UNAVAILABLE" } }));
   await page.goto("/catalogo?q=running");
   await expect(page.locator(".product-card")).toHaveCount(16);
   await expect(page.getByRole("status")).toHaveText("16 productos");
   await expect(page.locator(".product-grid")).not.toContainText("S/");
+  await expect(page.locator(".product-card").first()).toContainText("Precio por confirmar");
+  await expect(page.getByRole("button", { name: "Agregar al carrito" })).toHaveCount(0);
   const href = await page
     .locator(".product-card a")
     .first()
