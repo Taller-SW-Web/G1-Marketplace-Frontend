@@ -33,7 +33,7 @@ test("search normalizes query, preserves URL and has working clear", async ({
   await expect(page).toHaveURL(/q=polo\+entrenamiento/);
   // This phrase is not contiguous in synthetic names, so empty is an actual success state.
   await expect(
-    page.getByRole("heading", { name: /No encontramos productos/ }),
+    page.getByRole("heading", { name: "Sin resultados" }),
   ).toBeVisible();
   await page.screenshot({ path: "test-results/figma-catalogo-vacio-1280.png", fullPage: true });
   await page
@@ -72,7 +72,9 @@ test("search returns real fixture matches and does not invent prices or stock", 
   await page.goto("/catalogo?q=running");
   await expect(page.locator(".product-card")).toHaveCount(16);
   await expect(page.getByRole("status")).toHaveText("16 productos");
-  await expect(page.locator(".product-grid")).not.toContainText("S/");
+  const results = page.getByRole("region", { name: "Productos del catálogo" });
+  await expect(results.getByRole("article").first()).toBeVisible();
+  await expect(results).not.toContainText("S/");
   await expect(page.locator(".product-card").first()).toContainText("Precio por confirmar");
   await expect(page.getByRole("button", { name: "Agregar al carrito" })).toHaveCount(0);
   const href = await page
@@ -119,7 +121,7 @@ test("recoverable provider error stays an error, preserves q and retries", async
     "No pudimos cargar",
   );
   await expect(
-    page.getByRole("heading", { name: /No encontramos productos/ }),
+    page.getByRole("heading", { name: "Sin resultados" }),
   ).toHaveCount(0);
   await expect(page.getByRole("searchbox")).toHaveValue("polo");
   await page.screenshot({ path: "test-results/figma-catalogo-error-1280.png", fullPage: true });
@@ -167,7 +169,7 @@ test("slow old response cannot overwrite new query", async ({ page }) => {
   await page.getByRole("searchbox").fill("polo");
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.locator(".product-card")).toHaveCount(8);
-  await expect(page.locator(".product-grid")).toContainText("Polo");
+  await expect(page.getByRole("region", { name: "Productos del catálogo" })).toContainText("Polo");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("polo");
 });
 
@@ -202,7 +204,7 @@ test("query text is escaped and long query has no horizontal overflow", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/catalogo?q=${"a".repeat(120)}`);
   await expect(
-    page.getByRole("heading", { name: /No encontramos productos/ }),
+    page.getByRole("heading", { name: "Sin resultados" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
