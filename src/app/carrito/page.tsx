@@ -14,7 +14,7 @@ export default function CarritoPage() {
   };
 
   return (
-    <div style={{ padding: '32px 16px', minHeight: '60vh', maxWidth: '1000px', margin: '0 auto' }}>
+    <div className="cart-page-shell">
       <CartPageContainer
         cart={cart}
         status={status}
