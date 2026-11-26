@@ -1,0 +1,26 @@
+.invitation { display:flex; gap:24px; align-items:center; justify-content:space-between; padding:28px; border:1px solid var(--border); border-radius:16px; background:#fff; margin:24px 0; }
+.eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; color:#9a3412; }
+.invitation h2 { font-size:22px; margin:8px 0; }
+.invitation p,.muted { color:var(--text-secondary); }
+.actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.dialog { color:var(--text-primary); background:#fffdf9; border:1px solid var(--border); border-radius:20px; padding:28px; width:min(560px,calc(100% - 24px)); max-height:calc(100dvh - 32px); overflow:auto; }
+.dialog::backdrop { background:rgb(27 24 18 / .55); }
+.dialog h2 { font-size:28px; line-height:1.2; margin:8px 0; }
+.top { display:flex; align-items:center; justify-content:space-between; }
+.fieldset { border:0; padding:0; margin:24px 0; min-width:0; }
+.fieldset legend { margin-bottom:12px; font-weight:600; }
+.sentiments { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.choice { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; padding:16px 6px; min-height:64px; border:1px solid #999; border-radius:12px; cursor:pointer; }
+.choice span { font-size:24px; }
+.selected { border-color:#9a3412; background:#fff0e5; outline:1px solid #9a3412; }
+.reasons { display:flex; gap:8px; flex-wrap:wrap; }
+.reasons label { display:flex; gap:8px; align-items:center; border:1px solid var(--border); border-radius:24px; padding:10px 14px; min-height:44px; }
+.comment { display:block; font-weight:600; }
+.comment textarea { display:block; width:100%; margin-top:10px; padding:12px; border:1px solid #888; border-radius:10px; font:inherit; resize:vertical; }
+.optional,.counter,.footnote { color:var(--text-secondary); font-size:12px; font-weight:400; }
+.counter { text-align:right; margin:4px 0 20px; }
+.footnote { margin:16px 0 0; }
+.error { padding:12px; color:#9b1c1c; background:#fff1f0; border-radius:8px; }
+.confirmation { background:#fff; border:1px solid var(--border); border-radius:16px; padding:32px; margin:24px 0; text-align:center; }
+.confirmation>span { display:inline-grid; place-items:center; width:48px; height:48px; border-radius:50%; background:#e5f2dc; color:#315321; font-size:28px; }
+@media(max-width:600px) { .invitation { align-items:stretch; flex-direction:column; padding:20px; } .dialog { padding:20px; } .dialog h2 { font-size:24px; } .choice { flex-direction:column; gap:4px; } }

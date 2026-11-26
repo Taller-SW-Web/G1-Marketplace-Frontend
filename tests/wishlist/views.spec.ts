@@ -42,15 +42,15 @@ test("confirmed removal of the last favorite focuses the empty heading and does 
   expect(boxes[0]!.y + boxes[0]!.height).toBeLessThan(boxes[1]!.y);
 });
 
-test("out of stock and retired have distinct sections and remain removable", async ({ page }) => {
+test("out of stock and retired have distinct labels and remain removable", async ({ page }) => {
   await page.goto(preview + "?estado=agotados");
-  const out = page.getByRole("region", { name: "Sin existencias (1)" });
+  const out = page.locator("article").filter({ has: page.getByRole("heading", { name: "Nano Puff Vest" }) });
   await expect(out.getByText("Sin existencias", { exact: true })).toBeVisible();
   await out.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" }).click();
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
   await expect(out.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" })).toBeVisible();
   await page.goto(preview + "?estado=retirado");
-  const retired = page.getByRole("region", { name: "Productos no disponibles (1)" });
+  const retired = page.locator("article").filter({ has: page.getByRole("heading", { name: "Nano Puff Vest" }) });
   await expect(retired.getByText("Imagen no disponible")).toBeVisible();
   await expect(retired.getByRole("button", { name: "Eliminar de favoritos: Nano Puff Vest" })).toBeEnabled();
 });
@@ -122,4 +122,10 @@ test("responsive images, original SVG dimensions and all state screens", async (
       expect(geometry).toBe(true);
     }
   }
+});
+
+test("empty favorites CTA navigates to catalog", async ({ page }) => {
+  await page.goto(preview + "?estado=vacio");
+  await page.getByRole("link", { name: "Explorar productos" }).click();
+  await expect(page).toHaveURL(/\/catalogo$/);
 });

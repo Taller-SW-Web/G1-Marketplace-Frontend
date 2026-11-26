@@ -1,3 +1,34 @@
+## [1.8.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.7.0...v1.8.0) (2026-11-26)
+
+### Features
+
+* **orders:** forward session and show shipment tracking ([f3e26a5](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f3e26a5368e31a1c9a74dcab45136e0f87cb20a4))
+
+## [1.7.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.6.0...v1.7.0) (2026-11-26)
+
+### Features
+
+* **h5:** gateway APIM con prefijo configurable y trazo W3C ([#140](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/140)) ([0612c2d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0612c2d40c206c1aefdf0be44c8f3357e9595b1f))
+
+## [1.6.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.5.0...v1.6.0) (2026-11-26)
+
+### Features
+
+* **h5:** V-007 galeria con zoom, panel de compra fijo y tokens de contraste ([#146](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/146)) ([6d01056](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/6d0105615e1317483dd556f3482f27d2c48557fb))
+
+## [1.5.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.1...v1.5.0) (2026-11-24)
+
+### Features
+
+* **csat:** presentar evaluacion postentrega para revision local ([224ec35](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/224ec35c5b605150e50b5e47227b15283c3bec91))
+* **favoritos:** agregar al carrito conservando el favorito ([0ba4518](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0ba451825b583b17056327394a75afe3e82cd780))
+* **h4:** integrar favoritos y experiencia de CSAT ([cd7525e](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/cd7525e566600e4c12cc673abe85f2cb89f06e46))
+
+### Bug Fixes
+
+* **favoritos:** conectar sesión web y verificar QA de Diego ([1647c1a](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/1647c1ab24b9ae2f4377f83b7b2c61f3ee9a76c7))
+* **favoritos:** conservar disponibilidad indeterminada ([f7c95a0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f7c95a07d45da5bbee658cbbe6998934301a6ca7))
+
 ## [1.4.1](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.0...v1.4.1) (2026-11-23)
 
 ### Bug Fixes

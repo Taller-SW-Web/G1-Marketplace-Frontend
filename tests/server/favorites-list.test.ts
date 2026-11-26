@@ -27,6 +27,7 @@ describe("proposed wishlist read contract", () => {
     expect(parseWishlist([item, item])).toBeNull();
     for (const change of [{ availability: "UNKNOWN" }, { slug: "../escape" }, { createdAt: "bad" }, { price: { amount: -1, currency: "PEN" } }, { image: { url: "//evil.test/a", alt: "a" } }]) expect(parseWishlist([{ ...item, ...change }])).toBeNull();
     expect(parseWishlist([{ ...item, name: null, slug: null, availability: "UNAVAILABLE" }])).not.toBeNull();
+    expect(parseWishlist([{ ...item, availability: "UNDETERMINED" }])).toMatchObject([{ availability: "UNDETERMINED" }]);
   });
 });
 describe("wishlist read proxy", () => {

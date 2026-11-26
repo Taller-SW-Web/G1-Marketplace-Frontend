@@ -37,6 +37,8 @@ function NoticeView({ notice, controller }: { notice: Notice; controller: Favori
       : notice.action && <Button variant="tertiary" disabled={!!notice.productId && ["removing", "restoring"].includes(controller.getSnapshot().pending[notice.productId])} onClick={action}>
         {notice.title.includes("sin confirmar") || notice.title.includes("confirmar") ? "Comprobar resultado" : "Reintentar"}
       </Button>}
+    {notice.redirectUrl && <Link className="text-link" href={`${notice.redirectUrl}?returnTo=%2Ffavoritos`}>Seleccionar variante</Link>}
+    {notice.id.startsWith("cart:") && <Link className="text-link" href="/carrito">Revisar carrito</Link>}
     {!notice.action && <Button variant="tertiary" aria-label={`Cerrar aviso: ${notice.title}`} onClick={() => controller.dismiss(notice.id, true)}>×</Button>}
   </div>;
 }
@@ -65,6 +67,7 @@ export function FavoritesExperience({ state, controller, returnPath = "/favorito
   </div>;
   return <div ref={root}>
     <FavoritesList products={state.items} pending={state.pending} feedback={feedback} returnPath={returnPath}
+      onAddToCart={controller.canAddToCart ? product => void controller.addToCart(product.productId) : undefined}
       onRemove={product => void controller.remove(product.productId)} />
     <div className="favorites-toasts" aria-label="Eliminaciones recientes">
       {state.undos.slice(0, 3).map(undo => {

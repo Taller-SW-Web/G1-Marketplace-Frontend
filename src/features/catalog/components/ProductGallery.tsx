@@ -65,6 +65,7 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
             alt={item.alt}
             width="600"
             height="400"
+            fetchPriority="high"
             onError={() => markFailed(item.mediaId)}
           />
         )}
