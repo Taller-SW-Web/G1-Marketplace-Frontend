@@ -42,7 +42,7 @@ jobs:
         run: npm run test:server
 
   build-and-security:
-    name: 2. Build y Seguridad (SAST, Gitleaks, SCA, Licencias)
+    name: Build, Compile y Test
     needs: lint-typecheck-unit
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -172,23 +172,6 @@ jobs:
             ghcr.io/taller-sw-web/g1-marketplace-frontend:${{ needs.release.outputs.version }}
             ghcr.io/taller-sw-web/g1-marketplace-frontend:latest
 
-  deploy:
-    name: 5. Smoke Test Post-CI (autodespliegue nativo Vercel)
-    needs: [build-and-security, release]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      SITE_URL: ${{ vars.FRONTEND_URL || 'https://g1-marketplace-frontend.vercel.app' }}
-    steps:
-      - name: Smoke test del sitio (/ y /carrito) tras autodespliegue de Vercel
-        run: |
-          echo "Vercel autodespliega tras el CI (sin deploy hooks duplicados). Versión: ${{ needs.release.outputs.version || 'sin cambios' }}"
-          for i in $(seq 1 20); do
-            code_home=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL%/}/" || true)
-            code_cart=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL%/}/carrito" || true)
-            echo "intento $i -> / HTTP $code_home | /carrito HTTP $code_cart"
-            if [ "$code_home" = "200" ] && [ "$code_cart" = "200" ]; then exit 0; fi
-            sleep 15
-          done
-          echo "::error::El sitio no respondió 200"; exit 1
+  # Vía única de despliegue (acordada para H5):
+  # - Vercel gestiona el autodespliegue nativo del frontend (sin hooks duplicados ni smoke
+  #   desacoplado que pueda aceptar un HTTP 200 de una versión anterior sin verificar SHA).

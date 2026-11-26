@@ -7,24 +7,13 @@ const workflow = readFileSync(
   'utf8'
 );
 
-function jobSection(name: string) {
-  const start = workflow.indexOf(`  ${name}:`);
-  expect(start, `workflow job ${name} exists`).toBeGreaterThanOrEqual(0);
-
-  const nextJob = workflow.slice(start + 1).search(/^ {2}[a-z0-9-]+:\s*$/m);
-  return workflow.slice(start, nextJob < 0 ? undefined : start + 1 + nextJob);
-}
-
-describe('CI/CD single deploy path', () => {
-  const deploy = jobSection('deploy');
-
-  it('uses a single native post-CI smoke job without duplicate deploy hooks or environments', () => {
-    expect(deploy).not.toContain('environment: production');
-    expect(deploy).not.toContain('VERCEL_DEPLOY_HOOK_URL');
-    expect(deploy).toContain('needs: [build-and-security, release]');
-    expect(deploy).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/develop'");
-    expect(deploy).toContain('Smoke test del sitio (/ y /carrito)');
+describe('CI/CD single native deploy path and required check', () => {
+  it('publishes the required Build, Compile y Test check and delegates deploy to native Vercel', () => {
+    expect(workflow).toContain('name: Build, Compile y Test');
+    expect(workflow).not.toContain('  deploy:');
     expect(workflow).not.toContain('  deploy-staging:');
     expect(workflow).not.toContain('  deploy-production:');
+    expect(workflow).not.toContain('environment: production');
+    expect(workflow).not.toContain('VERCEL_DEPLOY_HOOK_URL');
   });
 });
