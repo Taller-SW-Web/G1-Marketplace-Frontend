@@ -49,8 +49,8 @@ test.describe("F-028–F-032 pedidos con fixtures de navegador", () => {
     await expect(page.getByRole("row", { name: new RegExp(orderSummary.orderId) })).toBeVisible();
 
     await page.getByRole("combobox", { name: "Estado" }).selectOption("DESPACHADO");
-    await page.getByRole("textbox", { name: "Desde" }).fill("2026-10-10");
-    await page.getByRole("textbox", { name: "Hasta" }).fill("2026-10-10");
+    await page.getByLabel("Desde", { exact: true }).fill("2026-10-10");
+    await page.getByLabel("Hasta", { exact: true }).fill("2026-10-10");
     await page.getByRole("button", { name: "Aplicar", exact: true }).click();
     await expect(page).toHaveURL(/state=DESPACHADO/);
     await expect.poll(() => listQueries.some(url =>
