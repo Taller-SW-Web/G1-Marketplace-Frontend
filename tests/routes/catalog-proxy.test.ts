@@ -121,3 +121,128 @@ describe('G6 partial REAL integration through the Marketplace proxy', () => {
     expect(forwarded.has('Cookie')).toBe(false);
   });
 });
+
+describe('APIM boundary and trace correlation (FE #140)', () => {
+  const TRACE = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+  it.each(['/v1', '/api/v1', '/marketplace/g1/v1'])(
+    'forwards to the published prefix %s without duplicating /api/v1',
+    async (basePath) => {
+      vi.stubEnv('MARKETPLACE_API_URL', 'https://apim.example.com');
+      vi.stubEnv('MARKETPLACE_API_BASE_PATH', basePath);
+      const upstream = vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ data: [] }, { headers: { 'X-Catalog-Source': 'REAL' } }),
+        );
+      vi.stubGlobal('fetch', upstream);
+
+      await GET(
+        new NextRequest('http://localhost/api/catalog/products/nike-academy?page=2'),
+        { params: Promise.resolve({ path: ['products', 'nike-academy'] }) },
+      );
+
+      expect(String(upstream.mock.calls[0][0])).toBe(
+        `https://apim.example.com${basePath}/catalog/products/nike-academy?page=2`,
+      );
+      expect(String(upstream.mock.calls[0][0])).not.toContain('/api/v1/api/v1');
+    },
+  );
+
+  it('keeps the default /api/v1 when the variable is not configured', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'http://backend:10000');
+    vi.stubEnv('MARKETPLACE_INTERNAL_HTTP_HOST', 'backend');
+    vi.stubEnv('MARKETPLACE_API_BASE_PATH', '');
+    const upstream = vi.fn().mockResolvedValue(Response.json({ data: [] }));
+    vi.stubGlobal('fetch', upstream);
+
+    await GET(new NextRequest('http://localhost/api/catalog/home'), {
+      params: Promise.resolve({ path: ['home'] }),
+    });
+
+    expect(String(upstream.mock.calls[0][0])).toBe(
+      'http://backend:10000/api/v1/catalog/home',
+    );
+  });
+
+  it('rejects an unsafe published prefix with a correlated problem and no upstream call', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://apim.example.com');
+    vi.stubEnv('MARKETPLACE_API_BASE_PATH', '/api/v1/../admin');
+    const upstream = vi.fn();
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/catalog/home', {
+        headers: { 'X-Request-Id': 'apim-prefix-01', traceparent: TRACE },
+      }),
+      { params: Promise.resolve({ path: ['home'] }) },
+    );
+
+    expect(response.status).toBe(503);
+    expect(upstream).not.toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({
+      code: 'CATALOG_UNAVAILABLE',
+      requestId: 'apim-prefix-01',
+    });
+    expect(response.headers.get('traceparent')).toBe(TRACE);
+  });
+
+  it('propagates a valid W3C traceparent to the BFF and back to the browser', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://apim.example.com');
+    vi.stubEnv('MARKETPLACE_API_BASE_PATH', '/v1');
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ data: [] }, { headers: { 'X-Catalog-Source': 'REAL' } }),
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/catalog/home', {
+        headers: { traceparent: TRACE },
+      }),
+      { params: Promise.resolve({ path: ['home'] }) },
+    );
+
+    expect(upstream.mock.calls[0][1].headers.traceparent).toBe(TRACE);
+    expect(response.headers.get('traceparent')).toBe(TRACE);
+  });
+
+  it('generates a well-formed traceparent when the incoming one is invalid or missing', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://apim.example.com');
+    vi.stubEnv('MARKETPLACE_API_BASE_PATH', '/v1');
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ data: [] }, { headers: { 'X-Catalog-Source': 'REAL' } }),
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/catalog/home', {
+        headers: { traceparent: 'not-a-traceparent' },
+      }),
+      { params: Promise.resolve({ path: ['home'] }) },
+    );
+
+    const generated = upstream.mock.calls[0][1].headers.traceparent;
+    expect(generated).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/u);
+    expect(generated).not.toBe('not-a-traceparent');
+    expect(response.headers.get('traceparent')).toBe(generated);
+  });
+
+  it('does not expose the upstream host or credentials in the response', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://apim.example.com');
+    vi.stubEnv('MARKETPLACE_API_BASE_PATH', '/v1');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json({ data: [] }, { headers: { 'X-Catalog-Source': 'REAL' } }),
+      ),
+    );
+
+    const response = await GET(new NextRequest('http://localhost/api/catalog/home'), {
+      params: Promise.resolve({ path: ['home'] }),
+    });
+
+    const serialized = JSON.stringify([...response.headers]);
+    expect(serialized).not.toContain('apim.example.com');
+    expect(response.headers.get('set-cookie')).toBeNull();
+  });
+});
