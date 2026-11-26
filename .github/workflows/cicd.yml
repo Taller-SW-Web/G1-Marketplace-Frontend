@@ -38,10 +38,22 @@ jobs:
         run: npm run build
       - name: Test del runner REAL local (sin red)
         run: npm run test:demo:catalogo:real
-      - name: Test de componentes
-        run: npm run test:components
-      - name: Test de servidor
-        run: npm run test:server
+      - name: Test de componentes con cobertura (Vitest)
+        run: npm run test:components:cov
+      - name: Test de servidor con cobertura (Vitest)
+        run: npm run test:server:cov
+      - name: Publicar reporte de cobertura Vitest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: |
+            coverage/components/coverage-summary.json
+            coverage/components/lcov.info
+            coverage/server/coverage-summary.json
+            coverage/server/lcov.info
+          if-no-files-found: warn
+          retention-days: 30
 
   release:
     name: Versionado (SemVer + CHANGELOG)
