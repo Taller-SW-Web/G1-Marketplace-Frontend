@@ -9,7 +9,7 @@ FE #153 y #154. Chrome local sobre el candidato de Catálogo `073b3b0`. **12 pru
 | O-006 · Deshacer | Retirar la última línea, mantener visible Deshacer en el estado vacío, foco por teclado y recuperación de la línea del fixture. | [Captura](desktop-o006-carrito-vacio-con-deshacer.png) | [Captura](mobile-o006-carrito-vacio-con-deshacer.png) |
 | O-007 · Ajustes | Mostrar cantidades solicitada y confirmada del resultado simulado de la fusión, enfocar Entendido, cerrar por Escape y devolver foco al invocador. | [Captura](desktop-o007-ajustes-fusion.png) | [Captura](mobile-o007-ajustes-fusion.png) |
 
-El fixture se habilita solo en desarrollo con `H5_CART_OVERLAY_QA=true`. El caso real de O-006 depende del contrato de restauración que revalida SKU, cantidad, precio y stock. Para O-007, la fusión actual identifica al cliente por bearer. El login web de G7 usa una sesión opaca y el guard actual del carrito sigue la ruta anónima al recibir solo esa cookie. Queda conectar la identidad y verificar el recorrido real desde login, incluida MFA.
+El fixture se habilita solo en desarrollo con `H5_CART_OVERLAY_QA=true`. La compilación de producción respondió HTTP 404 para esta ruta incluso con el flag habilitado. El caso real de O-006 depende del contrato de restauración que revalida SKU, cantidad, precio y stock. Para O-007, la fusión actual identifica al cliente por bearer. El login web de G7 usa una sesión opaca y el guard actual del carrito sigue la ruta anónima al recibir solo esa cookie. Queda conectar la identidad y verificar el recorrido real desde login, incluida MFA.
 
 ## Matriz de las 17 vistas
 
