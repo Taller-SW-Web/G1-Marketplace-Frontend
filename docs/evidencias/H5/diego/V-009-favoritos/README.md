@@ -22,4 +22,7 @@
 | Cargando (barra de progreso y skeletons) | [desktop-02-cargando.png](desktop-02-cargando.png) | [mobile-02-cargando.png](mobile-02-cargando.png) |
 | Vacío (con CTA a catálogo) | [desktop-03-vacio.png](desktop-03-vacio.png) | [mobile-03-vacio.png](mobile-03-vacio.png) |
 | Error de consulta (con reintento) | [desktop-04-error.png](desktop-04-error.png) | [mobile-04-error.png](mobile-04-error.png) |
-| Agotados / por confirmar / no disponibles | [desktop-05-agotados.png](desktop-05-agotados.png) | [mobile-05-agotados.png](mobile-05-agotados.png) |
+| Sin existencias | [desktop-05-agotados.png](desktop-05-agotados.png) | [mobile-05-agotados.png](mobile-05-agotados.png) |
+| Disponibilidad por confirmar con «Agregar al carrito» deshabilitado | [desktop-06-por-confirmar.png](desktop-06-por-confirmar.png) | [mobile-06-por-confirmar.png](mobile-06-por-confirmar.png) |
+
+Las capturas de disponibilidad por confirmar se tomaron en `/favoritos` con una respuesta de prueba de la API de favoritos (`UNDETERMINED`). Playwright verificó el texto y el botón deshabilitado en ambos tamaños.
