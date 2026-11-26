@@ -1,4 +1,6 @@
 import { Home } from "@/features/catalog/Home";
+import { HomeIntro } from "@/features/catalog/HomeIntro";
+
 export default function Page() {
-  return <Home />;
+  return <Home intro={<HomeIntro />} />;
 }

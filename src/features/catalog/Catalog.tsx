@@ -144,11 +144,12 @@ function CatalogResults({
               {state.source === "MOCK" && <MockNotice />}
               {state.data.data.length ? (
                 <div className="product-grid">
-                  {state.data.data.map((product) => (
+                  {state.data.data.map((product, index) => (
                     <ProductCard
                       key={product.productId}
                       product={product}
                       returnPath={returnPath}
+                      priority={index < 3}
                     />
                   ))}
                 </div>

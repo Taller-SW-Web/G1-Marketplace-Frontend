@@ -4,16 +4,24 @@
     {
       "file": "hero-shoe.png",
       "node": "274:111",
-      "sha256": "318e7877f5a1299863807919e4aadda3e1c514aa778f405632d196c7b1711c33",
-      "width": 1500,
-      "height": 1500
+      "sha256": "f06ad0be3d953ab1dc63530520827a1ba71ad2d8264b51ee9168d94cdea9efd7",
+      "width": 1160,
+      "height": 1160
+    },
+    {
+      "file": "hero-shoe-1160.webp",
+      "node": "274:111",
+      "sha256": "cfe16cc36b41e9e11341b86982d4ef13a61b09be02f277cd56682fdd5119b001",
+      "width": 1160,
+      "height": 1160,
+      "derivedFrom": "hero-shoe.png"
     },
     {
       "file": "logo.png",
       "node": "274:111",
-      "sha256": "f27eec3f9427b60f34580b24d3d302e57182240c8396082a375b3fc4e8449fec",
-      "width": 1448,
-      "height": 1086
+      "sha256": "1cd33fc93fea955828abc9c836511453ac0d7ad510ef18848b1567d9f7488f6e",
+      "width": 640,
+      "height": 480
     },
     {
       "file": "category-shirt.svg",
