@@ -1,0 +1,9 @@
+{
+  "route": "inicio",
+  "url": "http://127.0.0.1:3105/",
+  "project": "mobile",
+  "generatedAt": "2026-11-25T01:13:40.075Z",
+  "violations": [],
+  "passes": 24,
+  "incomplete": 1
+}

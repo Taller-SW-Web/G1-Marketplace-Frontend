@@ -1,0 +1,9 @@
+{
+  "route": "catalogo",
+  "url": "http://127.0.0.1:3105/catalogo",
+  "project": "mobile",
+  "generatedAt": "2026-11-25T01:13:42.341Z",
+  "violations": [],
+  "passes": 26,
+  "incomplete": 1
+}
