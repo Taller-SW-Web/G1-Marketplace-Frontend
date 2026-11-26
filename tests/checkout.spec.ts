@@ -85,6 +85,7 @@ for (const { name, width, height } of checkoutViewports) {
     await page.getByRole("button", { name: "Reintentar verificación" }).click();
     await expect(paid).toBeVisible();
     await expect(page.getByText("Estado verificado · SUCCEEDED/PAGADO")).toBeVisible();
+    await expect(page.getByText("No pudimos registrar el pedido. Conservamos la operación para verificarla.", { exact: true })).toHaveCount(0);
     expect(requests).toEqual(expect.arrayContaining([
       { stage: 0, method: "GET" }, { stage: 1, method: "GET" }, { stage: 2, method: "GET" },
     ]));

@@ -1,6 +1,6 @@
 # QA de estados de checkout · FE #154
 
-Chrome local sobre la base de Frontend `bcbdf55`. Escritorio a 1280 × 900 y móvil a 390 × 844. Pasaron cuatro pruebas de fixtures y dos de recuperación. Las capturas usan datos sintéticos y el proveedor de la verificación se simula con respuestas interceptadas.
+Chrome 158 local sobre la base de Frontend `bcbdf55`. Escritorio a 1280 × 900 y móvil a 390 × 844. Pasaron cuatro pruebas de fixtures y dos de recuperación. Las capturas usan datos sintéticos y el proveedor de la verificación se simula con respuestas interceptadas.
 
 | Escenario | Escritorio | Móvil |
 | --- | --- | --- |
@@ -21,6 +21,6 @@ npm run test:checkout:e2e -- -g 'checkout local fixtures|address form|address an
 NEXT_PUBLIC_CHECKOUT_MODE=backend-mock npm run test:checkout:e2e -- -g 'checkout verification recovers'
 ```
 
-La verificación simulada ejecuta tres etapas de lectura: `202 SUBMITTED/CREADO`, `503 SALES_UNAVAILABLE` y `200 SUCCEEDED/PAGADO`. Las pruebas comprueban que solo se consulta por GET, que el estado pagado aparece después de la respuesta final y que el error permite reintentar.
+La verificación simulada ejecuta tres etapas de lectura: `202 SUBMITTED/CREADO`, `503 SALES_UNAVAILABLE` y `200 SUCCEEDED/PAGADO`. Las pruebas comprueban que solo se consulta por GET, que el estado pagado aparece después de la respuesta final y que el error permite reintentar. Una vez confirmado el pago, la interfaz retira el aviso del intento anterior.
 
 La prueba documenta los estados locales de V-011 a V-014. La validación del checkout con proveedores desplegados sigue en las tareas de integración.
