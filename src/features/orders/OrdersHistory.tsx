@@ -15,7 +15,6 @@ import type {
   OrdersHistoryResponse,
   OrdersHistoryState,
   OrdersSource,
-  OrderSummary,
 } from "./types";
 
 function OrderLoading() {
@@ -107,23 +106,16 @@ export function OrdersHistoryContainer({ initialPage, initialFilters = {} }: { i
   const fromFilter = initialFilters.from ?? "";
   const toFilter = initialFilters.to ?? "";
   const filtersKey = `${stateFilter}|${fromFilter}|${toFilter}`;
-  const [draft, setDraft] = useState<OrderFilters>(initialFilters);
-  const [filterErrors, setFilterErrors] = useState<OrderFilterErrors>({});
+  const [filterForm, setFilterForm] = useState<{ key: string; draft: OrderFilters; errors: OrderFilterErrors } | null>(null);
+  const activeForm = filterForm?.key === filtersKey ? filterForm : null;
+  const draft = activeForm?.draft ?? initialFilters;
+  const filterErrors = activeForm?.errors ?? {};
   const [result, setResult] = useState<{
     key: string;
     state: OrdersHistoryState;
   }>({ key: "", state: { status: "loading" } });
   const [attempt, setAttempt] = useState(0);
   const key = `${initialPage}:${filtersKey}:${attempt}`;
-
-  useEffect(() => {
-    setDraft({
-      ...(stateFilter ? { state: stateFilter as NonNullable<OrderFilters["state"]> } : {}),
-      ...(fromFilter ? { from: fromFilter } : {}),
-      ...(toFilter ? { to: toFilter } : {}),
-    });
-    setFilterErrors({});
-  }, [stateFilter, fromFilter, toFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -173,13 +165,12 @@ export function OrdersHistoryContainer({ initialPage, initialFilters = {} }: { i
 
   const applyFilters = () => {
     const errors = validateOrderFilters(draft);
-    setFilterErrors(errors);
+    setFilterForm({ key: filtersKey, draft, errors });
     if (Object.keys(errors).length) return;
     router.push(ordersHref(0, draft));
   };
   const clearFilters = () => {
-    setDraft({});
-    setFilterErrors({});
+    setFilterForm({ key: filtersKey, draft: {}, errors: {} });
     router.push("/mis-pedidos?page=0");
   };
   const removeFilter = (keyToRemove: keyof OrderFilters) => {
@@ -189,7 +180,7 @@ export function OrdersHistoryContainer({ initialPage, initialFilters = {} }: { i
       ...(toFilter ? { to: toFilter } : {}),
     };
     delete next[keyToRemove];
-    setDraft(next);
+    setFilterForm({ key: filtersKey, draft: next, errors: {} });
     router.push(ordersHref(0, next));
   };
 
@@ -205,7 +196,7 @@ export function OrdersHistoryContainer({ initialPage, initialFilters = {} }: { i
       <OrdersFilterForm
         draft={draft}
         errors={filterErrors}
-        onChange={(next) => { setDraft(next); setFilterErrors({}); }}
+        onChange={(next) => setFilterForm({ key: filtersKey, draft: next, errors: {} })}
         onApply={applyFilters}
         onClear={clearFilters}
       />

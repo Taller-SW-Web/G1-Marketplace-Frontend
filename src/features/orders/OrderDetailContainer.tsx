@@ -15,20 +15,26 @@ function money(amount: number, currency: string) {
 }
 
 export function OrderDetailContainer({ orderId }: { orderId: string }) {
-  const [detail, setDetail] = useState<OrderDetail | null>(null);
-  const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  type Result = { key: string } & ({ detail: OrderDetail } | { error: { code: string; message: string } });
+  const [result, setResult] = useState<Result | null>(null);
   const [retry, setRetry] = useState(0);
+  const key = `${orderId}:${retry}`;
+  const current = result?.key === key ? result : null;
+  const detail = current && "detail" in current ? current.detail : null;
+  const error = current && "error" in current ? current.error : null;
   useEffect(() => {
     const controller = new AbortController();
-    setDetail(null); setError(null);
-    readOrderDetail(orderId, controller.signal).then(setDetail).catch((reason: unknown) => {
+    readOrderDetail(orderId, controller.signal).then((loadedDetail) => {
+      if (!controller.signal.aborted) setResult({ key, detail: loadedDetail });
+    }).catch((reason: unknown) => {
       if (controller.signal.aborted) return;
-      setError(reason instanceof OrdersRequestError
+      const requestError = reason instanceof OrdersRequestError
         ? { code: reason.code, message: reason.message }
-        : { code: "ORDER_UNAVAILABLE", message: "No pudimos cargar el detalle. Inténtalo nuevamente." });
+        : { code: "ORDER_UNAVAILABLE", message: "No pudimos cargar el detalle. Inténtalo nuevamente." };
+      setResult({ key, error: requestError });
     });
     return () => controller.abort();
-  }, [orderId, retry]);
+  }, [orderId, key]);
 
   return <main className="order-detail-page">
     <nav className="orders-breadcrumb" aria-label="Ruta de navegación">
