@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.6.0...v1.7.0) (2026-11-26)
+
+### Features
+
+* **h5:** gateway APIM con prefijo configurable y trazo W3C ([#140](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/140)) ([0612c2d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0612c2d40c206c1aefdf0be44c8f3357e9595b1f))
+
 ## [1.6.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.5.0...v1.6.0) (2026-11-26)
 
 ### Features
