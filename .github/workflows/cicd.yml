@@ -173,5 +173,5 @@ jobs:
             ghcr.io/taller-sw-web/g1-marketplace-frontend:latest
 
   # Vía única de despliegue (acordada para H5):
-  # - Vercel gestiona el autodespliegue nativo del frontend (sin hooks duplicados ni smoke
-  #   desacoplado que pueda aceptar un HTTP 200 de una versión anterior sin verificar SHA).
+  # - Vercel autodespliega de forma nativa tras pasar los checks de CI (sin hooks duplicados ni
+  #   smoke desacoplado que pueda aceptar un HTTP 200 de una versión anterior).
