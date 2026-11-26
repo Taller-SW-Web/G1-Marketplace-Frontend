@@ -73,6 +73,10 @@ export function Home() {
             <FeaturedRail products={state.data.featuredProducts} categories={state.data.categories} />}
         </>
       )}
+      <section className="home-ranking" aria-labelledby="home-ranking-title">
+        <h2 id="home-ranking-title">Más vendidos</h2>
+        <p>Pronto podrás consultar el ranking.</p>
+      </section>
       {state.source === "MOCK" && <MockNotice />}
     </div>
   );

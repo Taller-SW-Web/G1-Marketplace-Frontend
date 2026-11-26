@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ProductMediaDTO } from "../types/product-detail.types";
 
 interface Props {
@@ -15,9 +15,16 @@ interface Props {
 const FOCUSABLE =
   'button:not([disabled]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+/** Niveles de zoom del visor. El índice 0 equivale al tamaño natural. */
+const ZOOM_LEVELS = [1, 1.5, 2, 2.5] as const;
+
 /**
  * Visor ampliado de la galería (O-002): diálogo modal con foco devuelto al
  * elemento que lo abrió, cierre con Escape y controles finitos.
+ *
+ * V-007 / FE #146: el zoom es operable con teclado (`+`, `-` y `0`) además de
+ * los botones, y las flechas cambian de imagen. El zoom se reinicia al cambiar
+ * de imagen para no ampliar una foto distinta a la que se venía observando.
  */
 export function GalleryViewer({
   opened,
@@ -31,6 +38,19 @@ export function GalleryViewer({
   const closeRef = useRef<HTMLButtonElement>(null);
   // El fallo se registra por índice: cambiar de imagen no arrastra el anterior.
   const [failedAt, setFailedAt] = useState<number | null>(null);
+  // El nivel de zoom guardado sólo vale para su índice (sin efectos de reset).
+  const [zoomState, setZoomState] = useState({ index, level: 0 });
+  const level = zoomState.index === index ? zoomState.level : 0;
+  const zoom = ZOOM_LEVELS[level];
+
+  const setLevel = useCallback(
+    (next: number) =>
+      setZoomState({
+        index,
+        level: Math.min(Math.max(next, 0), ZOOM_LEVELS.length - 1),
+      }),
+    [index],
+  );
 
   // Al abrir: guardar el foco previo y enfocar Cerrar. Al cerrar: restaurarlo.
   useEffect(() => {
@@ -50,7 +70,42 @@ export function GalleryViewer({
         onClose();
         return;
       }
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab") {
+        // Atajos del visor: no se disparan mientras se escribe en un campo.
+        const target = event.target as HTMLElement | null;
+        if (
+          typeof target?.closest === "function" &&
+          target.closest("input, textarea, select, [contenteditable='true']")
+        ) {
+          return;
+        }
+        if (event.key === "+" || event.key === "=") {
+          event.preventDefault();
+          setLevel(level + 1);
+          return;
+        }
+        if (event.key === "-" || event.key === "_") {
+          event.preventDefault();
+          setLevel(level - 1);
+          return;
+        }
+        if (event.key === "0") {
+          event.preventDefault();
+          setLevel(0);
+          return;
+        }
+        if (event.key === "ArrowLeft" && index > 0) {
+          event.preventDefault();
+          onIndexChange(index - 1);
+          return;
+        }
+        if (event.key === "ArrowRight" && index < media.length - 1) {
+          event.preventDefault();
+          onIndexChange(index + 1);
+          return;
+        }
+        return;
+      }
       const dialog = dialogRef.current;
       const focusable = dialog
         ? Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
@@ -74,7 +129,7 @@ export function GalleryViewer({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [opened, onClose]);
+  }, [opened, onClose, onIndexChange, index, level, media.length, setLevel]);
 
   if (!opened) return null;
 
@@ -113,7 +168,11 @@ export function GalleryViewer({
           </button>
         </div>
 
-        <div className="viewer-media">
+        <div
+          className="viewer-media"
+          data-zoom={zoom}
+          style={{ overflow: zoom > 1 ? "auto" : undefined }}
+        >
           {imageFailed ? (
             <div
               className="gallery-fallback"
@@ -128,12 +187,13 @@ export function GalleryViewer({
               alt={current.alt}
               width="960"
               height="640"
+              style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
               onError={() => setFailedAt(index)}
             />
           )}
         </div>
 
-        <div className="viewer-controls">
+        <div className="viewer-controls" role="group" aria-label="Controles del visor">
           <button
             type="button"
             aria-label="Imagen anterior"
@@ -150,7 +210,30 @@ export function GalleryViewer({
           >
             Siguiente
           </button>
+          <button
+            type="button"
+            aria-label="Alejar imagen"
+            disabled={level <= 0}
+            onClick={() => setLevel(level - 1)}
+          >
+            −
+          </button>
+          <span className="viewer-zoom" role="status" aria-live="polite">
+            {Math.round(zoom * 100)} % de zoom
+          </span>
+          <button
+            type="button"
+            aria-label="Acercar imagen"
+            disabled={level >= ZOOM_LEVELS.length - 1}
+            onClick={() => setLevel(level + 1)}
+          >
+            +
+          </button>
         </div>
+        <p className="viewer-hint">
+          Usa +, − y 0 para el zoom, las flechas para cambiar de imagen y Escape
+          para cerrar.
+        </p>
       </div>
     </div>
   );

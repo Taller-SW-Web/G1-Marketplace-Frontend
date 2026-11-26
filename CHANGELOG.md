@@ -1,3 +1,21 @@
+## [1.8.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.7.0...v1.8.0) (2026-11-26)
+
+### Features
+
+* **orders:** forward session and show shipment tracking ([f3e26a5](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f3e26a5368e31a1c9a74dcab45136e0f87cb20a4))
+
+## [1.7.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.6.0...v1.7.0) (2026-11-26)
+
+### Features
+
+* **h5:** gateway APIM con prefijo configurable y trazo W3C ([#140](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/140)) ([0612c2d](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/0612c2d40c206c1aefdf0be44c8f3357e9595b1f))
+
+## [1.6.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.5.0...v1.6.0) (2026-11-26)
+
+### Features
+
+* **h5:** V-007 galeria con zoom, panel de compra fijo y tokens de contraste ([#146](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/146)) ([6d01056](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/6d0105615e1317483dd556f3482f27d2c48557fb))
+
 ## [1.5.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.4.1...v1.5.0) (2026-11-24)
 
 ### Features
