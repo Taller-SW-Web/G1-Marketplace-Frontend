@@ -5,6 +5,12 @@ export type OrderSummary = {
   createdAt: string;
 };
 
+export type OrderTracking = {
+  state: string;
+  estimatedDelivery?: string;
+  milestones: Array<{ state: string; at: string }>;
+};
+
 export type OrdersPageData = {
   number: number;
   size: number;

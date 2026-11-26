@@ -1,4 +1,4 @@
-import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
+import { marketplaceApiEndpoint } from "@/shared/server/marketplace-url";
 
 /**
  * Proxy server-only al BFF Marketplace (`/api/v1/catalog/...`).
@@ -9,6 +9,11 @@ import { marketplaceApiUrl } from "@/shared/server/marketplace-url";
  *
  * - `X-Request-Id`: se conserva el del consumidor si es seguro; si falta o
  *   es inseguro, se genera uno. Se envía al BFF y se devuelve siempre.
+ * - `traceparent` (W3C): se propaga el contexto entrante válido o se genera
+ *   uno nuevo. Permite unir la petición de la web con la entrada en APIM y la
+ *   salida al BFF en el mismo trazo (FE #140).
+ * - El prefijo publicado (`MARKETPLACE_API_BASE_PATH`) se configura aparte
+ *   del origen: APIM puede publicar `/v1` sin aceptar rutas arbitrarias.
  * - Errores propios del proxy en el mismo sobre `application/problem+json`
  *   (RFC 9457) que devuelve el BFF: `{ type, title, status, code, instance,
  *   requestId }`.
@@ -43,6 +48,9 @@ const isAllowedPath = (path: string[]): boolean => {
 /** Correlación (API-F011 §3): id opaco de 1–64 caracteres seguros. */
 const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/u;
 
+/** `traceparent` W3C válido (versión 00, ids hexadecimales, flags 00/01). */
+const TRACEPARENT = /^00-[0-9a-f]{32}-[0-9a-f]{16}-0[01]$/u;
+
 /** Base de identificadores `type` (ejemplo canónico del contrato §4). */
 const PROBLEM_TYPE_BASE = "https://marketplace.example.com/problems";
 
@@ -52,6 +60,7 @@ interface ProblemInput {
   title: string;
   instance: string;
   requestId: string;
+  traceparent?: string;
 }
 
 /** Error del proxy en el sobre Problem Details uniforme (RFC 9457). */
@@ -70,6 +79,7 @@ function problemResponse(input: ProblemInput): Response {
       "Content-Type": "application/problem+json",
       "Cache-Control": "no-store",
       "X-Request-Id": input.requestId,
+      ...(input.traceparent ? { traceparent: input.traceparent } : {}),
     },
   });
 }
@@ -78,6 +88,19 @@ function problemResponse(input: ProblemInput): Response {
 function resolveRequestId(request: Request): string {
   const incoming = request.headers.get("x-request-id") ?? "";
   return SAFE_REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
+}
+
+/**
+ * Contexto de trazo W3C. Si el navegador o APIM ya envían uno válido se
+ * reutiliza; si no, se genera aquí para que APIM y el BFF registren el mismo
+ * `traceparent`. El flag se conserva en `01` para que el tramo se muestree.
+ */
+function resolveTraceparent(request: Request): string {
+  const incoming = request.headers.get("traceparent") ?? "";
+  if (TRACEPARENT.test(incoming)) return incoming;
+  const traceId = crypto.randomUUID().replace(/-/gu, "");
+  const spanId = crypto.randomUUID().replace(/-/gu, "").slice(0, 16);
+  return `00-${traceId}-${spanId}-01`;
 }
 
 // Server-only runtime budget. Keep the normal 8s limit unless explicitly set.
@@ -96,6 +119,7 @@ export async function catalogProxyGet(
   path: string[],
 ): Promise<Response> {
   const requestId = resolveRequestId(request);
+  const traceparent = resolveTraceparent(request);
   const instance = new URL(request.url).pathname;
 
   if (!isAllowedPath(path))
@@ -105,18 +129,22 @@ export async function catalogProxyGet(
       title: "Ruta del catálogo no disponible.",
       instance,
       requestId,
+      traceparent,
     });
 
   let timeoutSignal: AbortSignal | undefined;
   try {
-    const base = marketplaceApiUrl();
-    const url = new URL(`/api/v1/catalog/${path.join("/")}`, base);
+    const url = marketplaceApiEndpoint(`/catalog/${path.join("/")}`);
     url.search = new URL(request.url).search;
     timeoutSignal = AbortSignal.timeout(catalogBffTimeoutMs());
     const response = await fetch(url, {
       cache: "no-store",
       redirect: "error",
-      headers: { Accept: "application/json", "X-Request-Id": requestId },
+      headers: {
+        Accept: "application/json",
+        "X-Request-Id": requestId,
+        traceparent,
+      },
       signal: AbortSignal.any([request.signal, timeoutSignal]),
     });
     const body = await response.text();
@@ -133,6 +161,8 @@ export async function catalogProxyGet(
         // El BFF NestJS devuelve el mismo id correlacionado; si aún no lo
         // hace (versión previa), se conserva el id generado por el proxy.
         "X-Request-Id": response.headers.get("x-request-id") || requestId,
+        traceparent:
+          response.headers.get("traceparent") || traceparent,
       },
     });
   } catch (error: unknown) {
@@ -144,6 +174,7 @@ export async function catalogProxyGet(
       title: timedOut ? "El catálogo tardó demasiado en responder." : "No pudimos cargar el catálogo.",
       instance,
       requestId,
+      traceparent,
     });
   }
 }
