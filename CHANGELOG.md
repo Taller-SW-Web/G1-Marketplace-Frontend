@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.7.0...v1.8.0) (2026-11-26)
+
+### Features
+
+* **orders:** forward session and show shipment tracking ([f3e26a5](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/commit/f3e26a5368e31a1c9a74dcab45136e0f87cb20a4))
+
 ## [1.7.0](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/compare/v1.6.0...v1.7.0) (2026-11-26)
 
 ### Features
