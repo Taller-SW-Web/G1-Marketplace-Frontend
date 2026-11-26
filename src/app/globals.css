@@ -3017,6 +3017,23 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
   .related-grid > li { scroll-snap-align: start; }
 }
 
+/* O-007: Cart merge adjustments */
+.cart-merge-dialog {
+  width: min(448px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 24px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-cloud);
+  color: var(--text-primary);
+}
+
+.cart-merge-dialog::backdrop {
+  background: rgb(27 24 18 / 55%);
+}
+
 /* O-006: Undo Removal Toast */
 .undo-removal-toast {
   position: fixed;
