@@ -1636,6 +1636,33 @@ body:has(.auth-page) .site-footer {
   margin-bottom: 16px;
 }
 
+/* V-007 / FE #146: panel de compra fijo en escritorio. En pantallas menores
+   el layout ya es de una columna y el panel fluye adaptado al ancho. */
+@media (min-width: 1101px) {
+  .detail-summary {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+}
+
+@media (max-width: 767px) {
+  .detail-cart-action-wrapper {
+    width: 100%;
+    max-width: none;
+  }
+
+  .detail-cart-action-wrapper .add-to-cart-button-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-cart-action-wrapper button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
 .detail-info h2 {
   font-size: 20px;
   line-height: 26px;
@@ -1906,8 +1933,26 @@ body:has(.viewer-backdrop) {
 
 .viewer-controls {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.viewer-zoom {
+  min-width: 12ch;
+  text-align: center;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.viewer-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .viewer-controls button:disabled {
@@ -1931,6 +1976,13 @@ body:has(.viewer-backdrop) {
   height: auto;
   max-height: 60vh;
   object-fit: contain;
+  transition: transform 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-media img {
+    transition: none;
+  }
 }
 
 /* --- Estados de la ficha --- */
@@ -2960,8 +3012,8 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
 .price-region { display: flex; flex-direction: column; gap: var(--spacing-xs); }
 .price-current { margin: 0; font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
 .price-offer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); margin: 0; }
-.price-badge { display: inline-flex; align-items: center; padding: 2px var(--spacing-sm); border-radius: var(--radius-full); background: var(--action-soft); color: var(--action-hover); font-size: .875rem; font-weight: 600; }
-.price-discount { font-weight: 700; }
+.price-badge { display: inline-flex; align-items: center; padding: 2px var(--spacing-sm); border-radius: var(--radius-full); background: var(--action-soft); color: var(--action-strong); font-size: .875rem; font-weight: 600; }
+.price-discount { color: var(--action-strong); font-weight: 700; }
 .price-reference { color: var(--text-secondary); }
 .price-reference s { text-decoration: line-through; }
 .price-validity, .price-note, .price-hint { margin: 0; font-size: .875rem; color: var(--text-secondary); }
@@ -2989,13 +3041,13 @@ body:has(.checkout-logout-dialog[open]) { overflow: hidden; }
 .availability-status { display: flex; align-items: center; gap: var(--spacing-xs); margin: 0; font-weight: 600; }
 .availability-hint { margin: 0; font-size: .875rem; color: var(--text-secondary); }
 .availability-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: .875rem; font-weight: 700; color: var(--text-inverse); }
-.availability-icon.availability-available { background: #2b8a3e; }
+.availability-icon.availability-available { background: var(--success-strong); }
 .availability-icon.availability-low { background: var(--warning); }
 .availability-icon.availability-out { background: var(--error); }
 .availability-icon.availability-undetermined { background: var(--text-secondary); }
-.availability-available { color: #2b8a3e; }
-.availability-low { color: var(--warning); }
-.availability-out, .availability-error { color: var(--error); }
+.availability-available { color: var(--success-strong); }
+.availability-low { color: var(--warning-strong); }
+.availability-out, .availability-error { color: var(--error-strong); }
 .availability-undetermined { color: var(--text-secondary); }
 
 /* F-015 — productos relacionados */
