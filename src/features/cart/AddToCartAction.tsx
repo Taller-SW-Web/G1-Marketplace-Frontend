@@ -10,6 +10,7 @@ import type { AddToCartActionProps } from './types';
  * Cumple con DS-001 (área táctil >= 44px, contraste AA, aria-live).
  */
 export function AddToCartAction({
+  productId,
   sku,
   availability,
   priceReady,
@@ -20,13 +21,15 @@ export function AddToCartAction({
   const hintId = useId();
 
   // Validación de estados
-  const isUnselected = availability === 'UNSELECTED' || !sku;
+  const isUnselected = availability === 'UNSELECTED' || !productId;
   const isUnavailable = availability === 'UNAVAILABLE';
   const isActionDisabled = isUnselected || isUnavailable || !priceReady || busy;
 
   const handleClick = () => {
-    if (isActionDisabled || !sku) return;
-    onAdd({ sku, quantity: 1 });
+    if (isActionDisabled || !productId) return;
+    // El SKU de la variante seleccionada viaja con el producto: sin él, el
+    // carrito no puede distinguir combinaciones del mismo producto (F-013).
+    onAdd({ productId, ...(sku ? { sku } : {}), quantity: 1 });
   };
 
   // Texto de ayuda descriptivo para accesibilidad

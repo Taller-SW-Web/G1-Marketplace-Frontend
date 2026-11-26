@@ -2,20 +2,22 @@
 import { useEffect, useState } from "react";
 import { CatalogRequestError, readCatalog } from "./api";
 import type { QueryState } from "./types";
+import { readHomeShared } from "./readHomeShared";
 
 export function useCatalog<T>(
-  path: string,
+  path: string | null,
   validate: (value: unknown) => value is T,
 ) {
   const [result, setResult] = useState<{ key: string; state: QueryState<T> }>({
-    key: path,
+    key: path ?? "",
     state: { status: "loading" },
   });
   const [attempt, setAttempt] = useState(0);
   const key = `${path}:${attempt}`;
   useEffect(() => {
+    if (path === null) return;
     const controller = new AbortController();
-    readCatalog(path, validate, controller.signal)
+    (path === "home" ? readHomeShared(validate, controller.signal) : readCatalog(path, validate, controller.signal))
       .then((result) => {
         if (!controller.signal.aborted)
           setResult({ key, state: { status: "ready", ...result } });
@@ -41,7 +43,7 @@ export function useCatalog<T>(
   }, [path, key, validate]);
   return {
     state:
-      result.key === key
+      path !== null && result.key === key
         ? result.state
         : ({ status: "loading" } as QueryState<T>),
     retry: () => setAttempt((value) => value + 1),

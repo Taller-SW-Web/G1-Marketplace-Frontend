@@ -8,6 +8,7 @@ import string
 import shutil
 import subprocess
 import tempfile
+from next_artifact_policy import artifact_policy
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--base", required=True, help="Existing baseline commit; scan base..HEAD history.")
@@ -36,12 +37,14 @@ def record(name, passed, **metadata):
     print(f"{name}: {'PASS' if passed else 'FAIL'}")
 
 
-def secret_scan(target, report, history=False):
+def secret_scan(target, report, history=False, config=None):
     command = [gitleaks, "git" if history else "dir", str(target), "--no-banner",
                "--no-color", "--redact=100", "--ignore-gitleaks-allow", "--report-format=json",
                f"--report-path={report}", "--timeout=180"]
     if history:
         command.append(f"--log-opts={args.base}..HEAD")
+    if config:
+        command.extend(["--config", str(config)])
     result = run(command)
     findings = json.loads(report.read_text(encoding="utf-8-sig")) if report.exists() else None
     # Match, Secret, email and snippets are intentionally never exported.
@@ -96,7 +99,12 @@ try:
             if not target.is_dir() or (name == "secrets-artifact" and not any(target.rglob("*"))):
                 record(name, False, reason="Required target missing or empty")
                 continue
-            code, findings, safe = secret_scan(target, temp / (name + ".json"), history)
+            artifact_config = None
+            if name == "secrets-artifact":
+                artifact_config, classification = artifact_policy(root, target, temp / "next-build-keys.toml")
+                if classification:
+                    record("next-private-build-keys", not classification["publicExposureFindings"], **classification)
+            code, findings, safe = secret_scan(target, temp / (name + ".json"), history, artifact_config)
             record(name, code == 0 and findings == [], findings=safe)
         result = run([semgrep, *scan_flags, "src", "scripts"])
         data = json.loads(result.stdout) if result.stdout.strip().startswith("{") else {}

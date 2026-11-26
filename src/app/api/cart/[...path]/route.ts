@@ -9,15 +9,29 @@ async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const joinedPath = path.join("/");
 
-  // Endpoints válidos: "current", "current/items", o "items"
-  if (!["current", "current/items", "items"].includes(joinedPath)) {
+  // Endpoints válidos: "current", "current/items", "items", "current/merge-anonymous", "items/:sku", "items/:sku/move-to-wishlist"
+  const isDirect = ["current", "current/items", "items", "current/merge-anonymous", "merge-anonymous"].includes(joinedPath);
+  const isItemBySku = path.length === 3 && path[0] === "current" && path[1] === "items" && path[2].length > 0;
+  const isItemBySkuShort = path.length === 2 && path[0] === "items" && path[1].length > 0;
+  const isMoveToWishlist =
+    (path.length === 4 && path[0] === "current" && path[1] === "items" && path[3] === "move-to-wishlist") ||
+    (path.length === 3 && path[0] === "items" && path[2] === "move-to-wishlist");
+
+  if (!isDirect && !isItemBySku && !isItemBySkuShort && !isMoveToWishlist) {
     return Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
   }
 
   try {
     const api = marketplaceApiUrl();
-    const backendEndpoint =
-      joinedPath === "items" ? "current/items" : joinedPath;
+    const backendEndpoint = isMoveToWishlist
+      ? (path[0] === "items"
+          ? `current/items/${encodeURIComponent(path[1])}/move-to-wishlist`
+          : `current/items/${encodeURIComponent(path[2])}/move-to-wishlist`)
+      : isItemBySkuShort
+        ? `current/items/${encodeURIComponent(path[1])}`
+        : joinedPath === "items"
+          ? "current/items"
+          : joinedPath;
     const url = new URL(`/api/v1/carts/${backendEndpoint}`, api);
 
     const headers = new Headers({
@@ -31,8 +45,12 @@ async function forward(request: NextRequest, context: RouteContext) {
     const cookie = request.headers.get("cookie");
     if (cookie) headers.set("Cookie", cookie);
 
+    const ifMatch = request.headers.get("if-match");
+    if (ifMatch) headers.set("If-Match", ifMatch);
+
     let body: string | undefined;
-    if (request.method === "POST") {
+    const isBodylessPost = joinedPath.includes("merge-anonymous") || joinedPath.includes("move-to-wishlist");
+    if ((request.method === "POST" || request.method === "PATCH") && !isBodylessPost) {
       const contentType = request.headers.get("content-type") || "";
       if (!contentType.toLowerCase().includes("application/json")) {
         return Response.json(
@@ -68,13 +86,15 @@ async function forward(request: NextRequest, context: RouteContext) {
     });
 
     const responseBody = await upstream.text();
-    try {
-      JSON.parse(responseBody);
-    } catch {
-      return Response.json(
-        { error: { code: "INVALID_BACKEND_RESPONSE" } },
-        { status: 502, headers: { "Cache-Control": "no-store" } },
-      );
+    if (upstream.status !== 204 && responseBody.trim().length > 0) {
+      try {
+        JSON.parse(responseBody);
+      } catch {
+        return Response.json(
+          { error: { code: "INVALID_BACKEND_RESPONSE" } },
+          { status: 502, headers: { "Cache-Control": "no-store" } },
+        );
+      }
     }
 
     const responseHeaders = new Headers({
@@ -85,6 +105,10 @@ async function forward(request: NextRequest, context: RouteContext) {
     const setCookie = upstream.headers.get("set-cookie");
     if (setCookie) {
       responseHeaders.set("Set-Cookie", setCookie);
+    }
+    const xCartVersion = upstream.headers.get("x-cart-version");
+    if (xCartVersion) {
+      responseHeaders.set("X-Cart-Version", xCartVersion);
     }
 
     return new Response(responseBody, {
@@ -101,3 +125,5 @@ async function forward(request: NextRequest, context: RouteContext) {
 
 export const GET = forward;
 export const POST = forward;
+export const PATCH = forward;
+export const DELETE = forward;

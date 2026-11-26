@@ -12,6 +12,12 @@ import { Footer } from "@/shared/ui/Footer";
 import { WishlistProvider } from "@/features/wishlist/WishlistProvider";
 import { sandboxEnabled } from "@/features/wishlist/server";
 import { SiteChrome } from "@/features/wishlist/FavoritesShell";
+import { AuthProvider } from "@/features/auth/AuthProvider";
+import { authWebEnabled } from "@/features/auth/server";
+
+// Header/login feature configuration must reflect the deployed runtime rather
+// than a build-time snapshot (e.g. a container built before G7 is enabled).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
@@ -27,9 +33,11 @@ export default function RootLayout({
   return (
     <html lang="es-PE" data-scroll-behavior="smooth">
       <body>
-        <WishlistProvider enabled={sandboxEnabled()}>
+        <AuthProvider enabled={authWebEnabled()}>
+        <WishlistProvider enabled={sandboxEnabled() || authWebEnabled()} realAuth={authWebEnabled()}>
           <SiteChrome header={<Header />} footer={<Footer />}>{children}</SiteChrome>
         </WishlistProvider>
+        </AuthProvider>
       </body>
     </html>
   );

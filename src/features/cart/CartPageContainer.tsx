@@ -38,7 +38,12 @@ export function CartPageContainer({
       <main className="cart-page-container container" aria-busy="true">
         <h1 className="cart-page-title">Carrito de compras</h1>
         <div className="cart-loading-state" role="status" aria-label="Cargando tu carrito">
-          <p>Cargando productos de tu carrito…</p>
+          <p className="cart-loading-banner">Cargando productos de tu carrito…</p>
+          <div className="cart-skeleton-column" aria-hidden="true">
+            <div className="cart-skeleton-card" />
+            <div className="cart-skeleton-card" />
+          </div>
+          <div className="cart-skeleton-summary" aria-hidden="true" />
         </div>
       </main>
     );
@@ -67,30 +72,34 @@ export function CartPageContainer({
     return (
       <main className="cart-page-container container">
         <h1 className="cart-page-title">Carrito de compras</h1>
-        <EmptyState
-          title="Tu carrito está vacío"
-          description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
-          icon="🛒"
-          actions={
-            <Link href="/catalogo">
-              <Button type="button" variant="primary">
-                Explorar catálogo
-              </Button>
-            </Link>
-          }
-        />
+        <div className="cart-empty-wrapper">
+          <EmptyState
+            title="Tu carrito está vacío"
+            description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
+            icon="🛒"
+            actions={
+              <Link href="/catalogo">
+                <Button type="button" variant="primary">
+                  Explorar catálogo
+                </Button>
+              </Link>
+            }
+          />
+        </div>
       </main>
     );
   }
 
-  // Calcular subtotal si todos los ítems tienen precio disponible
-  const hasIncompletePrices = items.some((it) => !it.unitPrice);
+  // Calcular subtotal si todos los ítems tienen precio disponible y sin advertencias pendientes
+  const hasIncompletePrices = items.some((it) => !it.unitPrice || Boolean(it.attention));
   const subtotal = hasIncompletePrices
     ? null
-    : {
-        amount: items.reduce((acc, it) => acc + (it.unitPrice?.amount ?? 0) * it.quantity, 0),
-        currency: items[0]?.unitPrice?.currency || 'PEN',
-      };
+    : (cart?.subtotal !== undefined && cart.subtotal !== null
+        ? cart.subtotal
+        : {
+            amount: items.reduce((acc, it) => acc + (it.unitPrice?.amount ?? 0) * it.quantity, 0),
+            currency: items[0]?.unitPrice?.currency || 'PEN',
+          });
 
   return (
     <main className="cart-page-container container">

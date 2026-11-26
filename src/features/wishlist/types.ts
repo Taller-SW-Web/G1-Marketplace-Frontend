@@ -1,4 +1,5 @@
-export type Identity = "A" | "B" | null;
+// Real identity is the verified G7 UUID. A/B exist only in the local sandbox.
+export type Identity = string | null;
 export type Session = { identity: Identity; scope: string; enabled: boolean };
 export type Confirmed = "unknown" | "saved" | "absent";
 export type Operation = "save" | "remove";
@@ -24,9 +25,15 @@ export function isProductId(value: unknown): value is string {
 }
 
 export const publicErrors: Record<string, string> = {
+  AUTH_UNAVAILABLE: "No pudimos comprobar tu sesión.",
+  CART_CONFLICT: "El carrito está ocupado o el favorito ya no está disponible.",
+  STOCK_LIMIT_REACHED: "No hay existencias suficientes.",
+  COMMERCE_DATA_UNAVAILABLE: "Las condiciones de compra no están disponibles.",
+  VARIANT_SELECTION_REQUIRED: "Selecciona una variante en la ficha del producto.",
+  CART_RESULT_UNCERTAIN: "Revisa tu carrito antes de volver a agregar este producto.",
   INVALID_REQUEST: "La solicitud no es válida.",
   INVALID_PRODUCT_ID: "El identificador del producto no es válido.",
-  UNAUTHORIZED: "Tu sesión de prueba terminó. Vuelve a seleccionarla; si venció el token, genera uno nuevo.",
+  UNAUTHORIZED: "Tu sesión terminó. Vuelve a iniciar sesión para continuar.",
   PRODUCT_NOT_AVAILABLE: "Este producto no está disponible para guardar.",
   CATALOG_UNAVAILABLE: "El servicio de productos no está disponible temporalmente.",
   INTERNAL_ERROR: "No pudimos completar la operación. Inténtalo de nuevo.",

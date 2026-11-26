@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { GET, POST } from "../../src/app/api/cart/[...path]/route";
+import { GET, POST, PATCH } from "../../src/app/api/cart/[...path]/route";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
@@ -61,5 +61,149 @@ describe("cart proxy with the shared Backend", () => {
     });
     expect(response.status).toBe(404);
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("forwards PATCH requests to current/items/:sku preserving If-Match header and payload (F-017)", async () => {
+    vi.stubEnv("MARKETPLACE_API_URL", "https://marketplace.example");
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ data: { cartId: "c1", version: 2, items: [] } }, { status: 200 })
+    );
+    vi.stubGlobal("fetch", upstream);
+    const body = JSON.stringify({ quantity: 5 });
+    const response = await PATCH(
+      new NextRequest("https://web.example/api/cart/current/items/INKA-PRO-M", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "If-Match": "1" },
+        body,
+      }),
+      { params: Promise.resolve({ path: ["current", "items", "INKA-PRO-M"] }) }
+    );
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe("https://marketplace.example/api/v1/carts/current/items/INKA-PRO-M");
+    expect(upstream.mock.calls[0][1].headers.get("If-Match")).toBe("1");
+    expect(upstream.mock.calls[0][1].body).toBe(body);
+  });
+
+  it('forwards GET /api/cart/current and returns enriched snapshot with subtotal and X-Cart-Version (F-019)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const mockSnapshot = {
+      cartId: 'cart-f019-1',
+      version: 3,
+      items: [
+        {
+          sku: 'INKA-PRO-M',
+          quantity: 2,
+          unitPrice: { amount: 50.0, currency: 'PEN', version: 1 },
+          availability: 'AVAILABLE',
+          attention: null,
+        },
+      ],
+      subtotal: { amount: 100.0, currency: 'PEN' },
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: mockSnapshot }, {
+        status: 200,
+        headers: { 'X-Cart-Version': '3' },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(new NextRequest('https://web.example/api/cart/current', {
+      headers: { Cookie: 'cart_session=session-xyz' },
+    }), { params: Promise.resolve({ path: ['current'] }) });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('X-Cart-Version')).toBe('3');
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const json = await response.json();
+    expect(json.data.subtotal).toEqual({ amount: 100.0, currency: 'PEN' });
+    expect(json.data.items[0].sku).toBe('INKA-PRO-M');
+  });
+
+  it('maps upstream network failure or timeout to 503 CART_BACKEND_UNAVAILABLE (F-019)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const upstream = vi.fn().mockRejectedValue(new Error('Connection timeout / network failure'));
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await GET(new NextRequest('https://web.example/api/cart/current'), {
+      params: Promise.resolve({ path: ['current'] }),
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const json = await response.json();
+    expect(json.error.code).toBe('CART_BACKEND_UNAVAILABLE');
+  });
+
+  it('forwards POST /api/cart/current/merge-anonymous preserving Authorization and Cookie (F-020)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const mergeResponse = {
+      cartId: 'cart-auth-99',
+      version: 4,
+      merged: true,
+      adjustments: [],
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: mergeResponse }, {
+        status: 200,
+        headers: {
+          'Set-Cookie': 'cart_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
+          'X-Cart-Version': '4',
+        },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await POST(
+      new NextRequest('https://web.example/api/cart/current/merge-anonymous', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-jwt',
+          Cookie: 'cart_session=anon-to-merge',
+        },
+      }),
+      { params: Promise.resolve({ path: ['current', 'merge-anonymous'] }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe('https://marketplace.example/api/v1/carts/current/merge-anonymous');
+    expect(upstream.mock.calls[0][1].headers.get('Authorization')).toBe('Bearer test-jwt');
+    expect(upstream.mock.calls[0][1].headers.get('Cookie')).toBe('cart_session=anon-to-merge');
+    expect(response.headers.get('Set-Cookie')).toContain('cart_session=');
+  });
+
+  it('forwards bodyless POST /api/cart/current/items/:sku/move-to-wishlist preserving Authorization (F-021)', async () => {
+    vi.stubEnv('MARKETPLACE_API_URL', 'https://marketplace.example');
+    const moveResponse = {
+      cartId: 'cart-123',
+      version: 5,
+      productId: 'PRD-100',
+      wishlistCreated: true,
+    };
+    const upstream = vi.fn().mockResolvedValue(
+      Response.json({ status: 'OK', data: moveResponse }, {
+        status: 200,
+        headers: { 'X-Cart-Version': '5' },
+      })
+    );
+    vi.stubGlobal('fetch', upstream);
+
+    const response = await POST(
+      new NextRequest('https://web.example/api/cart/current/items/INKA-PRO-M/move-to-wishlist', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-jwt-token',
+        },
+      }),
+      { params: Promise.resolve({ path: ['current', 'items', 'INKA-PRO-M', 'move-to-wishlist'] }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(String(upstream.mock.calls[0][0])).toBe('https://marketplace.example/api/v1/carts/current/items/INKA-PRO-M/move-to-wishlist');
+    expect(upstream.mock.calls[0][1].headers.get('Authorization')).toBe('Bearer test-jwt-token');
+    expect(response.headers.get('X-Cart-Version')).toBe('5');
   });
 });

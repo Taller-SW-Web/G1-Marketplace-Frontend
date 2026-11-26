@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { OrdersHistory } from "@/features/orders/OrdersHistory";
+import { OrdersHistoryContainer } from "@/features/orders/OrdersHistory";
+import type { OrderFilters } from "@/features/orders/filters";
 
 export const metadata: Metadata = {
   title: "Mis pedidos",
@@ -9,11 +10,16 @@ export const metadata: Metadata = {
 export default async function MyOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; state?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
   const parsedPage = params.page && /^\d+$/.test(params.page) ? Number(params.page) : 0;
   const initialPage = Number.isSafeInteger(parsedPage) ? parsedPage : 0;
+  const initialFilters: OrderFilters = {
+    ...(params.state ? { state: params.state as NonNullable<OrderFilters["state"]> } : {}),
+    ...(params.from ? { from: params.from } : {}),
+    ...(params.to ? { to: params.to } : {}),
+  };
 
-  return <OrdersHistory initialPage={initialPage} />;
+  return <OrdersHistoryContainer initialPage={initialPage} initialFilters={initialFilters} />;
 }

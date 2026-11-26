@@ -1,6 +1,6 @@
 {
   "name": "g1-marketplace-frontend",
-  "version": "0.1.0",
+  "version": "1.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
@@ -9,22 +9,32 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:components && npm run test:server && npm run test:e2e",
     "test:e2e": "npm run build && playwright test",
-    "test:checkout:e2e": "npm run build && playwright test --config playwright.checkout.config.ts",
+    "test:checkout:e2e": "playwright test --config playwright.checkout.config.ts",
+    "test:e2e:direccion": "playwright test --config playwright.e2e-direccion.config.ts",
+    "test:cart-checkout:e2e": "playwright test --config playwright.cart-checkout.config.ts -g \"backend-mock quotes\"",
     "lint": "eslint .",
     "test:components": "vitest run",
     "test:server": "vitest run --config vitest.server.config.mts",
     "test:e2e:wishlist": "playwright test --config playwright.wishlist.config.ts",
     "test:e2e:wishlist:connected": "node scripts/h3-connected.mjs",
+    "test:e2e:h4:connected": "node scripts/h4-connected.mjs",
     "test:e2e:wishlist:production": "playwright test --config playwright.wishlist-production.config.ts",
     "demo:h3": "node scripts/h3-connected.mjs --demo",
     "test:e2e:favorites:ui": "playwright test --config playwright.favorites-ui.config.ts",
-    "demo:favoritos": "node scripts/favorites-demo.mjs"
+    "test:e2e:cuenta": "playwright test --config playwright.e2e-cuenta.config.ts",
+    "test:e2e:csp": "playwright test --config playwright.e2e-csp.config.ts",
+    "demo:favoritos": "node scripts/favorites-demo.mjs",
+    "demo:catalogo:h4": "node scripts/demo-catalog-h4.mjs",
+    "demo:catalogo:featured": "node scripts/demo-catalog-h4.mjs --featured",
+    "demo:catalogo:real": "node scripts/demo-catalog-real.mjs",
+    "test:demo:catalogo:real": "node --test scripts/demo-catalog-real.test.mjs",
+    "check:g6:network": "node scripts/check-g6-network.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
     "@fontsource/oswald": "5.3.0",
     "@fontsource/roboto-condensed": "5.2.8",
-    "next": "16.4.1",
+    "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
@@ -37,7 +47,7 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "10.12.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "happy-dom": "21.0.1",
+    "happy-dom": "21.0.4",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
     "vitest": "5.0.4"

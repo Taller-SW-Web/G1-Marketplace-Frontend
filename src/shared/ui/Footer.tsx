@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="site-footer">
@@ -6,7 +8,8 @@ export function Footer() {
         <div className="footer-links" aria-label="Información y ayuda">
           <button disabled title="Próximamente">Ayuda y contacto</button>
           <button disabled title="Próximamente">Envíos y devoluciones</button>
-          <button disabled title="Próximamente">Privacidad</button>
+          <Link href="/terminos">Términos</Link>
+          <Link href="/privacidad">Privacidad</Link>
         </div>
       </div>
       <p className="footer-copyright">© Inka Athletics · Deporte a tu ritmo.</p>

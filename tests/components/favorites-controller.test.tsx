@@ -15,6 +15,14 @@ function setup(overrides: Partial<FavoritesTransport> = {}) {
 }
 
 describe("favorites collection state machine", () => {
+  it("preserves the last confirmed list when a later catalog read fails", async () => {
+    const list = vi.fn().mockResolvedValueOnce(products).mockRejectedValueOnce(new WishlistError("CATALOG_UNAVAILABLE", 503));
+    const { controller } = setup({ list });
+    await controller.load(); await controller.load();
+    expect(controller.getSnapshot().items).toEqual(products);
+    expect(controller.getSnapshot().status).toBe("error");
+    expect(controller.getSnapshot().queryError).toBeTruthy();
+  });
   it.each(["__proto__", "constructor"])("supports contractual product ID %s without prototype collisions", async id => {
     const { controller, transport } = setup({ list: async () => [{ ...products[0], productId: id }] });
     await controller.load(); await controller.remove(id);
@@ -98,5 +106,40 @@ describe("favorites collection state machine", () => {
     const pending = deferred<void>(); const { controller, confirmed } = setup({ remove: () => pending.promise });
     await controller.load(); const removing = controller.remove("P-1"); controller.dispose(); pending.resolve(); await removing;
     expect(confirmed).not.toHaveBeenCalled();
+  });
+});
+
+describe("favorites cart integration state", () => {
+  it("deduplicates pending additions and retains the favorite", async () => {
+    const next = deferred<void>(); const addToCart = vi.fn(() => next.promise);
+    const { controller } = setup({ addToCart }); await controller.load();
+    const addition = controller.addToCart("P-1"); await controller.addToCart("P-1");
+    expect(addToCart).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().pending["P-1"]).toBe("adding");
+    next.resolve(); await addition;
+    expect(controller.getSnapshot().items).toEqual(products);
+    expect(controller.getSnapshot().notices[0].title).toBe("Producto agregado");
+  });
+  it("blocks additions after uncertainty even after list refresh or notice dismissal", async () => {
+    const addToCart = vi.fn().mockRejectedValue(new WishlistError("CART_RESULT_UNCERTAIN", 504));
+    const { controller } = setup({ addToCart }); await controller.load(); await controller.addToCart("P-1");
+    controller.dismiss("cart:P-1"); await controller.load(); await controller.addToCart("P-1");
+    expect(addToCart).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().pending["P-1"]).toBe("cart-uncertain");
+    expect(controller.getSnapshot().items).toContainEqual(products[0]);
+  });
+  it("does not offer cart for the default adapter or add unavailable products", async () => {
+    expect(setup().controller.canAddToCart).toBe(false);
+    const addToCart = vi.fn(); const { controller } = setup({ addToCart,
+      list: async () => [{ ...products[0], availability: "out_of_stock" }] });
+    await controller.load(); await controller.addToCart("P-1"); expect(addToCart).not.toHaveBeenCalled();
+  });
+  it("keeps variant selection in favorites feedback and expires unauthorized sessions", async () => {
+    const addToCart = vi.fn().mockRejectedValueOnce(new WishlistError("VARIANT_SELECTION_REQUIRED", 422, "/productos/producto-1"))
+      .mockRejectedValueOnce(new WishlistError("UNAUTHORIZED", 401));
+    const { controller, expired } = setup({ addToCart }); await controller.load(); await controller.addToCart("P-1");
+    expect(controller.getSnapshot().notices[0].redirectUrl).toBe("/productos/producto-1");
+    await controller.addToCart("P-1"); expect(expired).toHaveBeenCalledOnce();
+    expect(controller.getSnapshot().items).toEqual([]);
   });
 });

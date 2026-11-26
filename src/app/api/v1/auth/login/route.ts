@@ -1,3 +1,5 @@
+import { authWebEnabled, proxyAuth } from "@/features/auth/server";
+
 const UNAVAILABLE = {
   code: "MOCK_NO_DISPONIBLE",
   message: "La demostración de acceso no está disponible en este entorno.",
@@ -11,6 +13,7 @@ function json(body: unknown, status: number) {
 }
 
 export async function POST(request: Request) {
+  if (authWebEnabled()) return proxyAuth(request, "login");
   let input: unknown;
   try {
     if (!request.headers.get("content-type")?.startsWith("application/json")) {
