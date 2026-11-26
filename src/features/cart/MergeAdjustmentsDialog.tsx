@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef } from 'react';
+import { Button } from '@/shared/ui/Button';
 import type { MergeAdjustmentsDialogProps } from './types';
 
 /**
@@ -46,47 +47,35 @@ export function MergeAdjustmentsDialog({
         dismiss();
       }}
     >
-      <h2 id={titleId} className="text-lg font-bold text-gray-900">
-        Ajustes en tu carrito
-      </h2>
-      <p id={descriptionId} className="mt-2 text-sm text-gray-600">
+      <h2 id={titleId}>Ajustes en tu carrito</h2>
+      <p id={descriptionId}>
         Al combinar tus productos de invitado con tu cuenta, realizamos los siguientes ajustes por disponibilidad de stock:
       </p>
 
-      <ul className="mt-4 divide-y divide-gray-100 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
-        {adjustments.map((adj) => (
-          <li key={adj.sku} className="py-2 flex justify-between items-center text-sm">
+      <ul className="cart-merge-adjustments">
+        {adjustments.map((adjustment) => (
+          <li key={adjustment.sku}>
             <div>
-              <span className="font-semibold text-gray-800">{adj.sku}</span>
-              <span className="block text-xs text-gray-500">
-                Solicitaste {adj.requestedQuantity} · Ajustado a {adj.confirmedQuantity}
-              </span>
+              <strong>{adjustment.sku}</strong>
+              <span>Solicitaste {adjustment.requestedQuantity} · Ajustado a {adjustment.confirmedQuantity}</span>
             </div>
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-              Límite de stock
-            </span>
+            <span className="cart-merge-stock-label">Límite de stock</span>
           </li>
         ))}
       </ul>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="cart-merge-actions">
         {onViewCart && (
-          <button
-            type="button"
-            onClick={() => { dialog.current?.close(); onViewCart(); }}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-          >
+          <Button variant="primary" onClick={() => {
+            dialog.current?.close();
+            onViewCart();
+          }}>
             Ver carrito
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          ref={dismissButton}
-          onClick={dismiss}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-        >
+        <Button variant="secondary" ref={dismissButton} onClick={dismiss}>
           Entendido
-        </button>
+        </Button>
       </div>
     </dialog>
   );
