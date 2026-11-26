@@ -27,6 +27,7 @@ export function AccountMenu() {
   </Link>;
   return <div className="account-menu">
     <span>{session.user?.nombreCompleto}</span>
+    <Link href="/mis-pedidos">Mis pedidos</Link>
     <button ref={trigger} className="auth-text-link" type="button" disabled={closing} onClick={() => {
       if (window.location.pathname === "/checkout") setConfirming(true); else void logout();
     }}>{closing ? "Cerrando sesión…" : "Cerrar sesión"}</button>
