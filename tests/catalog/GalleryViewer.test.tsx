@@ -112,4 +112,122 @@ describe("GalleryViewer · O-002 (F-011)", () => {
     ).toBe(true);
     expect(screen.getByText(/imagen 2 de 2/i)).toBeTruthy();
   });
+
+  it("V-007: el zoom es operable con +, - y 0 y anuncia el nivel", () => {
+    render(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={0}
+        onClose={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("100 % de zoom")).toBeTruthy();
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Alejar imagen" })
+        .disabled,
+    ).toBe(true);
+
+    fireEvent.keyDown(document, { key: "+" });
+    expect(screen.getByText("150 % de zoom")).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: "+" });
+    fireEvent.keyDown(document, { key: "+" });
+    expect(screen.getByText("250 % de zoom")).toBeTruthy();
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Acercar imagen" })
+        .disabled,
+    ).toBe(true);
+
+    fireEvent.keyDown(document, { key: "-" });
+    expect(screen.getByText("200 % de zoom")).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: "0" });
+    expect(screen.getByText("100 % de zoom")).toBeTruthy();
+  });
+
+  it("V-007: los botones de zoom funcionan y se limitan a los niveles válidos", () => {
+    render(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={0}
+        onClose={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    );
+
+    const zoomIn = screen.getByRole("button", { name: "Acercar imagen" });
+    const zoomOut = screen.getByRole<HTMLButtonElement>("button", {
+      name: "Alejar imagen",
+    });
+
+    fireEvent.click(zoomIn);
+    expect(screen.getByText("150 % de zoom")).toBeTruthy();
+    fireEvent.click(zoomOut);
+    expect(screen.getByText("100 % de zoom")).toBeTruthy();
+    expect(zoomOut.disabled).toBe(true);
+  });
+
+  it("V-007: las flechas cambian de imagen sin disparar el zoom", () => {
+    const onIndexChange = vi.fn();
+    const { rerender } = render(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={0}
+        onClose={vi.fn()}
+        onIndexChange={onIndexChange}
+      />,
+    );
+
+    fireEvent.keyDown(document, { key: "ArrowLeft" });
+    expect(onIndexChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, { key: "ArrowRight" });
+    expect(onIndexChange).toHaveBeenLastCalledWith(1);
+
+    rerender(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={1}
+        onClose={vi.fn()}
+        onIndexChange={onIndexChange}
+      />,
+    );
+    fireEvent.keyDown(document, { key: "ArrowRight" });
+    expect(onIndexChange).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(document, { key: "ArrowLeft" });
+    expect(onIndexChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it("V-007: cambiar de imagen reinicia el zoom aplicado", () => {
+    const { rerender } = render(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={0}
+        onClose={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.keyDown(document, { key: "+" });
+    expect(screen.getByText("150 % de zoom")).toBeTruthy();
+
+    rerender(
+      <GalleryViewer
+        opened
+        media={MOCK_MEDIA}
+        index={1}
+        onClose={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("100 % de zoom")).toBeTruthy();
+  });
 });
