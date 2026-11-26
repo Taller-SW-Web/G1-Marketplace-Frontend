@@ -1,6 +1,5 @@
 import type {
   OrdersHistoryResponse,
-  OrderDetail,
   OrderTracking,
   OrdersSource,
   OrderSummary,
@@ -45,14 +44,6 @@ function isMilestone(value: unknown): value is { state: string; at: string } {
   return isRecord(value) && typeof value.state === "string" && value.state.length > 0
     && typeof value.at === "string" && !Number.isNaN(Date.parse(value.at));
 }
-function isHistoricalLine(value: unknown): value is OrderDetail["lines"][number] {
-  return isRecord(value) && typeof value.sku === "string" && value.sku.length > 0
-    && typeof value.description === "string" && Number.isSafeInteger(value.quantity) && Number(value.quantity) > 0
-    && isRecord(value.unitPrice) && typeof value.unitPrice.amount === "number"
-    && Number.isFinite(value.unitPrice.amount) && typeof value.unitPrice.currency === "string"
-    && /^[A-Z]{3}$/.test(value.unitPrice.currency);
-}
-
 export class OrdersRequestError extends Error {
   constructor(
     public code: string,
@@ -62,31 +53,31 @@ export class OrdersRequestError extends Error {
   }
 }
 
-export async function readOrderDetail(orderId: string, signal: AbortSignal): Promise<OrderDetail> {
+export async function readOrderDetail(orderId: string, signal: AbortSignal): Promise<OrderSummary> {
   const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, { signal, cache: "no-store" });
-  const payload: unknown = await response.json();
-  if (!response.ok) {
-    const error = isRecord(payload) && isRecord(payload.error) ? payload.error : payload;
-    const code = isRecord(error) && typeof error.code === "string" ? error.code : "ORDER_UNAVAILABLE";
-    throw new OrdersRequestError(code, code === "ORDER_NOT_AVAILABLE"
-      ? "No encontramos un pedido disponible para tu cuenta."
-      : response.status === 401 ? "Inicia sesión para consultar el detalle de tus pedidos."
-      : "No pudimos cargar el detalle. Inténtalo nuevamente.");
+  if (response.status === 403 || response.status === 404) {
+    throw new OrdersRequestError("ORDER_NOT_AVAILABLE", "No encontramos un pedido disponible para tu cuenta.");
   }
-  const data = isRecord(payload) && isRecord(payload.data) ? payload.data : null;
-  const lines = data?.lines;
-  const milestones = data?.milestones;
-  if (!data || !isOrder(data) || !Array.isArray(lines) || !lines.every(isHistoricalLine)
-    || !Array.isArray(milestones) || !milestones.every(isMilestone)) {
+  if (!response.ok) {
+    const message = response.status === 401 ? "Inicia sesión para consultar el detalle de tus pedidos."
+      : "No pudimos cargar el detalle. Inténtalo nuevamente.";
+    throw new OrdersRequestError(response.status === 401 ? "UNAUTHENTICATED" : "ORDER_UNAVAILABLE", message);
+  }
+  const payload: unknown = await response.json();
+  if (!isOrder(payload) || payload.orderId !== orderId) {
     throw new OrdersRequestError("INVALID_RESPONSE", "Recibimos un detalle que no pudimos interpretar.");
   }
-  return data as unknown as OrderDetail;
+  const { state, total, createdAt } = payload;
+  return { orderId, state, total, createdAt };
 }
 
 export async function readOrderTracking(orderId: string, signal: AbortSignal): Promise<OrderTracking | null> {
   const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/tracking`, { signal, cache: "no-store" });
-  const payload: unknown = await response.json();
   if (response.status === 202) return null;
+  if (response.status === 403 || response.status === 404) {
+    throw new OrdersRequestError("ORDER_NOT_AVAILABLE", "No encontramos un pedido disponible para tu cuenta.");
+  }
+  const payload: unknown = await response.json();
   if (!response.ok) {
     const error = isRecord(payload) && isRecord(payload.error) ? payload.error : payload;
     const code = isRecord(error) && typeof error.code === "string" ? error.code : "TRACKING_UNAVAILABLE";

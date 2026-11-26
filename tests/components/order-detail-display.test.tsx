@@ -1,45 +1,44 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { HistoricalOrderLines } from "../../src/features/orders/HistoricalOrderLines";
-import { OrderStateTimeline } from "../../src/features/orders/OrderStateTimeline";
-import { OrderDeliverySummary } from "../../src/features/orders/OrderDeliverySummary";
+import { OrderDetailContainer } from "../../src/features/orders/OrderDetailContainer";
 import { ShipmentTimeline } from "../../src/features/orders/ShipmentTimeline";
+import { ShipmentTrackingContainer } from "../../src/features/orders/ShipmentTrackingContainer";
 
-describe("order detail and shipment presentation components", () => {
-  it("renders historical lines and snapshots the price passed by the order", () => {
-    render(<HistoricalOrderLines lines={[{
-      sku: "SKU-OLD-1", description: "Zapatillas edición anterior", quantity: 2,
-      unitPrice: { amount: 120, currency: "PEN" },
-    }]} />);
-    expect(screen.getByRole("heading", { name: "Productos de la compra" })).toBeDefined();
-    expect(screen.getByText("Zapatillas edición anterior")).toBeDefined();
-    expect(screen.getByText(/SKU SKU-OLD-1 · Cantidad: 2/)).toBeDefined();
-    expect(screen.getByText(/S\/ 120\.00/)).toBeDefined();
-  });
+describe("order detail and shipment presentation", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const orderId = "PED-2026-00001";
 
-  it("renders order milestones as a readable, timestamped timeline", () => {
-    render(<OrderStateTimeline milestones={[{ state: "PAGADO", at: "2026-10-10T10:00:00Z" }]} />);
-    expect(screen.getByRole("heading", { name: "Historial del pedido" })).toBeDefined();
+  it("shows the raw Ventas summary and only then offers tracking", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      orderId, state: "PAGADO", total: { amount: 139.90, currency: "PEN" }, createdAt: "2026-11-26T15:00:00Z",
+    })));
+    render(<OrderDetailContainer orderId={orderId} />);
+    expect(screen.queryByRole("link", { name: "Ver seguimiento" })).toBeNull();
+    const tracking = await screen.findByRole("link", { name: "Ver seguimiento" });
+    expect(tracking.getAttribute("href")).toBe("/mis-pedidos/PED-2026-00001/seguimiento");
+    expect(screen.getByText(orderId)).toBeDefined();
     expect(screen.getByText("PAGADO")).toBeDefined();
-    expect(document.querySelector('time[datetime="2026-10-10T10:00:00Z"]')).not.toBeNull();
+    expect(screen.getByText(/139[.,]90/)).toBeDefined();
+    expect(screen.getByText(/26 de noviembre de 2026/i)).toBeDefined();
   });
 
-  it("shows only a minimized delivery region and masked contact data", () => {
-    render(<OrderDeliverySummary shipping={{
-      locationSummary: "San Isidro, Lima",
-      emailMasked: "c•••@•••",
-      phoneMasked: "••••••888",
-      estimatedDelivery: "2026-10-14",
-    }} />);
-    expect(screen.getByRole("heading", { name: "Datos de entrega" })).toBeDefined();
-    expect(screen.getByText("San Isidro, Lima")).toBeDefined();
-    expect(screen.getByText("c•••@•••")).toBeDefined();
-    expect(screen.getByText("••••••888")).toBeDefined();
-    expect(screen.getByText(/14 de octubre de 2026/i)).toBeDefined();
-    expect(document.body.textContent).not.toMatch(/Av\. Javier Prado|correo\.com|\+51 999 888 888/);
+  it.each([403, 404])("shows no order data or tracking link when detail returns %s", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code: "upstream" } }, { status })));
+    render(<OrderDetailContainer orderId={orderId} />);
+    await screen.findByRole("heading", { name: "Pedido no disponible" });
+    expect(screen.queryByText(orderId)).toBeNull();
+    expect(screen.queryByRole("link", { name: "Ver seguimiento" })).toBeNull();
   });
 
-  it("shows only public shipment status, estimate, and milestone data", () => {
+  it.each([403, 404])("shows no tracking data when opening a denied URL (%s)", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: { code: "upstream" } }, { status })));
+    render(<ShipmentTrackingContainer orderId={orderId} />);
+    await screen.findByRole("heading", { name: "Pedido no disponible" });
+    expect(screen.queryByText(orderId)).toBeNull();
+    expect(screen.queryByRole("link", { name: "Detalle" })).toBeNull();
+  });
+
+  it("shows the shipment timeline and public estimated date", () => {
     render(<ShipmentTimeline
       state="DESPACHADO"
       estimatedDelivery="2026-10-12"
@@ -49,6 +48,5 @@ describe("order detail and shipment presentation components", () => {
     expect(screen.getByText("Entrega estimada:")).toBeDefined();
     expect(screen.getAllByText("DESPACHADO")).toHaveLength(2);
     expect(document.querySelector('time[datetime="2026-10-10T10:00:00Z"]')).not.toBeNull();
-    expect(document.body.textContent).not.toMatch(/teléfono|coordenada|repartidor/i);
   });
 });

@@ -5,17 +5,6 @@ export type OrderSummary = {
   createdAt: string;
 };
 
-export type OrderDetail = OrderSummary & {
-  lines: Array<{ sku: string; description: string; quantity: number; unitPrice: { amount: number; currency: string } }>;
-  milestones: Array<{ state: string; at: string }>;
-  shipping?: {
-    estimatedDelivery?: string;
-    locationSummary?: string;
-    emailMasked?: string;
-    phoneMasked?: string;
-  };
-};
-
 export type OrderTracking = {
   state: string;
   estimatedDelivery?: string;

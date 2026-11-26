@@ -7,25 +7,9 @@ const orderSummary = {
   createdAt: "2026-10-10T15:00:00.000Z",
 };
 
-const orderDetail = {
-  ...orderSummary,
-  lines: [{
-    sku: "SKU-H4-001",
-    description: "Producto histórico de prueba",
-    quantity: 2,
-    unitPrice: { amount: 124.95, currency: "PEN" },
-  }],
-  milestones: [
-    { state: "PAGADO", at: "2026-10-10T15:05:00.000Z" },
-    { state: "DESPACHADO", at: "2026-10-11T12:00:00.000Z" },
-  ],
-  shipping: {
-    estimatedDelivery: "2026-10-14",
-    locationSummary: "San Isidro, Lima",
-    emailMasked: "c•••@•••",
-    phoneMasked: "••••••888",
-  },
-};
+const shipmentMilestones = [
+  { state: "DESPACHADO", at: "2026-10-11T12:00:00.000Z" },
+];
 
 test.describe("F-028–F-032 pedidos con fixtures de navegador", () => {
   test("consulta el historial, aplica filtros y abre detalle y seguimiento", async ({ page }) => {
@@ -46,13 +30,13 @@ test.describe("F-028–F-032 pedidos con fixtures de navegador", () => {
         return;
       }
       if (url.pathname === `/api/orders/${orderSummary.orderId}` && request.method() === "GET") {
-        await route.fulfill({ status: 200, json: { data: orderDetail } });
+        await route.fulfill({ status: 200, json: orderSummary });
         return;
       }
       if (url.pathname === `/api/orders/${orderSummary.orderId}/tracking` && request.method() === "GET") {
         await route.fulfill({
           status: 200,
-          json: { data: { state: "DESPACHADO", estimatedDelivery: "2026-10-14T17:00:00.000Z", milestones: orderDetail.milestones } },
+          json: { data: { state: "DESPACHADO", estimatedDelivery: "2026-10-14", milestones: shipmentMilestones } },
         });
         return;
       }
@@ -79,11 +63,10 @@ test.describe("F-028–F-032 pedidos con fixtures de navegador", () => {
     await page.getByRole("link", { name: `Ver detalle del pedido ${orderSummary.orderId}` }).click();
     await expect(page).toHaveURL(new RegExp(`/mis-pedidos/${orderSummary.orderId}$`));
     await expect(page.getByRole("heading", { name: "Detalle del pedido" })).toBeVisible();
-    await expect(page.getByText("Producto histórico de prueba")).toBeVisible();
-    await expect(page.getByText("Total histórico")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Datos de entrega" })).toBeVisible();
-    await expect(page.getByText("San Isidro, Lima")).toBeVisible();
-    await expect(page.getByText("c•••@•••")).toBeVisible();
+    await expect(page.getByText(orderSummary.orderId, { exact: true })).toBeVisible();
+    await expect(page.getByText("DESPACHADO", { exact: true })).toBeVisible();
+    await expect(page.getByText("Total", { exact: true })).toBeVisible();
+    await expect(page.getByText(/10 de octubre de 2026/i)).toBeVisible();
 
     await page.getByRole("link", { name: "Ver seguimiento" }).click();
     await expect(page.getByRole("heading", { name: "Seguimiento del pedido" })).toBeVisible();
@@ -110,6 +93,7 @@ test.describe("F-028–F-032 pedidos con fixtures de navegador", () => {
     await page.goto("/mis-pedidos/PED-OTHER-CUSTOMER");
     await expect(page.getByRole("heading", { name: "Pedido no disponible" })).toBeVisible();
     await expect(page.getByText("No encontramos un pedido disponible para tu cuenta.")).toBeVisible();
-    await expect(page.getByText("Producto histórico de prueba", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Ver seguimiento" })).toHaveCount(0);
+    await expect(page.getByText("PED-OTHER-CUSTOMER", { exact: true })).toHaveCount(0);
   });
 });
