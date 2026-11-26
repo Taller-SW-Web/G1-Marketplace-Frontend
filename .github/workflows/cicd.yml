@@ -173,27 +173,17 @@ jobs:
             ghcr.io/taller-sw-web/g1-marketplace-frontend:latest
 
   deploy:
-    name: 5. Deploy (Vercel) + Smoke Test (vía única con aprobación)
+    name: 5. Smoke Test Post-CI (autodespliegue nativo Vercel)
     needs: [build-and-security, release]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Entorno protegido con Required Reviewers en GitHub Settings -> Environments -> production
-    environment: production
     env:
-      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
       SITE_URL: ${{ vars.FRONTEND_URL || 'https://g1-marketplace-frontend.vercel.app' }}
     steps:
-      - name: Disparar despliegue en Vercel (si hay deploy hook; Vercel autodespliega tras el CI)
+      - name: Smoke test del sitio (/ y /carrito) tras autodespliegue de Vercel
         run: |
-          if [ -n "$VERCEL_DEPLOY_HOOK_URL" ]; then
-            curl --fail --silent --show-error -X POST "$VERCEL_DEPLOY_HOOK_URL"
-            echo "Despliegue solicitado vía hook. Versión: ${{ needs.release.outputs.version || 'sin cambios' }}"
-          else
-            echo "Sin deploy hook configurado: esperando autodespliegue de Vercel."
-          fi
-      - name: Smoke test del sitio (/ y /carrito)
-        run: |
+          echo "Vercel autodespliega tras el CI (sin deploy hooks duplicados). Versión: ${{ needs.release.outputs.version || 'sin cambios' }}"
           for i in $(seq 1 20); do
             code_home=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL%/}/" || true)
             code_cart=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL%/}/carrito" || true)

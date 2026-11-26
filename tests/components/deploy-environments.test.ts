@@ -18,8 +18,9 @@ function jobSection(name: string) {
 describe('CI/CD single deploy path', () => {
   const deploy = jobSection('deploy');
 
-  it('uses a single protected deploy job after build-and-security and release', () => {
-    expect(deploy).toContain('environment: production');
+  it('uses a single native post-CI smoke job without duplicate deploy hooks or environments', () => {
+    expect(deploy).not.toContain('environment: production');
+    expect(deploy).not.toContain('VERCEL_DEPLOY_HOOK_URL');
     expect(deploy).toContain('needs: [build-and-security, release]');
     expect(deploy).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/develop'");
     expect(deploy).toContain('Smoke test del sitio (/ y /carrito)');
