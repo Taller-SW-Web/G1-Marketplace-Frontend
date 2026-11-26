@@ -38,12 +38,7 @@ export function CartPageContainer({
       <main className="cart-page-container container" aria-busy="true">
         <h1 className="cart-page-title">Carrito de compras</h1>
         <div className="cart-loading-state" role="status" aria-label="Cargando tu carrito">
-          <p className="cart-loading-banner">Cargando productos de tu carrito…</p>
-          <div className="cart-skeleton-column" aria-hidden="true">
-            <div className="cart-skeleton-card" />
-            <div className="cart-skeleton-card" />
-          </div>
-          <div className="cart-skeleton-summary" aria-hidden="true" />
+          <p>Cargando productos de tu carrito…</p>
         </div>
       </main>
     );
@@ -72,20 +67,18 @@ export function CartPageContainer({
     return (
       <main className="cart-page-container container">
         <h1 className="cart-page-title">Carrito de compras</h1>
-        <div className="cart-empty-wrapper">
-          <EmptyState
-            title="Tu carrito está vacío"
-            description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
-            icon="🛒"
-            actions={
-              <Link href="/catalogo">
-                <Button type="button" variant="primary">
-                  Explorar catálogo
-                </Button>
-              </Link>
-            }
-          />
-        </div>
+        <EmptyState
+          title="Tu carrito está vacío"
+          description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
+          icon="🛒"
+          actions={
+            <Link href="/catalogo">
+              <Button type="button" variant="primary">
+                Explorar catálogo
+              </Button>
+            </Link>
+          }
+        />
       </main>
     );
   }

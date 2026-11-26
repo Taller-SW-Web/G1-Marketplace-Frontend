@@ -15,43 +15,15 @@ function jobSection(name: string) {
   return workflow.slice(start, nextJob < 0 ? undefined : start + 1 + nextJob);
 }
 
-describe('CI/CD environment separation', () => {
-  const staging = jobSection('deploy-staging');
-  const production = jobSection('deploy-production');
+describe('CI/CD single deploy path', () => {
+  const deploy = jobSection('deploy');
 
-  it('requires staging-only credentials and URL before triggering its deploy hook', () => {
-    expect(staging).toContain('environment: pruebas');
-    expect(staging).toContain('VERCEL_STAGING_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_STAGING_DEPLOY_HOOK_URL }}');
-    expect(staging).toContain('SITE_URL: ${{ vars.FRONTEND_STAGING_URL }}');
-    expect(staging).toContain('PRODUCTION_SITE_URL: ${{ vars.FRONTEND_URL ||');
-    expect(staging).toContain('Falta el secreto VERCEL_STAGING_DEPLOY_HOOK_URL');
-    expect(staging).toContain('Falta la variable FRONTEND_STAGING_URL');
-    expect(staging).toContain('staging.protocol !== "https:"');
-    expect(staging).toContain('production.protocol !== "https:"');
-    expect(staging).toContain('staging.origin === production.origin');
-    expect(staging.indexOf('if [ -z "$SITE_URL" ]')).toBeLessThan(
-      staging.indexOf('curl --fail --silent --show-error -X POST "$VERCEL_STAGING_DEPLOY_HOOK_URL"')
-    );
-    expect(staging.indexOf('[ "${SITE_URL%/}" = "${PRODUCTION_SITE_URL%/}" ]')).toBeLessThan(
-      staging.indexOf('curl --fail --silent --show-error -X POST "$VERCEL_STAGING_DEPLOY_HOOK_URL"')
-    );
-    expect(staging).not.toContain('VERCEL_DEPLOY_HOOK_URL');
-    expect(staging).not.toMatch(/^\s*SITE_URL:\s*\$\{\{\s*vars\.FRONTEND_URL/m);
-  });
-
-  it('uses a production-only hook behind the production environment and staging dependency', () => {
-    expect(production).toContain('environment: production');
-    expect(production).toContain('needs: [deploy-staging, release]');
-    expect(production).toContain('VERCEL_PROD_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_PROD_DEPLOY_HOOK_URL }}');
-    expect(production).toContain('Falta el secreto VERCEL_PROD_DEPLOY_HOOK_URL');
-    expect(production).not.toContain('VERCEL_DEPLOY_HOOK_URL');
-    expect(production).not.toContain('VERCEL_STAGING_DEPLOY_HOOK_URL');
-    expect(production).not.toContain('FRONTEND_STAGING_URL');
-  });
-
-  it('keeps both deploy jobs restricted to pushes on develop', () => {
-    const pushToDevelop = "if: github.event_name == 'push' && github.ref == 'refs/heads/develop'";
-    expect(staging).toContain(pushToDevelop);
-    expect(production).toContain(pushToDevelop);
+  it('uses a single protected deploy job after build-and-security and release', () => {
+    expect(deploy).toContain('environment: production');
+    expect(deploy).toContain('needs: [build-and-security, release]');
+    expect(deploy).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/develop'");
+    expect(deploy).toContain('Smoke test del sitio (/ y /carrito)');
+    expect(workflow).not.toContain('  deploy-staging:');
+    expect(workflow).not.toContain('  deploy-production:');
   });
 });

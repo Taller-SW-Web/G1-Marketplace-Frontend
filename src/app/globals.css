@@ -1,6 +1,5 @@
 @import "../theme/tokens.css";
 @import "../features/catalog/catalog-controls.css";
-@import "../features/cart/cart-v008.css";
 * {
   box-sizing: border-box;
 }
