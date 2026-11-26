@@ -1,8 +1,11 @@
 # #293 — Contract tests contra OpenAPI de Productos
 
+**Estado: pendiente.** La evidencia disponible de contract tests de Ventas está separada en [BE #295](295-contract-tests-ventas.md) y no cubre los contratos requeridos aquí. Este issue necesita OpenAPI de **Productos y Ofertas**.
+
 | Artefacto | Enlace / referencia |
 |---|---|
 | OpenAPI de Productos probado (URL, versión o commit) | Pendiente |
+| OpenAPI de Ofertas probado (URL, versión o commit) | Pendiente |
 | Contract tests (suite y ubicación) | Pendiente |
 | Run CI / ejecución reproducible | Pendiente |
 | Reporte de validación | Pendiente |
