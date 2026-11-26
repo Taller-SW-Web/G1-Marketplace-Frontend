@@ -14,7 +14,8 @@
  *
  * También acepta una URL pública (con SHA a confirmar por Operaciones):
  *
- *   LH_BASE_URL=https://g1-marketplace-frontend.vercel.app npm run lighthouse:h5
+ *   LH_BASE_URL=https://g1-marketplace-frontend.vercel.app \
+ *   LH_COMMIT_SHA=<sha-desplegado> npm run lighthouse:h5
  */
 
 import { spawn, execFileSync } from "node:child_process";
@@ -35,6 +36,8 @@ const MOBILE = { width: 390, height: 844, deviceScaleFactor: 3 };
 const LIGHTHOUSE_CLI = resolve("node_modules/lighthouse/cli/index.js");
 
 function commitSha() {
+  const deployedSha = process.env.LH_COMMIT_SHA?.trim();
+  if (deployedSha) return deployedSha;
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   } catch {
@@ -86,7 +89,8 @@ async function takeScreenshot(url, outputPath) {
       hasTouch: true,
     });
     const page = await context.newPage();
-    await page.goto(url, { waitUntil: "networkidle", timeout: 45_000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+    await page.waitForTimeout(1_000);
     await page.screenshot({ path: outputPath, fullPage: true, animations: "disabled" });
   } finally {
     await browser.close();
@@ -124,6 +128,8 @@ function evaluateThresholds(scores) {
 }
 
 function summary(results, sha) {
+  const isDeployed = !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(BASE_URL);
+  const deploymentRun = process.env.LH_DEPLOYMENT_RUN_URL;
   const lines = [
     "# Lighthouse H5 · FE #155",
     "",
@@ -132,15 +138,17 @@ function summary(results, sha) {
     `- **Base URL:** ${BASE_URL}`,
     `- **Umbrales:** rendimiento ≥${THRESHOLDS.performance}, accesibilidad ≥${THRESHOLDS.accessibility}, buenas prácticas ≥${THRESHOLDS["best-practices"]}, SEO ≥${THRESHOLDS.seo}`,
     "- **Emulación:** móvil 390×844, DPR 3, throttling móvil de Lighthouse",
-    "- **Ejecución:** `npm run build && npm run start -- --port 3106` + `npm run lighthouse:h5`",
+    `- **Ejecución:** ${isDeployed ? "Lighthouse móvil contra el sitio desplegado; sin build local." : "`npm run build && npm run start -- --port 3106` + `npm run lighthouse:h5`."}`,
+    ...(deploymentRun ? [`- **Workflow de despliegue:** ${deploymentRun}`] : []),
     "",
-    "| Ruta | Rendimiento | Accesibilidad | Buenas prácticas | SEO | Estado |",
-    "| --- | ---: | ---: | ---: | ---: | --- |",
+    "| Ruta | URL exacta | Hora (UTC) | Rendimiento | Accesibilidad | Buenas prácticas | SEO | Estado |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
   ];
   for (const result of results) {
     const scores = result.scores ?? {};
+    const exactUrl = result.finalUrl ?? `${BASE_URL}${result.path}`;
     lines.push(
-      `| ${result.route} (\`${result.path}\`) | ${scores.performance ?? "—"} | ${scores.accessibility ?? "—"} | ${scores["best-practices"] ?? "—"} | ${scores.seo ?? "—"} | ${
+      `| ${result.route} | ${exactUrl} | ${result.fetchTime ?? "—"} | ${scores.performance ?? "—"} | ${scores.accessibility ?? "—"} | ${scores["best-practices"] ?? "—"} | ${scores.seo ?? "—"} | ${
         result.thresholds.pass ? "✅ cumple" : "❌ revisar"
       } |`,
     );
@@ -165,7 +173,7 @@ function summary(results, sha) {
     "",
     "- `lh-<ruta>.report.json` y `lh-<ruta>.report.html`: reporte completo.",
     "- `capturas/<ruta>-movil.png`: captura de referencia del mismo corte.",
-    "- El run no acredita por sí solo el SHA desplegado en un entorno público; esa confirmación corresponde a Operaciones.",
+    "- La hora y URL exactas de cada auditoría están en la tabla y en `scores.json`; el SHA se confirma con el workflow de despliegue enlazado arriba.",
     "",
   );
   return lines.join("\n");

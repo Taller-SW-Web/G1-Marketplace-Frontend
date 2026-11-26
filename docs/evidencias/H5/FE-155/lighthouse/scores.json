@@ -1,45 +1,43 @@
 {
-  "sha": "6c25364e2a461d360f7130be29a3a6284e4a5698",
-  "baseUrl": "http://127.0.0.1:3106",
-  "generatedAt": "2026-11-25T01:17:26.390Z",
+  "sha": "93fdc79f9e2c52eee4ff29ac80f107c9e9b0821e",
+  "baseUrl": "https://g1-marketplace-frontend.vercel.app",
+  "generatedAt": "2026-11-26T06:36:51.693Z",
   "results": [
     {
       "route": "inicio",
       "path": "/",
       "scores": {
-        "performance": 73,
+        "performance": 100,
         "accessibility": 100,
         "best-practices": 96,
         "seo": 100
       },
-      "finalUrl": "http://127.0.0.1:3106/",
-      "fetchTime": "2026-11-25T01:16:48.503Z",
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/",
+      "fetchTime": "2026-11-26T06:35:12.319Z",
       "lighthouseVersion": "13.6.0",
       "accessibilityAudits": [],
       "thresholds": {
-        "pass": false,
-        "failures": [
-          "performance: 73 < 90"
-        ]
+        "pass": true,
+        "failures": []
       }
     },
     {
       "route": "catalogo",
       "path": "/catalogo",
       "scores": {
-        "performance": 89,
+        "performance": 84,
         "accessibility": 100,
         "best-practices": 96,
         "seo": 100
       },
-      "finalUrl": "http://127.0.0.1:3106/catalogo",
-      "fetchTime": "2026-11-25T01:17:02.611Z",
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/catalogo",
+      "fetchTime": "2026-11-26T06:35:34.492Z",
       "lighthouseVersion": "13.6.0",
       "accessibilityAudits": [],
       "thresholds": {
         "pass": false,
         "failures": [
-          "performance: 89 < 90"
+          "performance: 84 < 90"
         ]
       }
     },
@@ -47,19 +45,19 @@
       "route": "ficha",
       "path": "/productos/producto-demostracion-4",
       "scores": {
-        "performance": 84,
+        "performance": 86,
         "accessibility": 100,
         "best-practices": 96,
         "seo": 100
       },
-      "finalUrl": "http://127.0.0.1:3106/productos/producto-demostracion-4",
-      "fetchTime": "2026-11-25T01:17:16.779Z",
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/productos/producto-demostracion-4",
+      "fetchTime": "2026-11-26T06:35:53.860Z",
       "lighthouseVersion": "13.6.0",
       "accessibilityAudits": [],
       "thresholds": {
         "pass": false,
         "failures": [
-          "performance: 84 < 90"
+          "performance: 86 < 90"
         ]
       }
     }
