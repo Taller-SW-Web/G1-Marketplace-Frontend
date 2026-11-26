@@ -1,0 +1,9 @@
+# Matriz de propietarios H5 — G1-Marketplace-Frontend
+* @saire22 @andreus710 @JimSegovia @DiesmEsp
+
+.github/ @andreus710 @DiesmEsp
+src/features/wishlist/ @DiesmEsp @saire22
+src/features/checkout/ @LeonidasGarcia @saire22
+src/features/orders/ @saire22 @LeonidasGarcia
+src/features/auth/ @JimSegovia @andreus710
+src/features/catalog/ @SebastianMalca @GiulianoMaPe
