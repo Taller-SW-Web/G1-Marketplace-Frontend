@@ -28,12 +28,7 @@
     "demo:catalogo:featured": "node scripts/demo-catalog-h4.mjs --featured",
     "demo:catalogo:real": "node scripts/demo-catalog-real.mjs",
     "test:demo:catalogo:real": "node --test scripts/demo-catalog-real.test.mjs",
-    "check:g6:network": "node scripts/check-g6-network.mjs",
-    "lighthouse:h5": "node scripts/lighthouse-h5.mjs",
-    "lighthouse:h5:ci": "LH_BASE_URL=https://g1-marketplace-frontend.vercel.app LH_OUTPUT_DIR=./lighthouse-results/h5-ci node scripts/lighthouse-h5.mjs",
-    "test:h5": "playwright test --config playwright.h5.config.ts",
-    "test:visual:regression": "playwright test --config playwright.visual-regression.config.ts",
-    "test:visual:regression:update": "playwright test --config playwright.visual-regression.config.ts --update-snapshots"
+    "check:g6:network": "node scripts/check-g6-network.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
@@ -44,18 +39,15 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@testing-library/react": "16.3.3",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "chrome-launcher": "^1.2.3",
     "eslint": "10.12.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "happy-dom": "21.0.4",
-    "lighthouse": "^13.6.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
     "vitest": "5.0.4"
