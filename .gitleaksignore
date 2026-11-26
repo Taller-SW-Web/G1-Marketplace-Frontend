@@ -1,0 +1,4 @@
+# Falsos positivos auditados: ID público del archivo de mockups de Figma ("fileKey") en manifiestos de diseño, no es una credencial.
+# Referencia: TASK-H5-CICD-003 (BE #283) / TASK-H5-CICD-002 (FE #136)
+169cf0105c4afb39946c8013dd1dd2e803bc23f0:public/figma/favorites-manifest.json:generic-api-key:2
+9f39e0c58ace011a0c910c27bcc43e46a80d8108:public/figma/manifest.json:generic-api-key:2

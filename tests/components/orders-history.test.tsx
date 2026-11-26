@@ -75,18 +75,14 @@ describe("F-028 OrdersHistory (MOCK Hito 3)", () => {
     expect(screen.queryByText(/MOCK\)/)).toBe(null);
   });
 
-  it("«Detalle» queda pendiente: no hay enlaces a /mis-pedidos/{id} (F-030 fuera de entrega)", async () => {
+  it("enlaza el detalle de cada pedido en tabla y tarjeta", async () => {
     mockFetch(twoOrders, { source: "MOCK" });
     const { container } = render(<OrdersHistory initialPage={0} />);
     await screen.findAllByText("PED-MOCK-001");
 
-    expect(container.querySelectorAll('a[href^="/mis-pedidos/"]').length).toBe(0);
-    expect(screen.queryByRole("link", { name: /ver detalle/i })).toBe(null);
-    const pending = screen.getAllByText("Detalle próximamente");
-    expect(pending.length).toBe(4); // tabla (2) + tarjetas (2)
-    for (const node of screen.getAllByRole("button", { name: /Detalle del pedido/ })) {
-      expect((node as HTMLButtonElement).disabled).toBe(true);
-    }
+    expect(container.querySelectorAll('a[href^="/mis-pedidos/"]').length).toBe(4);
+    expect(screen.getAllByRole("link", { name: /ver detalle/i })).toHaveLength(4);
+    expect(container.querySelector('a[href="/mis-pedidos/PED-MOCK-001"]')).toBeDefined();
   });
 
   it("lista vacía muestra estado vacío con acción hacia el catálogo", async () => {
@@ -127,6 +123,51 @@ describe("F-028 OrdersHistory (MOCK Hito 3)", () => {
     );
     render(<OrdersHistory initialPage={9} />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/mis-pedidos?page=1"));
+  });
+
+  it("F-029 applies state and date filters from page zero without shifting the selected calendar day", async () => {
+    const fetchMock = mockFetch(twoOrders, { source: "MOCK" });
+    render(<OrdersHistory initialPage={0} />);
+    await screen.findAllByText("PED-MOCK-001");
+
+    fireEvent.change(screen.getByLabelText("Estado"), { target: { value: "PAGADO" } });
+    fireEvent.change(screen.getByLabelText("Desde"), { target: { value: "2026-10-10" } });
+    fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: "2026-10-10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect(push).toHaveBeenLastCalledWith("/mis-pedidos?page=0&state=PAGADO&from=2026-10-10&to=2026-10-10");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("F-029 blocks an inverted or over-one-year range before navigation", async () => {
+    mockFetch(twoOrders, { source: "MOCK" });
+    render(<OrdersHistory initialPage={0} />);
+    await screen.findAllByText("PED-MOCK-001");
+
+    fireEvent.change(screen.getByLabelText("Desde"), { target: { value: "2026-10-11" } });
+    fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: "2026-10-10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByText("La fecha inicial no puede ser posterior a la fecha final.")).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText(/Desde/), { target: { value: "2025-10-01" } });
+    fireEvent.change(screen.getByLabelText(/Hasta/), { target: { value: "2026-10-02" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getAllByText("El rango no puede superar un año.")).toHaveLength(2);
+  });
+
+  it("F-029 explains empty filtered results and clears filters from the zero state", async () => {
+    mockFetch(
+      { data: [], page: { number: 0, size: 10, totalElements: 0, totalPages: 0 } },
+      { source: "MOCK" },
+    );
+    render(<OrdersHistory initialPage={0} initialFilters={{ state: "PAGADO" }} />);
+
+    expect(await screen.findByText("No hay pedidos con estos filtros")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+    expect(push).toHaveBeenLastCalledWith("/mis-pedidos?page=0");
   });
 
   it("error 503: muestra mensaje y permite reintentar", async () => {

@@ -72,26 +72,33 @@ export function CartLine({
     }
   };
 
+  const badgeInitial = (line.name || line.sku).trim().slice(0, 2).toUpperCase();
+
   return (
     <article className="cart-line-item" aria-label={"Producto " + (line.name || line.sku)}>
-      <div className="cart-line-details">
-        <div className="cart-line-header">
-          <h3 className="cart-line-title">{line.name || line.sku}</h3>
-          <span className="cart-line-sku">SKU: {line.sku}</span>
+      <div className="cart-line-main">
+        <div className="cart-line-thumb" aria-hidden="true">
+          <span>{badgeInitial}</span>
         </div>
+        <div className="cart-line-details">
+          <div className="cart-line-header">
+            <h3 className="cart-line-title">{line.name || line.sku}</h3>
+            <span className="cart-line-sku">SKU: {line.sku}</span>
+          </div>
 
-        <div className="cart-line-pricing">
-          <span className="cart-line-unit-price">{priceFormatted}</span>
-          {line.quantity > 1 && (
-            <span className="cart-line-total">Total línea: {lineTotal}</span>
+          <div className="cart-line-pricing">
+            <span className="cart-line-unit-price">{priceFormatted}</span>
+            {line.quantity > 1 && (
+              <span className="cart-line-total">Total línea: {lineTotal}</span>
+            )}
+          </div>
+
+          {line.attention && (
+            <div className="cart-line-attention" role="status">
+              <span>{line.attention === 'PRECIO_PENDIENTE' ? 'Precio pendiente de confirmación' : line.attention}</span>
+            </div>
           )}
         </div>
-
-        {line.attention && (
-          <div className="cart-line-attention" role="status">
-            <span>{line.attention === 'PRECIO_PENDIENTE' ? 'Precio pendiente de confirmación' : line.attention}</span>
-          </div>
-        )}
       </div>
 
       <div className="cart-line-controls">
