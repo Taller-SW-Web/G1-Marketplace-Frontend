@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
+import { OrderEmailNotice } from "./OrderEmailNotice";
 import { formatCheckoutMoney, type CheckoutAddress } from "./fixtures";
 import type { CheckoutOperation, Contact } from "./api";
 import type { CheckoutQuote } from "./fixtures";
@@ -184,7 +185,7 @@ export function OrderConfirmationSummary({ orderId, operationId, operation, quot
   return <div className="checkout-confirmation" role="region" aria-labelledby="confirmed-title">
     <header className="checkout-confirmation-hero" aria-labelledby="confirmed-title">
       <span className="checkout-confirmation-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m5 12.5 4.2 4.2L19 7" /></svg></span>
-      <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
+      <p className="checkout-success-tag">{bff ? "Estado verificado por BFF · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
       <h2 ref={confirmationTitleRef} id="confirmed-title" tabIndex={-1}>¡Pedido confirmado!</h2>
       <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
     </header>
@@ -209,6 +210,7 @@ export function OrderConfirmationSummary({ orderId, operationId, operation, quot
           <div><dt>Descuento</dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
           <div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(operation?.orderTotal ?? quote.total)}</dd></div>
         </dl>}
+        <OrderEmailNotice orderConfirmed preview />
       </section>
     </div>
     <div className="checkout-actions checkout-confirmation-actions">
