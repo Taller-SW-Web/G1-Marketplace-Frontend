@@ -91,15 +91,16 @@ type OrderConfirmationSummaryProps = {
   operation: CheckoutOperation | null;
   quote: CheckoutQuote | null;
   backendMockEnabled: boolean;
+  bff?: boolean;
   copyMessage: string;
   onCopy: () => void;
 };
 
-export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
+export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, bff = false, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
   return <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">
-    <p className="checkout-success-tag">{backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
+    <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
     <h2 id="confirmed-title">¡Pedido confirmado!</h2>
-    <p>{backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
+    <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
     <dl className="checkout-totals"><div><dt>Código de pedido</dt><dd><code>{orderId}</code></dd></div><div><dt>Estado</dt><dd>PAGADO{backendMockEnabled ? "" : " (fixture)"}</dd></div><div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(operation?.orderTotal ?? quote?.total ?? 0)}</dd></div>{operation?.orderCreatedAt && <div><dt>Fecha del pedido</dt><dd>{new Date(operation.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}</dl>
     <h3>Resumen de productos</h3><ul className="checkout-lines" aria-label="Productos del pedido">{quote?.lines.map((line) => <li key={line.sku}>{line.sku} × {line.quantity}</li>)}</ul>
     <div className="checkout-actions"><Button variant="secondary" onClick={onCopy} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>{backendMockEnabled && operation && <Link className="button button--secondary button--md" href={`/checkout/confirmado/${encodeURIComponent(orderId)}?operationId=${encodeURIComponent(operationId)}`}>Ver mi pedido</Link>}<Button onClick={() => window.location.assign("/")}>Seguir comprando</Button></div>

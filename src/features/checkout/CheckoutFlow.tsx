@@ -64,6 +64,9 @@ function mapContactFieldErrors(fields: string[] | undefined): ContactFieldErrors
   return errors;
 }
 
+/** Modo `bff`: el flujo usa la sesión de la cuenta y el BFF real (se resuelve en la compilación). */
+const checkoutBffEnabled = process.env.NEXT_PUBLIC_CHECKOUT_MODE === "bff";
+
 export function CheckoutFlow() {
   const [step, setStep] = useState<Step>("address");
   const [addresses, setAddresses] = useState<CheckoutAddress[]>(backendMockEnabled ? [] : checkoutFixtureAddresses);
@@ -485,7 +488,7 @@ export function CheckoutFlow() {
       return true;
     }
     setOrderSubmission("UNCERTAIN");
-    setNotice("El pedido aún no tiene un resultado final verificado. Consulta o reintenta la misma operación; no se creará otra.");
+    setNotice(`El pedido aún no tiene un resultado final verificado. ${operation.retryAfterSeconds ? `Vuelve a verificar en ${operation.retryAfterSeconds} s. ` : ""}Consulta o reintenta la misma operación; no se creará otra.`);
     return false;
   }
 
@@ -507,7 +510,10 @@ export function CheckoutFlow() {
           return;
         }
         setOrderSubmission("UNCERTAIN");
-        setNotice(checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave."));
+        const wait = error instanceof CheckoutApiError && error.retryAfterSeconds
+          ? ` Espera ${error.retryAfterSeconds} s antes de verificar.`
+          : "";
+        setNotice(`${checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave.")}${wait}`);
       });
   }
 
@@ -558,14 +564,27 @@ export function CheckoutFlow() {
           return;
         }
         if (!finishVerifiedOrder(operation) && operation.state === "SUBMITTED" && operation.recoveryRequired) {
+          // En modo BFF verificar es solo lectura: ningún POST implícito.
+          if (checkoutBffEnabled) {
+            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido; vuelve a verificar en unos minutos.");
+            return undefined;
+          }
           return submitBackendOrder();
         }
         return undefined;
       }).catch((error: unknown) => {
         if (error instanceof CheckoutApiError && error.code === "ORDER_NOT_SUBMITTED") {
+          if (checkoutBffEnabled) {
+            // La operación original nunca se registró: el reenvío lo decide la persona, con la misma operación y clave.
+            setOrderSubmission("READY");
+            setNotice("La operación original no llegó a registrarse. Puedes crear el pedido de nuevo: se conserva la misma operación y la misma clave.");
+            return undefined;
+          }
           return submitBackendOrder();
         }
-        setNotice(checkoutErrorMessage(error, "No se pudo verificar. Conservamos la operación original."));
+        setNotice(checkoutErrorMessage(error, error instanceof CheckoutApiError && error.retryAfterSeconds
+          ? `No se pudo verificar todavía. Vuelve a intentarlo en ${error.retryAfterSeconds} s; conservamos la operación original.`
+          : "No se pudo verificar. Conservamos la operación original."));
         return undefined;
       }).finally(() => setBusy(false));
       return;
@@ -592,9 +611,9 @@ export function CheckoutFlow() {
   return (
     <main className="checkout-page container">
       <header className="checkout-heading">
-        <p className="checkout-eyebrow">{backendMockEnabled ? "Backend MOCK · entorno local" : "Fixtures locales"}</p>
+        <p className="checkout-eyebrow">{checkoutBffEnabled ? "Conectado al BFF · compra de homologación" : backendMockEnabled ? "Backend MOCK · entorno local" : "Fixtures locales"}</p>
         <h1>Finaliza tu compra</h1>
-        <p>Datos de prueba · no se realizan cobros reales</p>
+        <p>{checkoutBffEnabled ? "Tu pedido se registra en Ventas · el pago lo simula Ventas y no hay cobro real" : "Datos de prueba · no se realizan cobros reales"}</p>
       </header>
       {notice && step !== "order" && <p role="alert" className="checkout-error">{notice}</p>}
       <nav className="checkout-progress" aria-label="Progreso de compra">
@@ -667,7 +686,7 @@ export function CheckoutFlow() {
               onSubmit={createOrder} onBack={() => setStep("summary")} />
           </>}
       </section>}
-      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
+      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} bff={checkoutBffEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
     </main>
   );
 }
