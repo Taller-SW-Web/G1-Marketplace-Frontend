@@ -17,6 +17,7 @@ function request(path: string, init: { method?: string; headers?: Record<string,
 describe("checkout route in bff mode", () => {
   beforeEach(() => {
     vi.stubEnv("CHECKOUT_MODE", "bff");
+    vi.stubEnv("NEXT_PUBLIC_CHECKOUT_MODE", "bff");
     vi.stubEnv("G1_AUTH_ENABLED", "true");
     vi.stubEnv("G1_WEB_ORIGIN", ORIGIN);
     vi.stubEnv("MARKETPLACE_API_URL", "https://bff.example");
@@ -100,6 +101,35 @@ describe("checkout route in bff mode", () => {
     const html = await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
     expect(html.status).toBe(502);
     expect(await html.json()).toEqual({ error: { code: "INVALID_BACKEND_RESPONSE" } });
+  });
+
+  it("rejects a partial bff configuration without calling the backend", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    vi.stubEnv("NEXT_PUBLIC_CHECKOUT_MODE", "local-fixtures");
+    const onlyServer = await POST(request("orders", {
+      method: "POST", headers: { Cookie: SESSION, "Content-Type": "application/json", Origin: ORIGIN, "Idempotency-Key": "key-0001-abcdef" }, body: "{}",
+    }), ctx("orders"));
+    expect(onlyServer.status).toBe(503);
+    expect(await onlyServer.json()).toEqual({ error: { code: "CHECKOUT_MODE_MISCONFIGURED" } });
+    vi.stubEnv("CHECKOUT_MODE", "");
+    vi.stubEnv("NEXT_PUBLIC_CHECKOUT_MODE", "bff");
+    const onlyPublic = await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
+    expect(onlyPublic.status).toBe(503);
+    expect(await onlyPublic.json()).toEqual({ error: { code: "CHECKOUT_MODE_MISCONFIGURED" } });
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("gives order creation a longer deadline than the other calls so a slow Ventas does not lose the 202", async () => {
+    const timeouts: number[] = [];
+    const spy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => { timeouts.push(ms); return new AbortController().signal; });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ data: {} }, { status: 202 })));
+    await POST(request("orders", {
+      method: "POST", headers: { Cookie: SESSION, "Content-Type": "application/json", Origin: ORIGIN, "Idempotency-Key": "key-0001-abcdef" }, body: "{}",
+    }), ctx("orders"));
+    await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
+    spy.mockRestore();
+    expect(timeouts).toEqual([45_000, 20_000]);
   });
 
   it("keeps the mode disabled in production when it is not configured", async () => {

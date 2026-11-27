@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
+// La creación del pedido puede tardar hasta el plazo de Ventas del BFF (30 s por defecto, hasta 60 s).
+export const maxDuration = 60;
+const ORDER_TIMEOUT_MS = 45_000;
+const DEFAULT_TIMEOUT_MS = 20_000;
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
@@ -59,7 +63,8 @@ async function forwardToBff(request: NextRequest, endpoint: string) {
   }
 
   try {
-    const upstream = await bffFetch(request, `/api/v1/checkout/${endpoint}`, request.method, body, { headers: extraHeaders, cookies: extraCookies });
+    const upstream = await bffFetch(request, `/api/v1/checkout/${endpoint}`, request.method, body, { headers: extraHeaders, cookies: extraCookies,
+      timeoutMs: endpoint === "orders" ? ORDER_TIMEOUT_MS : DEFAULT_TIMEOUT_MS });
     const text = await upstream.text();
     try { JSON.parse(text); } catch { return checkoutError("INVALID_BACKEND_RESPONSE", 502); }
     const headers = new Headers({ "Content-Type": "application/json; charset=utf-8", ...NO_STORE });
@@ -75,7 +80,12 @@ async function forward(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const endpoint = allowedEndpoint(path, request.method);
   if (!endpoint) return Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
-  if (process.env.CHECKOUT_MODE === "bff") return forwardToBff(request, endpoint);
+  // El modo real exige las dos variables (servidor y compilación): una configuración parcial no llama al BFF.
+  const serverBff = process.env.CHECKOUT_MODE === "bff";
+  const publicBff = process.env.NEXT_PUBLIC_CHECKOUT_MODE === "bff";
+  if (serverBff || publicBff) {
+    return serverBff && publicBff ? forwardToBff(request, endpoint) : checkoutError("CHECKOUT_MODE_MISCONFIGURED", 503);
+  }
   const isBackendMock =
     process.env.CHECKOUT_MODE === "backend-mock" ||
     process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock";

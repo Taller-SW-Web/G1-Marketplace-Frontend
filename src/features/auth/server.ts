@@ -25,7 +25,7 @@ export function authRequestGuard(request: Request, mutation: boolean) {
 }
 
 export async function bffFetch(request: Request, path: string, method: string, body?: unknown,
-  extra?: { headers?: Record<string, string>; cookies?: string[] }) {
+  extra?: { headers?: Record<string, string>; cookies?: string[]; timeoutMs?: number }) {
   const base = new URL(process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:10000");
   if (base.username || base.password || base.search || base.hash || base.pathname !== "/"
     || (base.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && base.protocol === "http:"
@@ -34,7 +34,7 @@ export async function bffFetch(request: Request, path: string, method: string, b
   const cookies = (request.headers.get("cookie") ?? "").split(";").map(value => value.trim())
     .filter(value => cookiePattern.test(value)).join("; ");
   return fetch(new URL(path, base), { method, cache: "no-store", redirect: "error",
-    signal: AbortSignal.any([request.signal, AbortSignal.timeout(20000)]),
+    signal: AbortSignal.any([request.signal, AbortSignal.timeout(extra?.timeoutMs ?? 20000)]),
     headers: { Accept: "application/json", Origin: webOrigin(), Cookie: [cookies, ...(extra?.cookies ?? [])].filter(Boolean).join("; "),
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(extra?.headers ?? {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
