@@ -19,6 +19,7 @@ vi.mock("../../src/features/checkout/api", () => ({
 }));
 
 import { CheckoutFlow } from "../../src/features/checkout/CheckoutFlow";
+import { OrderConfirmationSummary } from "../../src/features/checkout/CheckoutComponents";
 import { OrderConfirmationLookup } from "../../src/features/checkout/OrderConfirmationLookup";
 
 beforeEach(() => {
@@ -60,6 +61,19 @@ function fillContact() {
 }
 
 describe("Checkout payment and confirmation acceptance", () => {
+  const paidOperation = { checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-1", orderState: "PAGADO", orderTotal: 110, orderCreatedAt: "2026-10-27T10:00:00Z" } as const;
+
+  it("labels BFF confirmations explicitly and keeps the email notice as a preview", () => {
+    render(<OrderConfirmationSummary orderId="PED-1" operationId="op-1" operation={paidOperation} quote={null}
+      backendMockEnabled bff copyMessage="" onCopy={vi.fn()} />);
+
+    expect(screen.getByText("Estado verificado por BFF · PAGADO")).toBeDefined();
+    expect(screen.getByText("Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real.")).toBeDefined();
+    expect(screen.getByText("Pago simulado confirmado por Ventas")).toBeDefined();
+    expect(screen.queryByText(/Backend MOCK confirmó/)).toBeNull();
+    expect(screen.getByRole("note").textContent).toContain("Vista previa:");
+  });
+
   it("sends only one preparation request for rapid repeated submits", async () => {
     let resolvePreparation!: (value: { checkoutOperationId: string; state: string }) => void;
     api.prepare.mockImplementationOnce(() => new Promise((resolve) => { resolvePreparation = resolve; }));
@@ -80,6 +94,7 @@ describe("Checkout payment and confirmation acceptance", () => {
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
     expect(await screen.findByRole("button", { name: "Verificar operación original" })).toBeDefined();
     expect(screen.queryByRole("heading", { name: "¡Pedido confirmado!" })).toBeNull();
+    expect(screen.queryByRole("note")).toBeNull();
   });
 
   it("keeps contact transient in browser storage while creating the order", async () => {
@@ -107,7 +122,7 @@ describe("Checkout payment and confirmation acceptance", () => {
   });
 
   it("offers a manual copy fallback when clipboard access fails", async () => {
-    api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-1", orderState: "PAGADO", orderTotal: 110, orderCreatedAt: "2026-10-27T10:00:00Z" });
+    api.getOperation.mockResolvedValueOnce(paidOperation);
     const testNavigator = Object.create(navigator) as Navigator;
     Object.defineProperty(testNavigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
     vi.stubGlobal("navigator", testNavigator);
@@ -122,6 +137,7 @@ describe("Checkout payment and confirmation acceptance", () => {
     render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
     await screen.findByRole("heading", { name: "No pudimos verificar el pedido" });
     expect(screen.queryByText("PAGADO")).toBeNull();
+    expect(screen.queryByRole("note")).toBeNull();
     expect(api.getOperation).toHaveBeenCalledWith("op-1");
     await waitFor(() => expect(screen.getByRole("alert")).toBeDefined());
   });
@@ -130,5 +146,74 @@ describe("Checkout payment and confirmation acceptance", () => {
     render(<OrderConfirmationLookup orderId="PED-1" />);
     await screen.findByRole("heading", { name: "No pudimos verificar el pedido" });
     expect(api.getOperation).not.toHaveBeenCalled();
+  });
+
+  it("announces order confirmation and shows the MOCK notice without echoing contact", async () => {
+    api.createOrder.mockResolvedValueOnce(paidOperation);
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    const title = await screen.findByRole("heading", { name: "¡Pedido confirmado!" });
+    expect(document.activeElement).toBe(title);
+    expect(screen.getByRole("note").textContent).toContain("Vista previa:");
+    expect(screen.queryByText("ana@example.test")).toBeNull();
+  });
+
+  it("shows the notice only after lookup moves from loading and CREADO to verified PAGADO", async () => {
+    api.getOperation.mockResolvedValueOnce({ ...paidOperation, state: "SUBMITTED", orderState: "CREADO" });
+    api.getOperation.mockResolvedValueOnce(paidOperation);
+    render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
+
+    expect(screen.getByRole("status").textContent).toContain("Consultando el estado");
+    expect(screen.queryByRole("note")).toBeNull();
+    const verify = await screen.findByRole("button", { name: "Verificar pedido" });
+    expect(screen.queryByRole("note")).toBeNull();
+    fireEvent.click(verify);
+
+    await screen.findByRole("heading", { name: "¡Pedido confirmado!" });
+    expect(screen.getByRole("note").textContent).toContain("Vista previa:");
+    expect(api.getOperation).toHaveBeenCalledTimes(2);
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("only reads the original operation when remounting a confirmed lookup", async () => {
+    api.getOperation.mockResolvedValueOnce(paidOperation).mockResolvedValueOnce(paidOperation);
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+
+    for (let i = 0; i < 2; i++) {
+      const { unmount } = render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
+      await screen.findByRole("note");
+      unmount();
+    }
+    expect(api.getOperation.mock.calls).toEqual([["op-1"], ["op-1"]]);
+    expect(api.createOrder).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("does not keep the previous notice while a different deep link is being verified", async () => {
+    api.getOperation.mockResolvedValueOnce(paidOperation).mockResolvedValueOnce(paidOperation);
+    const { rerender } = render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
+    await screen.findByRole("note");
+
+    rerender(<OrderConfirmationLookup orderId="PED-1" operationId="op-2" />);
+    expect(screen.queryByRole("note")).toBeNull();
+    await screen.findByRole("heading", { name: "No pudimos verificar el pedido" });
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("omits the notice on a failed order and on a checkout lookup error", async () => {
+    api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "op-1", state: "FAILED", orderId: "PED-1", orderState: "ANULADO" });
+    api.getOperation.mockRejectedValueOnce(new Error("Checkout lookup unavailable"));
+
+    const { unmount } = render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
+    await screen.findByRole("heading", { name: "No se confirmó el pago simulado" });
+    expect(screen.queryByRole("note")).toBeNull();
+    unmount();
+
+    render(<OrderConfirmationLookup orderId="PED-1" operationId="op-1" />);
+    await screen.findByRole("heading", { name: "No pudimos verificar el pedido" });
+    expect(screen.queryByRole("note")).toBeNull();
   });
 });

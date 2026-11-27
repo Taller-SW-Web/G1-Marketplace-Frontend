@@ -26,3 +26,43 @@
 @media(max-width:991px){.checkout-address-step{grid-template-columns:1fr;grid-template-areas:"main" "aside" "actions"}}
 @media(max-width:700px){.checkout-form-row{grid-template-columns:1fr}.checkout-address-actions{flex-direction:column-reverse}}
 @media(prefers-reduced-motion:reduce){.checkout-address{transition:none}}
+
+.checkout-email-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--spacing-sm) + var(--spacing-xs));
+  margin-block-start: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  background: var(--surface-cloud);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.checkout-email-notice::before {
+  content: "";
+  flex: none;
+  inline-size: 19.25px;
+  block-size: 18.5px;
+  background: url("/checkout-order-email-desktop.svg") no-repeat center;
+}
+
+.checkout-email-notice p { margin: 0; }
+
+.checkout-email-notice .checkout-email-notice-title {
+  margin-block-end: var(--spacing-xs);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .checkout-email-notice { border-radius: var(--radius-md); }
+  .checkout-email-notice::before {
+    inline-size: 20px;
+    block-size: 20px;
+    background-image: url("/checkout-order-email-mobile.svg");
+  }
+}
