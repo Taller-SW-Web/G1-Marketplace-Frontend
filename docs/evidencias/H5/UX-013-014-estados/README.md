@@ -51,6 +51,10 @@ O-008 se verificó desde el detalle de pedido en la rama de QA del candidato de 
 
 Para V-008 y V-015 a V-017, la suite usa las rutas normales y simula respuestas HTTP. Los archivos `*-carga.png`, `*-error.png` y `*-recuperado.png` conservan las tres transiciones. La revisión visual completa y la aceptación del corte desplegado siguen en FE #153 y #154.
 
+## Retest del Frontend publicado
+
+En Vercel pasaron 16 casos de recuperación de Inicio, Catálogo, Carrito, Favoritos, historial, detalle y seguimiento en Chrome con respuestas HTTP simuladas. V-010 quedó pendiente porque el checkout público muestra un fixture de direcciones. [Resultados, capturas y reproducción](vercel/README.md)
+
 ## Reproducción
 
 Con las dependencias del proyecto y Google Chrome instalados:

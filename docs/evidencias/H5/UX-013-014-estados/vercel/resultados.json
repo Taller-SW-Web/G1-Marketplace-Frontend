@@ -1,0 +1,321 @@
+{
+  "origen": "https://g1-marketplace-frontend.vercel.app",
+  "casos": [
+    {
+      "dispositivo": "escritorio",
+      "caso": "v005-inicio",
+      "ruta": "/",
+      "pruebaUtc": "2026-11-27T04:11:33.374Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::8dvvf-1795752693588-5b5495b333fb",
+      "rutaFinal": "/",
+      "deployId": null,
+      "capturaError": "escritorio-v005-inicio-error.png",
+      "capturaRecuperacion": "escritorio-v005-inicio-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v006-timeout",
+      "ruta": "/catalogo?q=polo",
+      "pruebaUtc": "2026-11-27T04:11:34.442Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::fbxxm-1795752694653-f708f08c2989",
+      "rutaFinal": "/catalogo",
+      "deployId": null,
+      "capturaError": "escritorio-v006-timeout-error.png",
+      "capturaRecuperacion": "escritorio-v006-timeout-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v006-indisponible",
+      "ruta": "/catalogo?q=polo",
+      "pruebaUtc": "2026-11-27T04:11:35.549Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::hqmrn-1795752695767-0a224ab5788e",
+      "rutaFinal": "/catalogo",
+      "deployId": null,
+      "capturaError": "escritorio-v006-indisponible-error.png",
+      "capturaRecuperacion": "escritorio-v006-indisponible-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v008-carrito",
+      "ruta": "/carrito",
+      "pruebaUtc": "2026-11-27T04:11:36.652Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::8qmvp-1795752696861-6521a7786c62",
+      "rutaFinal": "/carrito",
+      "deployId": null,
+      "capturaError": "escritorio-v008-carrito-error.png",
+      "capturaRecuperacion": "escritorio-v008-carrito-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v009-favoritos",
+      "ruta": "/favoritos",
+      "pruebaUtc": "2026-11-27T04:11:37.666Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::cpzjh-1795752697876-4db2162e7447",
+      "rutaFinal": "/favoritos",
+      "deployId": null,
+      "sesionSimulada": true,
+      "capturaError": "escritorio-v009-favoritos-error.png",
+      "capturaRecuperacion": "escritorio-v009-favoritos-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v010-direccion",
+      "ruta": "/checkout/direccion",
+      "pruebaUtc": "2026-11-27T04:11:38.821Z",
+      "respuestasSimuladas": [],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::vx5qs-1795752699041-f95ba1437f08",
+      "rutaFinal": "/checkout/direccion",
+      "deployId": null,
+      "sesionSimulada": true,
+      "modo": "Fixtures locales",
+      "capturaModo": "escritorio-v010-direccion-modo-fixture.png",
+      "resultado": "INCONCLUSO",
+      "encabezados": [
+        "Finaliza tu compra",
+        "¿Dónde entregamos tu pedido?",
+        "Tu pedido"
+      ],
+      "motivo": "Checkout muestra datos de fixture y no consulta el endpoint de direcciones."
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v015-pedidos",
+      "ruta": "/mis-pedidos",
+      "pruebaUtc": "2026-11-27T04:11:39.846Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::nj7hq-1795752700061-77ac5f6650bc",
+      "rutaFinal": "/mis-pedidos",
+      "deployId": null,
+      "capturaError": "escritorio-v015-pedidos-error.png",
+      "capturaRecuperacion": "escritorio-v015-pedidos-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v016-detalle",
+      "ruta": "/mis-pedidos/PED-H5-QA-001",
+      "pruebaUtc": "2026-11-27T04:11:40.876Z",
+      "respuestasSimuladas": [
+        503,
+        404
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::k6zz7-1795752701090-368da295ccc1",
+      "rutaFinal": "/mis-pedidos/PED-H5-QA-001",
+      "deployId": null,
+      "capturaError": "escritorio-v016-detalle-error.png",
+      "capturaRecuperacion": "escritorio-v016-detalle-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "escritorio",
+      "caso": "v017-seguimiento",
+      "ruta": "/mis-pedidos/PED-H5-QA-001/seguimiento",
+      "pruebaUtc": "2026-11-27T04:11:41.935Z",
+      "respuestasSimuladas": [
+        503,
+        202
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::clfg5-1795752702143-c3c60bde0457",
+      "rutaFinal": "/mis-pedidos/PED-H5-QA-001/seguimiento",
+      "deployId": null,
+      "capturaError": "escritorio-v017-seguimiento-error.png",
+      "capturaRecuperacion": "escritorio-v017-seguimiento-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v005-inicio",
+      "ruta": "/",
+      "pruebaUtc": "2026-11-27T04:11:42.988Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::jrp85-1795752703195-a8ef48f8413d",
+      "rutaFinal": "/",
+      "deployId": null,
+      "capturaError": "movil-v005-inicio-error.png",
+      "capturaRecuperacion": "movil-v005-inicio-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v006-timeout",
+      "ruta": "/catalogo?q=polo",
+      "pruebaUtc": "2026-11-27T04:11:43.950Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::w29fw-1795752704158-7e78d4f6e7e4",
+      "rutaFinal": "/catalogo",
+      "deployId": null,
+      "capturaError": "movil-v006-timeout-error.png",
+      "capturaRecuperacion": "movil-v006-timeout-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v006-indisponible",
+      "ruta": "/catalogo?q=polo",
+      "pruebaUtc": "2026-11-27T04:11:44.940Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::nnb68-1795752705149-5c19f65c394c",
+      "rutaFinal": "/catalogo",
+      "deployId": null,
+      "capturaError": "movil-v006-indisponible-error.png",
+      "capturaRecuperacion": "movil-v006-indisponible-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v008-carrito",
+      "ruta": "/carrito",
+      "pruebaUtc": "2026-11-27T04:11:45.939Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::jrp85-1795752706147-0b7be0e5bf1f",
+      "rutaFinal": "/carrito",
+      "deployId": null,
+      "capturaError": "movil-v008-carrito-error.png",
+      "capturaRecuperacion": "movil-v008-carrito-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v009-favoritos",
+      "ruta": "/favoritos",
+      "pruebaUtc": "2026-11-27T04:11:46.922Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::fbxxm-1795752707132-5db008250a31",
+      "rutaFinal": "/favoritos",
+      "deployId": null,
+      "sesionSimulada": true,
+      "capturaError": "movil-v009-favoritos-error.png",
+      "capturaRecuperacion": "movil-v009-favoritos-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v010-direccion",
+      "ruta": "/checkout/direccion",
+      "pruebaUtc": "2026-11-27T04:11:48.090Z",
+      "respuestasSimuladas": [],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::64mfz-1795752708298-2d4639aea218",
+      "rutaFinal": "/checkout/direccion",
+      "deployId": null,
+      "sesionSimulada": true,
+      "modo": "Fixtures locales",
+      "capturaModo": "movil-v010-direccion-modo-fixture.png",
+      "resultado": "INCONCLUSO",
+      "encabezados": [
+        "Finaliza tu compra",
+        "¿Dónde entregamos tu pedido?",
+        "Tu pedido"
+      ],
+      "motivo": "Checkout muestra datos de fixture y no consulta el endpoint de direcciones."
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v015-pedidos",
+      "ruta": "/mis-pedidos",
+      "pruebaUtc": "2026-11-27T04:11:49.054Z",
+      "respuestasSimuladas": [
+        503,
+        200
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::kdjh4-1795752709263-ef8d2139a84e",
+      "rutaFinal": "/mis-pedidos",
+      "deployId": null,
+      "capturaError": "movil-v015-pedidos-error.png",
+      "capturaRecuperacion": "movil-v015-pedidos-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v016-detalle",
+      "ruta": "/mis-pedidos/PED-H5-QA-001",
+      "pruebaUtc": "2026-11-27T04:11:50.045Z",
+      "respuestasSimuladas": [
+        503,
+        404
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::rl2ft-1795752710259-3e71550facca",
+      "rutaFinal": "/mis-pedidos/PED-H5-QA-001",
+      "deployId": null,
+      "capturaError": "movil-v016-detalle-error.png",
+      "capturaRecuperacion": "movil-v016-detalle-recuperado.png",
+      "resultado": "PASS"
+    },
+    {
+      "dispositivo": "movil",
+      "caso": "v017-seguimiento",
+      "ruta": "/mis-pedidos/PED-H5-QA-001/seguimiento",
+      "pruebaUtc": "2026-11-27T04:11:51.069Z",
+      "respuestasSimuladas": [
+        503,
+        202
+      ],
+      "documentoHttp": 200,
+      "vercelRequestId": "gru1::iad1::nnb68-1795752711277-1490e099707f",
+      "rutaFinal": "/mis-pedidos/PED-H5-QA-001/seguimiento",
+      "deployId": null,
+      "capturaError": "movil-v017-seguimiento-error.png",
+      "capturaRecuperacion": "movil-v017-seguimiento-recuperado.png",
+      "resultado": "PASS"
+    }
+  ]
+}
