@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import {
@@ -23,6 +23,7 @@ import {
   type CheckoutQuote,
 } from "./fixtures";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
+import { checkoutOperationReducer, initialCheckoutOperationState } from "./checkout-operation-state";
 import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome, type ContactField, type ContactFieldErrors } from "./CheckoutComponents";
 import "./checkout.css";
 
@@ -97,13 +98,20 @@ export function CheckoutFlow() {
   const [couponMessage, setCouponMessage] = useState("");
   const [consented, setConsented] = useState(false);
   const [hasPreparationAttempt, setHasPreparationAttempt] = useState(false);
-  const [operationId, setOperationId] = useState("");
+  const [operationState, dispatchOperationState] = useReducer(checkoutOperationReducer, initialCheckoutOperationState);
+  const { operationId, recoveryOffered } = operationState;
+  const setOperationId = useCallback((nextOperationId: string) => {
+    dispatchOperationState({ type: "operation-changed", operationId: nextOperationId });
+  }, []);
+  const setRecoveryOffered = useCallback((offered: boolean) => {
+    dispatchOperationState(offered
+      ? { type: "recovery-offered", operationId }
+      : { type: "recovery-cleared" });
+  }, [operationId]);
   const [orderId, setOrderId] = useState("");
   const [verifiedOrder, setVerifiedOrder] = useState<CheckoutOperation | null>(null);
   const [copyMessage, setCopyMessage] = useState("");
   const [orderSubmission, setOrderSubmission] = useState<"READY" | "UNCERTAIN" | "REJECTED">("READY");
-  // En modo BFF, la recuperación explícita (mismo pedido y misma clave) solo se ofrece cuando verificar indicó que la operación la necesita.
-  const [recoveryOffered, setRecoveryOffered] = useState(false);
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<{ quoteId: string; cartVersion: number; key: string } | null>(null);
   const benefitRequest = useRef(0);
@@ -135,7 +143,7 @@ export function CheckoutFlow() {
     setHasPreparationAttempt(false);
     orderKey.current = null;
     contactRef.current = null;
-  }, []);
+  }, [setOperationId]);
   const requireAddressAuthentication = useCallback((error: unknown) => {
     setAddresses([]);
     setSelectedId("");

@@ -30,6 +30,7 @@ vi.mock("../../src/features/checkout/api", () => {
 
 import { CheckoutApiError } from "../../src/features/checkout/api";
 import { CheckoutFlow } from "../../src/features/checkout/CheckoutFlow";
+import { checkoutOperationReducer, initialCheckoutOperationState } from "../../src/features/checkout/checkout-operation-state";
 
 const quote = {
   quoteId: "Q-1", expiresAt: Date.now() + 5 * 60_000, subtotal: 340, discount: 0, shipping: 15, estimatedDays: 2,
@@ -57,6 +58,8 @@ function fillContact() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  api.createOrder.mockReset();
+  api.getOperation.mockReset();
   api.listAddresses.mockResolvedValue([{
     addressId: "ADR-1", label: "Casa", street: "Av. Lima 123", district: "Miraflores",
     province: "Lima", department: "Lima", phone: "999999999",
@@ -65,6 +68,35 @@ beforeEach(() => {
   api.createQuote.mockImplementation(async () => quote);
   api.prepare.mockResolvedValue({ checkoutOperationId: "operation-1", state: "PREPARED" });
   api.createOrder.mockRejectedValueOnce(new CheckoutApiError(504, "CHECKOUT_BACKEND_TIMEOUT", undefined, 5));
+});
+
+describe("checkout recovery belongs to the current operation", () => {
+  it("clears operation A's recovery offer when preparing B and ignores a late recovery read for A", () => {
+    const operationA = checkoutOperationReducer(initialCheckoutOperationState, {
+      type: "operation-changed",
+      operationId: "operation-A",
+    });
+    const recoveryRequiredA = checkoutOperationReducer(operationA, {
+      type: "recovery-offered",
+      operationId: "operation-A",
+    });
+    expect(recoveryRequiredA.recoveryOffered).toBe(true);
+
+    const operationB = checkoutOperationReducer(recoveryRequiredA, {
+      type: "operation-changed",
+      operationId: "operation-B",
+    });
+    expect(operationB.recoveryOffered).toBe(false);
+    expect(checkoutOperationReducer(operationB, {
+      type: "recovery-offered",
+      operationId: "operation-A",
+    })).toEqual(operationB);
+
+    expect(checkoutOperationReducer(operationB, {
+      type: "recovery-offered",
+      operationId: "operation-B",
+    })).toEqual({ operationId: "operation-B", recoveryOffered: true });
+  });
 });
 
 describe("CheckoutFlow in bff mode: verification is read-only", () => {
