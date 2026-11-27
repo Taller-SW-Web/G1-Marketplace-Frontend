@@ -1,0 +1,263 @@
+{
+  "capturedAtUtc": "2026-11-27T20:48:43.029Z",
+  "durationMs": 15482,
+  "task": "TASK-F010-QA-001",
+  "issue": "https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/36",
+  "scope": "Vercel public UI only. All /api/catalog/* requests below were observed as page-generated requests; no direct BFF/API calls were sent.",
+  "deployment": {
+    "url": "https://g1-marketplace-frontend.vercel.app/catalogo",
+    "githubMainShaAtCapture": "ce72b5d73e422dae77f56c4e6edb04983377dc31",
+    "shaAttribution": "GitHub main SHA was read from the branch API before the browser run. Andres had reported the same SHA as the Vercel FE deployment; the running Vercel runtime SHA was not independently verified."
+  },
+  "browser": {
+    "method": "Local Google Chrome controlled with Playwright",
+    "viewport": "1440x1000",
+    "navigation": "domcontentloaded",
+    "pageErrors": 0
+  },
+  "dataset": {
+    "search": "G6 QA Marketplace Desempate",
+    "pageSize": 1,
+    "expectedProducts": 2
+  },
+  "scenarios": [
+    {
+      "name": "initial-page",
+      "at": {
+        "capturedAtUtc": "2026-11-27T20:48:47.880Z",
+        "url": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6%20QA%20Marketplace%20Desempate&pageSize=1",
+        "query": {
+          "q": "G6 QA Marketplace Desempate",
+          "pageSize": "1"
+        }
+      },
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/products?q=G6+QA+Marketplace+Desempate&pageSize=1",
+        "status": 200,
+        "source": "REAL",
+        "cacheControl": "no-store",
+        "requestId": "d9704cc2-c67a-4b4d-9a9a-44addc820095",
+        "summary": {
+          "pageNumber": 0,
+          "pageSize": 1,
+          "totalElements": 2,
+          "totalPages": 2,
+          "products": [
+            {
+              "id": "8ad24563-c9da-4305-b650-1dd47a14fffb",
+              "slug": "g6-qa-marketplace-ord-002",
+              "name": "G6 QA Marketplace Desempate"
+            }
+          ]
+        }
+      },
+      "visible": "2 productos; Mostrando 1–1 de 2 productos; Página 1 de 2; Anterior visually disabled, Siguiente enabled.",
+      "screenshot": "page-0.png"
+    },
+    {
+      "name": "click-next-reaches-last-page",
+      "at": {
+        "capturedAtUtc": "2026-11-27T20:48:49.443Z",
+        "url": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6+QA+Marketplace+Desempate&pageSize=1&page=1",
+        "query": {
+          "q": "G6 QA Marketplace Desempate",
+          "pageSize": "1",
+          "page": "1"
+        }
+      },
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/products?q=G6+QA+Marketplace+Desempate&pageSize=1&page=1",
+        "status": 200,
+        "source": "REAL",
+        "cacheControl": "no-store",
+        "requestId": "fa4f26ca-0160-444d-9072-f196792b7ffe",
+        "summary": {
+          "pageNumber": 1,
+          "pageSize": 1,
+          "totalElements": 2,
+          "totalPages": 2,
+          "products": [
+            {
+              "id": "93f7f500-077d-432e-be98-31cb9ee0d66d",
+              "slug": "g6-qa-marketplace-ord-001",
+              "name": "G6 QA Marketplace Desempate"
+            }
+          ]
+        }
+      },
+      "visible": "Mostrando 2–2 de 2 productos; Página 2 de 2; Anterior enabled, Siguiente visually disabled. This is the last page; no separate Última/Last control was visible.",
+      "screenshot": "page-1.png"
+    },
+    {
+      "name": "change-search-from-page-1",
+      "fromUrl": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6+QA+Marketplace+Desempate&pageSize=1&page=1",
+      "at": {
+        "capturedAtUtc": "2026-11-27T20:48:53.060Z",
+        "url": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6+QA+Marketplace&pageSize=1",
+        "query": {
+          "q": "G6 QA Marketplace",
+          "pageSize": "1"
+        }
+      },
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/products?q=G6+QA+Marketplace&pageSize=1",
+        "status": 200,
+        "source": "REAL",
+        "cacheControl": "no-store",
+        "requestId": "f36c6ad9-9c15-4979-a273-544ef8648576",
+        "summary": {
+          "pageNumber": 0,
+          "pageSize": 1,
+          "totalElements": 2,
+          "totalPages": 2,
+          "products": [
+            {
+              "id": "8ad24563-c9da-4305-b650-1dd47a14fffb",
+              "slug": "g6-qa-marketplace-ord-002",
+              "name": "G6 QA Marketplace Desempate"
+            }
+          ]
+        }
+      },
+      "visible": "Search changed through the header search input from “G6 QA Marketplace Desempate” to “G6 QA Marketplace”; URL omitted page, response pageNumber=0, and UI showed Página 1 de 2.",
+      "screenshot": "search-reset.png"
+    },
+    {
+      "name": "out-of-range-page-2",
+      "at": {
+        "capturedAtUtc": "2026-11-27T20:48:58.144Z",
+        "url": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6%20QA%20Marketplace%20Desempate&page=2&pageSize=1",
+        "query": {
+          "q": "G6 QA Marketplace Desempate",
+          "page": "2",
+          "pageSize": "1"
+        }
+      },
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/products?q=G6+QA+Marketplace+Desempate&page=2&pageSize=1",
+        "status": 200,
+        "source": "REAL",
+        "cacheControl": "no-store",
+        "requestId": "80670cf8-e9e6-4e62-a489-d8647840fdb7",
+        "summary": {
+          "pageNumber": 2,
+          "pageSize": 1,
+          "totalElements": 2,
+          "totalPages": 2,
+          "products": []
+        }
+      },
+      "visible": "“ESTA PÁGINA YA NO TIENE PRODUCTOS”; “Página 3 de 2”; Anterior enabled, Siguiente visually disabled; actions “Limpiar búsqueda” and “Ver catálogo completo”. No explicit action to return to page zero while preserving q was visible.",
+      "screenshot": "page-2-out-of-range.png"
+    }
+  ],
+  "paginationComparison": {
+    "page0ProductIds": [
+      "8ad24563-c9da-4305-b650-1dd47a14fffb"
+    ],
+    "page1ProductIds": [
+      "93f7f500-077d-432e-be98-31cb9ee0d66d"
+    ],
+    "uniqueAcrossObservedPages": true,
+    "observedOrder": [
+      "g6-qa-marketplace-ord-002",
+      "g6-qa-marketplace-ord-001"
+    ],
+    "totalElements": [
+      2,
+      2
+    ],
+    "totalPages": [
+      2,
+      2
+    ]
+  },
+  "controls": {
+    "searchInputPresent": true,
+    "filterControlsPresent": false,
+    "selectors": [],
+    "lastControls": {
+      "buttons": [],
+      "links": [],
+      "next": [
+        "Siguiente →"
+      ]
+    }
+  },
+  "criteria": {
+    "firstThenNextAndLastPage": "Verified through one click of Siguiente: page 0 → page 1 (the last page, totalPages=2). No separate Última control was present.",
+    "pageUrlAndPageNumber": "Verified: page omitted defaults to pageNumber=0; clicking Siguiente adds page=1; UI labels pages 1/2 and 2/2.",
+    "totalsAndNoDuplicates": "Verified two products, totalElements=2, totalPages=2; IDs differ across the two observed pages (ord-002 then ord-001).",
+    "searchChangeResetsPage": "Verified from page=1: submitting a shorter query through the UI removed page from URL, kept pageSize=1, and the response/UI returned to pageNumber=0 / page 1 of 2.",
+    "filterChangeResetsPage": "Not verified; no filter inputs/controls were present in the rendered DOM. The only input was the labeled search field.",
+    "outOfRangeApi": "Verified: UI-originated response is HTTP 200/REAL with page=2, size=1, totalElements=2, totalPages=2 and an empty product list.",
+    "outOfRangeVisual": "Controlled empty state rendered and no automatic redirect occurred. V-006-OPEN-03 is NOT MET in this UI cut: the page displays “Página 3 de 2” and offers “Limpiar búsqueda” / “Ver catálogo completo”, but no explicit return-to-page-zero action preserving search criteria. Siguiente is disabled.",
+    "noAutomaticRetry": "No repeated requests were sent by the test; one page-generated products request was observed per scenario."
+  },
+  "separateDependencyEvidence": {
+    "BE61": "Per the previously reviewed Backend #61 retest, an APIM case for page=2,size=1 returned HTTP 200/REAL, data=[], page=2, totalElements=2,totalPages=2, request ID 297754b6-b1f4-4786-8505-bf7031aec24b. That is separate backend evidence, not part of this UI run and not retested here.",
+    "BE61Issue": "https://github.com/Taller-SW-Web/G1-Marketplace-Backend/issues/61",
+    "FE35": "Implementation is in merged Frontend #124; independent acceptance remains separate.",
+    "BE60": "Closed per dependency review."
+  },
+  "uiGeneratedHomeResponses": [
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "source": "REAL",
+      "cacheControl": "no-store",
+      "requestId": "8254a685-cce1-4ff3-b03a-f4d7dab78148"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "source": "REAL",
+      "cacheControl": "no-store",
+      "requestId": "3ac2e6c9-d71d-4bd1-98c1-b9bcbcadf9d7"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "source": "REAL",
+      "cacheControl": "no-store",
+      "requestId": "80876fba-bf66-4779-a75f-473e7dcf6391"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "source": "REAL",
+      "cacheControl": "no-store",
+      "requestId": "d884a0cb-8156-410f-b111-578d31350248"
+    }
+  ],
+  "result": "PARTIAL / NOT READY for FE #36 acceptance: pagination between the two known products and search reset were verified. Filter reset was unavailable. The out-of-range API response is correct, but the published UI misses the explicit OPEN-03 action to return to page zero while preserving q and shows Página 3 de 2.",
+  "issueState": "open; no state change requested or made.",
+  "captures": {
+    "page-0.png": {
+      "sha256": "bf889b286ef9edc6c097b1b344af952739a2443e11e62c76a9c8bc678e9cf935",
+      "sizeBytes": 87478
+    },
+    "page-1.png": {
+      "sha256": "67f911a8e476a1b7d7424f07d214fba82c9842580c8ab6ffbc3223e1c8a4efbe",
+      "sizeBytes": 163233
+    },
+    "search-reset.png": {
+      "sha256": "54af3f9ef8d5507b76375945ab3731a3f892af87ef508723e24504e358f79ff1",
+      "sizeBytes": 162511
+    },
+    "page-2-out-of-range.png": {
+      "sha256": "3f428b7a8717633c4deee4b33293adbd28333e347d85095dd8f93a82f6ed9656",
+      "sizeBytes": 134826
+    }
+  },
+  "sanitization": "No cookies, credentials, authorization headers, HAR, or personal data were recorded.",
+  "capture_report_sha256": "3434f23d68079e2a1ca553dc30c6086e6fe0f0a642b8a4993e34831e936cefb8"
+}
