@@ -5,7 +5,7 @@ name: CI-CD
 # -> release (SemVer) -> imagen Docker (GHCR) -> deploy staging -> smoke -> aprobación -> producción.
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
   pull_request:
     branches: [develop, main]
   workflow_dispatch:
@@ -116,9 +116,9 @@ jobs:
           retention-days: 30
 
   release:
-    name: 3. Versionado (SemVer + CHANGELOG)
+    name: 3. Versionado (SemVer + GitHub Release)
     needs: build-and-security
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -139,8 +139,6 @@ jobs:
         with:
           semantic_version: 24
           extra_plugins: |
-            @semantic-release/changelog@6
-            @semantic-release/git@10
             conventional-changelog-conventionalcommits@8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
