@@ -1,0 +1,89 @@
+{
+  "captured_at_utc": "2026-11-27T20:28:11.725Z",
+  "task": "TASK-F008-QA-001",
+  "issue": "https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/32",
+  "scope": "Published Vercel UI only. No direct BFF/API request or backend test was made.",
+  "deployment": {
+    "url": "https://g1-marketplace-frontend.vercel.app/catalogo",
+    "reported_frontend_sha": "ce72b5d73e422dae77f56c4e6edb04983377dc31",
+    "sha_attribution": "Reported by Andres for Vercel; this run did not verify the Vercel runtime deployment SHA."
+  },
+  "browser": {
+    "method": "Local Chrome via Playwright; one navigation and rendered DOM inspection",
+    "navigation": "domcontentloaded",
+    "duration_ms": 24222,
+    "title": "Catálogo | Inka Athletics",
+    "page_errors": 0
+  },
+  "visible_ui": {
+    "catalog_route_loaded": true,
+    "category_navigation_visible": true,
+    "filter_form_rendered": false,
+    "price_min_input_rendered": false,
+    "price_max_input_rendered": false,
+    "brand_selector_rendered": false,
+    "filter_apply_clear_buttons_rendered": false,
+    "sort_selector_rendered": false,
+    "mobile_filter_dialog_trigger_rendered": false,
+    "unfiltered_product_count": 49,
+    "page": 0,
+    "total_pages": 3
+  },
+  "ui_generated_responses": [
+    {
+      "method": "GET",
+      "path": "/api/catalog/products",
+      "status": 200,
+      "X-Catalog-Source": "REAL",
+      "Cache-Control": "no-store",
+      "X-Request-Id": "3232b950-ca46-4381-a18b-e5e962748b41",
+      "totalElements": 49,
+      "totalPages": 3,
+      "filter_query_sent": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "X-Catalog-Source": "REAL",
+      "Cache-Control": "no-store",
+      "X-Request-Id": "7677b458-8eca-45a5-b2dc-0ee0032a188e"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/home",
+      "status": 200,
+      "X-Catalog-Source": "REAL",
+      "Cache-Control": "no-store",
+      "X-Request-Id": "f6870f0d-7c5a-4df9-a1e9-614cc2e3bd0b"
+    }
+  ],
+  "interaction": {
+    "attempted": [
+      "search field",
+      "sort selector",
+      "category/brand filter select",
+      "price inputs",
+      "clear/apply controls",
+      "mobile Filters dialog"
+    ],
+    "result": "No filter controls were present. The category label locator resolved to the category navigation landmark; no query using categoryIds, brandIds, minPrice, or maxPrice was sent.",
+    "verified_filter_cases": [],
+    "not_verified": [
+      "price 40–50 should return only ord-002",
+      "category + brand combination",
+      "invalid range causes no query",
+      "preserve search/sort when applying",
+      "clear/reset",
+      "mobile cancel/Escape/focus restoration"
+    ]
+  },
+  "result": "INCONCLUSIVE for FE #32 filter behavior: the published catalog route loaded successfully, but its current rendered UI did not expose the filter controls needed to exercise the task criteria. This is not evidence of a BFF or Vercel outage.",
+  "dependency": "FE #31 remains open; the missing published filter controls prevent UI acceptance here. Any separate BE #53 evidence is not retested or attributed to this run.",
+  "capture": {
+    "file": "vercel-catalog-ui.png",
+    "sha256": "049bdbd018c3dd6d4bdaccb457841fec30ce7198f08f67093141803c193402a8",
+    "path_at_capture": "/tmp/g1-f008-live/vercel-catalog-ui.png"
+  },
+  "sanitization": "No cookies, credentials, authorization headers, HAR, or personal data were recorded."
+}
