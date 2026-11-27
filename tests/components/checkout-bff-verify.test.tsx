@@ -103,6 +103,34 @@ describe("CheckoutFlow in bff mode: verification is read-only", () => {
     expect(api.createOrder.mock.calls[1]?.[2]).toBe(originalKey);
   });
 
+  it.each([
+    ["a later read that no longer asks for recovery", () => api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED", retryAfterSeconds: 5 }), /Vuelve a verificar en 5 s/],
+    ["a later read that fails with 429", () => api.getOperation.mockRejectedValueOnce(new CheckoutApiError(429, "SALES_RATE_LIMITED", undefined, 9)), /Vuelve a intentarlo en 9 s/],
+  ])("withdraws the recovery button after %s", async (_label, secondRead, message) => {
+    api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED", recoveryRequired: true });
+    secondRead();
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Verificar operación original" }));
+    await screen.findByRole("button", { name: "Reintentar con la misma operación" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Verificar operación original" }));
+    await screen.findByText(message);
+    expect(screen.queryByRole("button", { name: "Reintentar con la misma operación" })).toBe(null);
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not claim that no order was created when the result is uncertain", async () => {
+    api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED", recoveryRequired: true });
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Verificar operación original" }));
+    const notice = await screen.findByText(/no está confirmado/);
+    expect(notice.textContent).not.toMatch(/no se creó/i);
+  });
+
   it("returns control to the person on ORDER_NOT_SUBMITTED and resends only on an explicit click, with the same operation and key", async () => {
     api.getOperation.mockRejectedValueOnce(new CheckoutApiError(409, "ORDER_NOT_SUBMITTED"));
     api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED" });

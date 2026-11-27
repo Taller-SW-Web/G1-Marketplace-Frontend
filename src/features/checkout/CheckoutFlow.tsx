@@ -569,6 +569,8 @@ export function CheckoutFlow() {
 
   function verifyOriginalOperation() {
     if (!operationId || orderSubmission !== "UNCERTAIN" || busy) return;
+    // La recuperación explícita solo se ofrece si la última lectura la indica: cualquier otra respuesta o error la retira.
+    setRecoveryOffered(false);
     setBusy(true);
     setNotice("Consultando la operación original…");
     if (backendMockEnabled) {
@@ -582,7 +584,7 @@ export function CheckoutFlow() {
           // En modo BFF verificar es solo lectura: ningún POST implícito.
           if (checkoutBffEnabled) {
             setRecoveryOffered(true);
-            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido. Puedes reintentar con la misma operación y la misma clave: Ventas no duplica el pedido.");
+            setNotice("El resultado del pedido no está confirmado y la operación necesita recuperación. Conservamos tu operación original. Si decides reintentar, se envía con la misma operación y la misma clave; si el pedido ya existía, Ventas debe reconocerlo y no duplicarlo.");
             return undefined;
           }
           return submitBackendOrder();
