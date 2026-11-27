@@ -129,7 +129,26 @@ describe("checkout route in bff mode", () => {
     }), ctx("orders"));
     await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
     spy.mockRestore();
-    expect(timeouts).toEqual([45_000, 20_000]);
+    expect(timeouts).toEqual([55_000, 20_000]);
+  });
+
+  it("answers 202 with Retry-After and the original operation when the backend is slower than the proxy deadline", async () => {
+    const operationId = "00000000-0000-4000-8000-000000000001";
+    const slow = Object.assign(new Error("timeout"), { name: "TimeoutError" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(slow));
+    const created = await POST(request("orders", {
+      method: "POST",
+      headers: { Cookie: SESSION, "Content-Type": "application/json", Origin: ORIGIN, "Idempotency-Key": "key-0001-abcdef" },
+      body: JSON.stringify({ checkoutOperationId: operationId, contact: { fullName: "Prueba", phone: "+51900000001" } }),
+    }), ctx("orders"));
+    expect(created.status).toBe(202);
+    expect(created.headers.get("Retry-After")).toBe("5");
+    expect(await created.json()).toEqual({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } });
+    const verified = await GET(request(`operations/${operationId}`, { headers: { Cookie: SESSION } }), ctx("operations", operationId));
+    expect(verified.status).toBe(202);
+    expect(await verified.json()).toEqual({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } });
+    const addresses = await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
+    expect(addresses.status).toBe(503);
   });
 
   it("keeps the mode disabled in production when it is not configured", async () => {

@@ -1,10 +1,13 @@
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
-// La creación del pedido puede tardar hasta el plazo de Ventas del BFF (30 s por defecto, hasta 60 s).
+// El BFF puede tardar hasta 30 s en crear el pedido en Ventas y esperar hasta 60 s más para confirmar su estado.
+// El proxy no puede esperar tanto (límite de la función): a los 55 s responde 202 con Retry-After y la operación
+// original, que el BFF sigue procesando, se consulta después con la misma clave.
 export const maxDuration = 60;
-const ORDER_TIMEOUT_MS = 45_000;
+const PENDING_TIMEOUT_MS = 55_000;
 const DEFAULT_TIMEOUT_MS = 20_000;
+const PENDING_RETRY_AFTER_SECONDS = "5";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
@@ -28,6 +31,7 @@ function allowedEndpoint(path: string[], method: string) {
 }
 
 const NO_STORE = { "Cache-Control": "no-store, private" };
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function checkoutError(code: string, status: number) {
   return Response.json({ error: { code } }, { status, headers: NO_STORE });
@@ -47,6 +51,7 @@ async function forwardToBff(request: NextRequest, endpoint: string) {
     return checkoutError(code, blocked.status);
   }
 
+  const isPendingEndpoint = endpoint === "orders" || endpoint.startsWith("operations/");
   const extraHeaders: Record<string, string> = {};
   const idempotencyKey = request.headers.get("idempotency-key");
   if (idempotencyKey && /^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) extraHeaders["Idempotency-Key"] = idempotencyKey;
@@ -64,14 +69,26 @@ async function forwardToBff(request: NextRequest, endpoint: string) {
 
   try {
     const upstream = await bffFetch(request, `/api/v1/checkout/${endpoint}`, request.method, body, { headers: extraHeaders, cookies: extraCookies,
-      timeoutMs: endpoint === "orders" ? ORDER_TIMEOUT_MS : DEFAULT_TIMEOUT_MS });
+      timeoutMs: isPendingEndpoint ? PENDING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS });
     const text = await upstream.text();
     try { JSON.parse(text); } catch { return checkoutError("INVALID_BACKEND_RESPONSE", 502); }
     const headers = new Headers({ "Content-Type": "application/json; charset=utf-8", ...NO_STORE });
     const retryAfter = upstream.headers.get("retry-after");
     if (retryAfter && /^\d{1,5}$/.test(retryAfter)) headers.set("Retry-After", retryAfter);
     return new Response(text, { status: upstream.status, headers });
-  } catch {
+  } catch (error) {
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    if (timedOut && isPendingEndpoint) {
+      const operationId = endpoint.startsWith("operations/")
+        ? endpoint.slice("operations/".length)
+        : isRecord(body) && typeof body.checkoutOperationId === "string" ? body.checkoutOperationId : undefined;
+      if (operationId && /^[0-9a-f-]{36}$/i.test(operationId)) {
+        // Resultado todavía incierto: no es un error ni un pago confirmado.
+        return Response.json({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } }, {
+          status: 202, headers: { ...NO_STORE, "Retry-After": PENDING_RETRY_AFTER_SECONDS },
+        });
+      }
+    }
     return checkoutError("CHECKOUT_BACKEND_UNAVAILABLE", 503);
   }
 }
