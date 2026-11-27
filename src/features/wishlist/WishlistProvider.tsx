@@ -11,7 +11,7 @@ type Store = {
   session: Session; sessionBusy: boolean; sessionMessage: string;
   items: Record<string, ItemState>;
   selectIdentity: (identity: Identity) => Promise<void>;
-  mutate: (id: string, operation: Operation) => Promise<void>;
+  mutate: (id: string, operation: Operation) => Promise<"expired" | void>;
   revision: number;
   confirm: (id: string, saved: boolean) => void;
   confirmList: (items: FavoriteProduct[]) => void;
@@ -121,6 +121,7 @@ export function WishlistProvider({ enabled, children, realAuth = false }: { enab
         sessionRef.current = { identity: null, scope: "anonymous", enabled };
         setSession(sessionRef.current);
         setSessionMessage(error.message);
+        return "expired" as const;
       } else {
         setItems(previous => ({ ...previous, [id]: { ...getItemState(previous, id), pending: undefined,
           error: true, uncertain: error instanceof WishlistError && error.code === "RESULT_UNCERTAIN", retry: operation,

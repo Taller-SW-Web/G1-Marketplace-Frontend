@@ -23,6 +23,7 @@ export function useCurrentCart(useMock: boolean = true) {
   const [cart, setCart] = useState<CartSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [removedItemName, setRemovedItemName] = useState<string>();
   const [isBusy, setIsBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -56,6 +57,7 @@ export function useCurrentCart(useMock: boolean = true) {
   }, [useMock, reloadKey]);
 
   const retry = useCallback(() => {
+    setRemovedItemName(undefined);
     setStatus('loading');
     setErrorMessage(undefined);
     setReloadKey((k) => k + 1);
@@ -64,6 +66,7 @@ export function useCurrentCart(useMock: boolean = true) {
   const handleQuantityChange = useCallback(
     async (sku: string, newQty: number) => {
       if (newQty < 1 || newQty > 99) return;
+      setRemovedItemName(undefined);
       setIsBusy(true);
       try {
         const result = await updateCartItemQuantityApi(sku, newQty, cart?.version, useMock);
@@ -107,22 +110,23 @@ export function useCurrentCart(useMock: boolean = true) {
 
   const handleRemove = useCallback(
     async (sku: string) => {
+      const item = cart?.items.find((line) => line.sku === sku);
+      if (!cart || !item) return;
       setIsBusy(true);
+      setRemovedItemName(undefined);
+      setErrorMessage(undefined);
       try {
-        await removeCartItemApi(sku, cart?.version, useMock);
-        setCart((prev) => {
-          if (!prev) return prev;
-          const updatedItems = prev.items.filter((it) => it.sku !== sku);
-          const newCart = {
-            ...prev,
-            version: prev.version + 1,
-            items: updatedItems,
-          };
-          if (updatedItems.length === 0) {
-            setStatus('empty');
-          }
-          return newCart;
-        });
+        const result = await removeCartItemApi(sku, cart.version, useMock);
+        if (!result.success) {
+          setErrorMessage(result.status === 409
+            ? 'El carrito cambió. Reintenta la carga antes de quitar el producto.'
+            : 'No pudimos quitar el producto de tu carrito. Inténtalo nuevamente.');
+          return;
+        }
+        const items = cart.items.filter((line) => line.sku !== sku);
+        setCart({ ...cart, items, version: result.cart?.version ?? cart.version + 1, subtotal: undefined });
+        setStatus(items.length ? 'ready' : 'empty');
+        setRemovedItemName(item.name || item.sku);
       } catch (err: unknown) {
         setErrorMessage(err instanceof Error ? err.message : 'Error al eliminar el producto.');
       } finally {
@@ -136,6 +140,7 @@ export function useCurrentCart(useMock: boolean = true) {
     cart,
     status,
     errorMessage,
+    removedItemName,
     isBusy,
     retry,
     handleQuantityChange,
