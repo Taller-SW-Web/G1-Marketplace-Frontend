@@ -9,3 +9,13 @@ Cart quantity/removal controls remain local-only until the Backend exposes mutat
 ## Validation
 
 This repository currently has no GitHub Actions workflows, so pull requests may show no automated checks. Run the local checks with `npm run lint`, `npm run typecheck`, `npm run test:components`, and `npm run test:checkout:e2e`. The last command builds the app and runs Checkout fixture E2E tests; Backend MOCK smoke tests require the local services described above.
+
+
+## Modo `bff` (checkout conectado al BFF real)
+
+Con `NEXT_PUBLIC_CHECKOUT_MODE=bff` (compilación) y `CHECKOUT_MODE=bff` (servidor), el flujo deja de usar fixtures y `/api/checkout/*` reenvía al BFF (`MARKETPLACE_API_URL`) con la sesión opaca de la cuenta (`__Host-g1_session` o `g1_session`), `cart_session`, `Idempotency-Key` y el `Origin` de `G1_WEB_ORIGIN`. Requiere `G1_AUTH_ENABLED=true` y una sesión iniciada. No acepta tokens del navegador.
+
+- Direcciones: lista y alta contra G7 por el BFF (REAL).
+- Cotización, preparación y pedido: dependen de la configuración del BFF (`CHECKOUT_SALES_SOURCE`, fixture de homologación). Un pedido creado desde la pantalla es un pedido real en Ventas; el pago lo simula Ventas.
+- Un 202, 409 o 429 del BFF no se interpreta como pagado: la pantalla ofrece verificar la operación original.
+- Sin estas variables el modo por defecto sigue siendo `local-fixtures`.
