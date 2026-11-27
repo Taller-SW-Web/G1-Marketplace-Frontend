@@ -7,8 +7,10 @@ describe("F-031 reorder presentation", () => {
     const onReorder = vi.fn();
     render(<ReorderAction busy onReorder={onReorder} />);
     expect(screen.getByText(/precios y disponibilidad actuales/)).toBeDefined();
-    expect((screen.getByRole("button", { name: "Agregando productos…" }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "Agregando productos…" }));
+    const busy = screen.getByRole("button", { name: "Agregando productos…" });
+    expect(busy.getAttribute("aria-disabled")).toBe("true");
+    expect(busy.getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(busy);
     expect(onReorder).not.toHaveBeenCalled();
   });
 

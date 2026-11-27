@@ -5,8 +5,9 @@ export function ReorderAction({ busy, onReorder }: { busy: boolean; onReorder: (
   return <section aria-labelledby="reorder-action-title">
     <h2 id="reorder-action-title">Agregar productos al carrito</h2>
     <p>Se volverán a revisar los productos, precios y disponibilidad actuales. Esto no crea una compra.</p>
-    <Button variant="primary" loading={busy} preserveFocusWhileLoading loadingLabel="Agregando productos…" onClick={onReorder}>
-      Agregar productos al carrito
+    <Button variant="primary" loading={busy} preserveFocusWhileLoading loadingLabel="Agregando productos…"
+      aria-label={busy ? "Agregando productos…" : undefined} onClick={onReorder}>
+      {busy ? "Agregando productos…" : "Agregar productos al carrito"}
     </Button>
   </section>;
 }
