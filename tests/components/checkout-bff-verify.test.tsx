@@ -83,6 +83,26 @@ describe("CheckoutFlow in bff mode: verification is read-only", () => {
     expect(api.createOrder).toHaveBeenCalledTimes(1);
   });
 
+  it("offers an explicit recovery after verification and resends only on that click, with the same operation and key", async () => {
+    api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED", recoveryRequired: true });
+    api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED" });
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    const verify = await screen.findByRole("button", { name: "Verificar operación original" });
+    expect(screen.queryByRole("button", { name: "Reintentar con la misma operación" })).toBe(null);
+    const originalKey = api.createOrder.mock.calls[0]?.[2];
+
+    fireEvent.click(verify);
+    const recover = await screen.findByRole("button", { name: "Reintentar con la misma operación" });
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(recover);
+    await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
+    expect(api.createOrder.mock.calls[1]?.[0]).toBe(api.createOrder.mock.calls[0]?.[0]);
+    expect(api.createOrder.mock.calls[1]?.[2]).toBe(originalKey);
+  });
+
   it("returns control to the person on ORDER_NOT_SUBMITTED and resends only on an explicit click, with the same operation and key", async () => {
     api.getOperation.mockRejectedValueOnce(new CheckoutApiError(409, "ORDER_NOT_SUBMITTED"));
     api.createOrder.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED" });

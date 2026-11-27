@@ -102,6 +102,8 @@ export function CheckoutFlow() {
   const [verifiedOrder, setVerifiedOrder] = useState<CheckoutOperation | null>(null);
   const [copyMessage, setCopyMessage] = useState("");
   const [orderSubmission, setOrderSubmission] = useState<"READY" | "UNCERTAIN" | "REJECTED">("READY");
+  // En modo BFF, la recuperación explícita (mismo pedido y misma clave) solo se ofrece cuando verificar indicó que la operación la necesita.
+  const [recoveryOffered, setRecoveryOffered] = useState(false);
   const orderKey = useRef<string | null>(null);
   const preparationKey = useRef<{ quoteId: string; cartVersion: number; key: string } | null>(null);
   const benefitRequest = useRef(0);
@@ -552,6 +554,19 @@ export function CheckoutFlow() {
     }, 350);
   }
 
+  /** Reenvío explícito (clic de la persona) con la misma operación, el mismo contacto y la misma Idempotency-Key. */
+  function recoverOriginalOperation() {
+    if (!operationId || !contactRef.current || !orderKey.current || busy || submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setRecoveryOffered(false);
+    setNotice("Reintentando con la misma operación…");
+    void submitBackendOrder().finally(() => {
+      submitting.current = false;
+      setBusy(false);
+    });
+  }
+
   function verifyOriginalOperation() {
     if (!operationId || orderSubmission !== "UNCERTAIN" || busy) return;
     setBusy(true);
@@ -566,7 +581,8 @@ export function CheckoutFlow() {
         if (!finishVerifiedOrder(operation) && operation.state === "SUBMITTED" && operation.recoveryRequired) {
           // En modo BFF verificar es solo lectura: ningún POST implícito.
           if (checkoutBffEnabled) {
-            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido; vuelve a verificar en unos minutos.");
+            setRecoveryOffered(true);
+            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido. Puedes reintentar con la misma operación y la misma clave: Ventas no duplica el pedido.");
             return undefined;
           }
           return submitBackendOrder();
@@ -678,7 +694,7 @@ export function CheckoutFlow() {
         <h2 id="order-title">Confirma y crea tu pedido</h2>
         <p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>
         {orderSubmission === "UNCERTAIN" || orderSubmission === "REJECTED"
-          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
+          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} onRecover={checkoutBffEnabled && recoveryOffered ? recoverOriginalOperation : undefined} />
           : <>
             {notice && <p role="status" className="checkout-notice">{notice}</p>}
             <OrderCreationForm contact={contact} errors={contactFieldErrors} busy={busy}

@@ -79,8 +79,8 @@ export function OrderCreationForm({ contact, errors, busy, focusErrorRequest, on
   </form>;
 }
 
-export function OrderSubmissionStatus({ state, message, busy, onVerify, onContinue }: { state: "READY" | "UNCERTAIN" | "REJECTED"; message: string; busy: boolean; onVerify: () => void; onContinue: () => void }) {
-  if (state === "UNCERTAIN") return <><p role="status" className="checkout-notice">{message}</p><div className="checkout-actions"><Button onClick={onVerify} loading={busy}>Verificar operación original</Button></div></>;
+export function OrderSubmissionStatus({ state, message, busy, onVerify, onContinue, onRecover }: { state: "READY" | "UNCERTAIN" | "REJECTED"; message: string; busy: boolean; onVerify: () => void; onContinue: () => void; onRecover?: () => void }) {
+  if (state === "UNCERTAIN") return <><p role="status" className="checkout-notice">{message}</p><div className="checkout-actions"><Button onClick={onVerify} loading={busy}>Verificar operación original</Button>{onRecover && <Button variant="secondary" onClick={onRecover} loading={busy}>Reintentar con la misma operación</Button>}</div></>;
   if (state === "REJECTED") return <><p role="alert" className="checkout-error">{message || "La operación no se completó y no fue confirmada como pagada."}</p><div className="checkout-actions"><Button onClick={onContinue}>Seguir comprando</Button></div></>;
   return message ? <p role="status" className="checkout-notice">{message}</p> : null;
 }
