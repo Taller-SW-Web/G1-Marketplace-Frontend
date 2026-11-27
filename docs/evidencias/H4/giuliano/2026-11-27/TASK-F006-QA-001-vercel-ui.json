@@ -1,0 +1,50 @@
+{
+  "captured_at_utc": "2026-11-27T20:15:43.242Z",
+  "task": "TASK-F006-QA-001",
+  "issue": "https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/28",
+  "scope": "Published Vercel UI only; no BFF or BE #45 test was run in this retest.",
+  "deployment": {
+    "url": "https://g1-marketplace-frontend.vercel.app/",
+    "reported_frontend_sha": "ce72b5d73e422dae77f56c4e6edb04983377dc31",
+    "sha_attribution": "Andres reported this SHA for Vercel. It matches GitHub main HEAD at the time checked, but was not independently read from Vercel runtime metadata."
+  },
+  "interaction": {
+    "method": "Chrome navigation to the published home route",
+    "duration_seconds": 4.57,
+    "document_title": "Inka Athletics",
+    "page_errors": 0
+  },
+  "visible_home": {
+    "category_count": 10,
+    "featured_section": "DESTACADOS PARA TI",
+    "featured_product": {
+      "slug": "g6-qa-marketplace-ord-001",
+      "id": "93f7f500-077d-432e-be98-31cb9ee0d66d",
+      "visible_name": "G6 QA Marketplace Desempate"
+    }
+  },
+  "network": {
+    "observed_request": "GET /api/catalog/home",
+    "status": 200,
+    "headers": {
+      "X-Catalog-Source": "REAL",
+      "Cache-Control": "no-store"
+    },
+    "request_ids": [
+      "4abf488e-7597-430f-949b-ae73b2d4bdbd",
+      "c629dcc7-3b49-4d4b-822a-623bdaf31ea0"
+    ]
+  },
+  "capture": {
+    "file": "vercel-home.png",
+    "sha256": "3d554e7ca4a0bd4073af15dc245bbbc0b011fd76a435d033e59c5bdccbb76ce4",
+    "path_at_capture": "/tmp/g1-f006-live/vercel-home.png"
+  },
+  "result": "PASS for visible REAL featured product and categories on this home load; pending independent review of the broader issue criteria.",
+  "limitations": [
+    "This run covered one published home view; it did not repeat empty-state, error-resilience, category-link, or unauthenticated-favorite scenarios.",
+    "The Vercel runtime deployment SHA was not independently verified; the reported SHA matches current GitHub main HEAD.",
+    "No BFF verification or backend request was run as part of this task."
+  ],
+  "sanitization": "No cookies, credentials, authorization headers, or personal data were captured in this report."
+}
