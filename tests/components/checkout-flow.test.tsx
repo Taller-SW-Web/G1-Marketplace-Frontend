@@ -45,6 +45,7 @@ describe("CheckoutFlow local fixtures", () => {
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeDefined());
+    expect(screen.getByRole("navigation", { name: "Progreso de compra" }).querySelector('[aria-current="step"]')?.textContent).toContain("Confirmación");
     expect(screen.getByRole("heading", { name: "Resumen de productos" })).toBeDefined();
     expect(screen.queryByRole("link", { name: "Ver mi pedido" })).toBe(null);
     const clipboardWrite = vi.fn().mockResolvedValue(undefined);
@@ -67,6 +68,30 @@ describe("CheckoutFlow local fixtures", () => {
     await screen.findByRole("heading", { name: "Pago simulado" });
     expect((screen.getByRole("button", { name: "Registrar consentimiento" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.queryByRole("heading", { name: "Confirma y crea tu pedido" })).toBe(null);
+  });
+
+  it("shows a linked and focusable contact error summary after an invalid order submit", async () => {
+    render(<CheckoutFlow />);
+
+    const progress = screen.getByRole("navigation", { name: "Progreso de compra" });
+    expect(progress.querySelector('[aria-current="step"]')?.textContent).toContain("Dirección");
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));
+    await screen.findByRole("heading", { name: "Confirma la simulación" });
+    expect(progress.querySelector('[aria-current="step"]')?.textContent).toContain("Pago");
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
+    await screen.findByRole("heading", { name: "Datos de contacto" });
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+
+    const summary = await screen.findByRole("alert", { name: "Revisa los datos de contacto" });
+    await waitFor(() => expect(document.activeElement).toBe(summary));
+    expect(summary.querySelectorAll("a[href^='#checkout-contact-']")).toHaveLength(4);
+    expect(screen.getByLabelText("Nombre completo").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Nombre completo").getAttribute("aria-describedby")).toContain("error");
   });
 
   it("keeps the current quote when a local coupon is not applicable", async () => {
