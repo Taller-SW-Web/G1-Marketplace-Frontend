@@ -3,7 +3,16 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
   // Wishlist uses its explicit sandbox configs, kept outside this default suite.
-  testIgnore: ["**/wishlist/**", "**/auth/**", "**/featured/**"],
+  // H5 (V-007, axe) y regresión visual tienen sus propias configuraciones.
+  testIgnore: [
+    "**/wishlist/**",
+    "**/h4-connected/**",
+    "**/auth/**",
+    "**/featured/**",
+    "**/diego-closure/**",
+    "**/h5/**",
+    "**/visual-regression/**",
+  ],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,

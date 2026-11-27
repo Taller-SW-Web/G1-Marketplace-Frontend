@@ -157,8 +157,8 @@ function validateContactField(field: ContactField, value: string): string | unde
   return undefined;
 }
 
-export function OrderSubmissionStatus({ state, message, busy, onVerify, onContinue }: { state: "READY" | "UNCERTAIN" | "REJECTED"; message: string; busy: boolean; onVerify: () => void; onContinue: () => void }) {
-  if (state === "UNCERTAIN") return <><p role="status" className="checkout-notice">{message}</p><div className="checkout-actions"><Button onClick={onVerify} loading={busy}>Verificar operación original</Button></div></>;
+export function OrderSubmissionStatus({ state, message, busy, onVerify, onContinue, onRecover }: { state: "READY" | "UNCERTAIN" | "REJECTED"; message: string; busy: boolean; onVerify: () => void; onContinue: () => void; onRecover?: () => void }) {
+  if (state === "UNCERTAIN") return <><p role="status" className="checkout-notice">{message}</p><div className="checkout-actions"><Button onClick={onVerify} loading={busy}>Verificar operación original</Button>{onRecover && <Button variant="secondary" onClick={onRecover} loading={busy}>Reintentar con la misma operación</Button>}</div></>;
   if (state === "REJECTED") return <><p role="alert" className="checkout-error">{message || "La operación no se completó y no fue confirmada como pagada."}</p><div className="checkout-actions"><Button onClick={onContinue}>Seguir comprando</Button></div></>;
   return message ? <p role="status" className="checkout-notice">{message}</p> : null;
 }
@@ -169,11 +169,12 @@ type OrderConfirmationSummaryProps = {
   operation: CheckoutOperation | null;
   quote: CheckoutQuote | null;
   backendMockEnabled: boolean;
+  bff?: boolean;
   copyMessage: string;
   onCopy: () => void;
 };
 
-export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
+export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, bff = false, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
   const confirmationTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -183,9 +184,9 @@ export function OrderConfirmationSummary({ orderId, operationId, operation, quot
   return <div className="checkout-confirmation" role="region" aria-labelledby="confirmed-title">
     <header className="checkout-confirmation-hero" aria-labelledby="confirmed-title">
       <span className="checkout-confirmation-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m5 12.5 4.2 4.2L19 7" /></svg></span>
-      <p className="checkout-success-tag">{backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
+      <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
       <h2 ref={confirmationTitleRef} id="confirmed-title" tabIndex={-1}>¡Pedido confirmado!</h2>
-      <p>{backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
+      <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
     </header>
     <div className="checkout-confirmation-grid">
       <section className="checkout-card checkout-confirmation-details" aria-labelledby="confirmation-details-title">
@@ -193,9 +194,9 @@ export function OrderConfirmationSummary({ orderId, operationId, operation, quot
         <div className="checkout-order-code"><div><span>Código de tu pedido</span><code>{orderId}</code></div>
           <Button variant="secondary" onClick={onCopy} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button></div>
         <dl className="checkout-confirmation-facts">
-          <div><dt>Estado de la orden</dt><dd><span className="checkout-status-pill">PAGADO{backendMockEnabled ? "" : " (fixture)"}</span></dd></div>
+          <div><dt>Estado de la orden</dt><dd><span className="checkout-status-pill">PAGADO{backendMockEnabled || bff ? "" : " (fixture)"}</span></dd></div>
           {operation?.orderCreatedAt && <div><dt>Fecha de registro</dt><dd>{new Date(operation.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}
-          <div className="checkout-simulation-note"><dt>Simulación de pago</dt><dd>{backendMockEnabled ? "Pago simulado confirmado por Backend MOCK" : "Pago simulado confirmado por fixture"}<small>Sin cobro real ejecutado</small></dd></div>
+          <div className="checkout-simulation-note"><dt>Simulación de pago</dt><dd>{bff ? "Pago simulado confirmado por Ventas" : backendMockEnabled ? "Pago simulado confirmado por Backend MOCK" : "Pago simulado confirmado por fixture"}<small>Sin cobro real ejecutado</small></dd></div>
         </dl>
         <p className="checkout-muted">Operación de prueba {operationId.slice(0, 8)}…</p>
       </section>
