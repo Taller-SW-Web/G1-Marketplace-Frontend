@@ -24,6 +24,7 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
         setMessage("No pudimos verificar este pedido para la operación indicada.");
         return;
       }
+      setMessage("");
       setOperation(result);
       if (isVerifiedPaidOperation(result) && result.orderId === orderId) {
         setState("paid");
