@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import {
@@ -23,6 +23,7 @@ import {
   type CheckoutQuote,
 } from "./fixtures";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, CheckoutApiError, isVerifiedPaidOperation, type CheckoutCartSnapshot, type CheckoutOperation, type Contact } from "./api";
+import { checkoutOperationReducer, initialCheckoutOperationState } from "./checkout-operation-state";
 import { OrderConfirmationContainer, OrderCreationForm, OrderSubmissionStatus, PreparationOutcome, type ContactField, type ContactFieldErrors } from "./CheckoutComponents";
 import "./checkout.css";
 
@@ -97,7 +98,16 @@ export function CheckoutFlow() {
   const [couponMessage, setCouponMessage] = useState("");
   const [consented, setConsented] = useState(false);
   const [hasPreparationAttempt, setHasPreparationAttempt] = useState(false);
-  const [operationId, setOperationId] = useState("");
+  const [operationState, dispatchOperationState] = useReducer(checkoutOperationReducer, initialCheckoutOperationState);
+  const { operationId, recoveryOffered } = operationState;
+  const setOperationId = useCallback((nextOperationId: string) => {
+    dispatchOperationState({ type: "operation-changed", operationId: nextOperationId });
+  }, []);
+  const setRecoveryOffered = useCallback((offered: boolean) => {
+    dispatchOperationState(offered
+      ? { type: "recovery-offered", operationId }
+      : { type: "recovery-cleared" });
+  }, [operationId]);
   const [orderId, setOrderId] = useState("");
   const [verifiedOrder, setVerifiedOrder] = useState<CheckoutOperation | null>(null);
   const [copyMessage, setCopyMessage] = useState("");
@@ -133,7 +143,7 @@ export function CheckoutFlow() {
     setHasPreparationAttempt(false);
     orderKey.current = null;
     contactRef.current = null;
-  }, []);
+  }, [setOperationId]);
   const requireAddressAuthentication = useCallback((error: unknown) => {
     setAddresses([]);
     setSelectedId("");
@@ -552,8 +562,23 @@ export function CheckoutFlow() {
     }, 350);
   }
 
+  /** Reenvío explícito (clic de la persona) con la misma operación, el mismo contacto y la misma Idempotency-Key. */
+  function recoverOriginalOperation() {
+    if (!operationId || !contactRef.current || !orderKey.current || busy || submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setRecoveryOffered(false);
+    setNotice("Reintentando con la misma operación…");
+    void submitBackendOrder().finally(() => {
+      submitting.current = false;
+      setBusy(false);
+    });
+  }
+
   function verifyOriginalOperation() {
     if (!operationId || orderSubmission !== "UNCERTAIN" || busy) return;
+    // La recuperación explícita solo se ofrece si la última lectura la indica: cualquier otra respuesta o error la retira.
+    setRecoveryOffered(false);
     setBusy(true);
     setNotice("Consultando la operación original…");
     if (backendMockEnabled) {
@@ -566,7 +591,8 @@ export function CheckoutFlow() {
         if (!finishVerifiedOrder(operation) && operation.state === "SUBMITTED" && operation.recoveryRequired) {
           // En modo BFF verificar es solo lectura: ningún POST implícito.
           if (checkoutBffEnabled) {
-            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido; vuelve a verificar en unos minutos.");
+            setRecoveryOffered(true);
+            setNotice("El resultado del pedido no está confirmado y la operación necesita recuperación. Conservamos tu operación original. Si decides reintentar, se envía con la misma operación y la misma clave; si el pedido ya existía, Ventas debe reconocerlo y no duplicarlo.");
             return undefined;
           }
           return submitBackendOrder();
@@ -678,7 +704,7 @@ export function CheckoutFlow() {
         <h2 id="order-title">Confirma y crea tu pedido</h2>
         <p>La simulación de pago ocurrirá después de crear el pedido. No habrá cobro real.</p>
         {orderSubmission === "UNCERTAIN" || orderSubmission === "REJECTED"
-          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} />
+          ? <OrderSubmissionStatus state={orderSubmission} message={notice} busy={busy} onVerify={verifyOriginalOperation} onContinue={() => window.location.assign("/catalogo")} onRecover={checkoutBffEnabled && recoveryOffered ? recoverOriginalOperation : undefined} />
           : <>
             {notice && <p role="status" className="checkout-notice">{notice}</p>}
             <OrderCreationForm contact={contact} errors={contactFieldErrors} busy={busy}
