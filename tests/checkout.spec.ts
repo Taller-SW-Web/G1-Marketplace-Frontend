@@ -1,29 +1,50 @@
 import { expect, test } from "./e2e/csp-guard";
 
-test("checkout local fixtures cover coupon, consent, and clearly labeled paid fixture", async ({ page }) => {
-  test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
-  await page.goto("/checkout");
-  await expect(page.getByText("Fixtures locales")).toBeVisible();
-  await page.getByRole("button", { name: "Continuar al resumen" }).click();
-  await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
-  await page.getByLabel("Código promocional").fill("SAVE20");
-  await page.getByRole("button", { name: "Aplicar" }).click();
-  await expect(page.getByText("Cupón aplicado.")).toBeVisible();
-  await page.getByRole("button", { name: "Continuar al pago simulado" }).click();
-  await expect(page.getByRole("heading", { name: "Pago simulado" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Registrar consentimiento" })).toBeDisabled();
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Registrar consentimiento" }).click();
-  await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
-  await page.getByLabel("Nombre completo").fill("Ana Prueba");
-  await page.getByLabel("Número de documento").fill("12345678");
-  await page.getByLabel("Teléfono").fill("999999999");
-  await page.getByLabel("Correo electrónico").fill("ana@example.test");
-  await page.getByRole("button", { name: "Crear pedido" }).click();
-  await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeVisible();
-  await expect(page.getByText("Resultado de fixture · SUCCEEDED/PAGADO")).toBeVisible();
-  await expect(page.getByText("PAGADO (fixture)")).toBeVisible();
-});
+for (const width of [320, 1280]) {
+  test(`checkout local fixtures cover coupon, consent, and the paid email notice at ${width}px`, async ({ page }) => {
+    test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/checkout");
+    await expect(page.getByText("Fixtures locales")).toBeVisible();
+    await page.getByRole("button", { name: "Continuar al resumen" }).click();
+    await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
+    await page.getByLabel("Código promocional").fill("SAVE20");
+    await page.getByRole("button", { name: "Aplicar" }).click();
+    await expect(page.getByText("Cupón aplicado.")).toBeVisible();
+    await page.getByRole("button", { name: "Continuar al pago simulado" }).click();
+    await expect(page.getByRole("heading", { name: "Pago simulado" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrar consentimiento" })).toBeDisabled();
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Registrar consentimiento" }).click();
+    await expect(page.getByRole("heading", { name: "Confirma y crea tu pedido" })).toBeVisible();
+    await page.getByLabel("Nombre completo").fill("Ana Prueba");
+    await page.getByLabel("Número de documento").fill("12345678");
+    await page.getByLabel("Teléfono").fill("999999999");
+    await page.getByLabel("Correo electrónico").fill("ana@example.test");
+    await expect(page.getByRole("note")).toHaveCount(0);
+    await page.getByRole("button", { name: "Crear pedido" }).press("Enter");
+    await expect(page.getByRole("heading", { name: "¡Pedido confirmado!" })).toBeFocused();
+    await expect(page.getByText("Resultado de fixture · SUCCEEDED/PAGADO")).toBeVisible();
+    await expect(page.getByText("PAGADO (fixture)")).toBeVisible();
+    const notice = page.getByRole("note");
+    await expect(notice).toBeVisible();
+    const copy = "Vista previa: en una compra real, te enviaremos una confirmación al correo registrado.";
+    await expect(notice).toContainText(copy);
+    await expect(page.getByText("ana@example.test")).toHaveCount(0);
+    const ariaSnapshot = await notice.ariaSnapshot();
+    expect(ariaSnapshot).toContain("Confirmación por correo");
+    expect(ariaSnapshot).toContain(copy);
+    expect(await notice.evaluate((element) => {
+      const { left, right } = element.getBoundingClientRect();
+      return left >= 0 && right <= innerWidth && element.scrollWidth <= element.clientWidth;
+    })).toBe(true);
+    const icon = `/checkout-order-email-${width < 700 ? "mobile" : "desktop"}.svg`;
+    expect(await notice.evaluate((element) => getComputedStyle(element, "::before").backgroundImage)).toContain(icon);
+    await expect(await page.request.get(icon)).toBeOK();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: /Copiar código de pedido/ })).toBeFocused();
+  });
+}
 
 test("address form validates required fields and saves a local fixture address", async ({ page }) => {
   test.skip(process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock", "runs only with local checkout fixtures");

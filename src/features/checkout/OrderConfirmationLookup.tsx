@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
+import { OrderEmailNotice } from "./OrderEmailNotice";
 import { backendMockEnabled, checkoutApi, checkoutErrorMessage, isVerifiedPaidOperation, type CheckoutOperation } from "./api";
 import { formatCheckoutMoney } from "./fixtures";
 
@@ -13,13 +14,14 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
   const [operation, setOperation] = useState<CheckoutOperation | null>(null);
   const [message, setMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const isCurrentPaidOrder = state === "paid" && operation?.orderId === orderId && operation.checkoutOperationId === operationId;
 
   useEffect(() => {
     if (!backendMockEnabled || !operationId) return;
     let active = true;
     checkoutApi.getOperation(operationId).then((result) => {
       if (!active) return;
-      if (result.orderId && result.orderId !== orderId) {
+      if (result.checkoutOperationId !== operationId || (result.orderId && result.orderId !== orderId)) {
         setState("error");
         setMessage("No pudimos verificar este pedido para la operación indicada.");
         return;
@@ -58,7 +60,7 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
       </header>
       <section className="checkout-card" aria-live="polite">
         {state === "loading" && <p role="status">Consultando el estado del pedido…</p>}
-        {state === "paid" && operation && <div className="checkout-success">
+        {isCurrentPaidOrder && <div className="checkout-success">
           <p className="checkout-success-tag">Estado verificado · SUCCEEDED/PAGADO</p>
           <h2>¡Pedido confirmado!</h2>
           <p>Ventas confirmó el pago simulado. No hubo cobro real.</p>
@@ -68,6 +70,7 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
             <div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(operation.orderTotal!)}</dd></div>
             <div><dt>Fecha del pedido</dt><dd>{new Date(operation.orderCreatedAt!).toLocaleString("es-PE")}</dd></div>
           </dl>
+          <OrderEmailNotice orderConfirmed preview />
           <div className="checkout-actions">
             <Button variant="secondary" onClick={copyOrderCode} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
             <Button onClick={() => window.location.assign("/catalogo")}>Seguir comprando</Button>
@@ -92,7 +95,7 @@ export function OrderConfirmationLookup({ orderId, operationId }: { orderId: str
           <h2>Este resultado es una fixture local</h2>
           <p>No se creó un pedido real ni hay un estado de Ventas que podamos verificar.</p>
         </div>}
-        {message && state === "paid" && <p role="status">{message}</p>}
+        {message && isCurrentPaidOrder && <p role="status">{message}</p>}
         <p><Link href="/checkout">Volver a Checkout</Link></p>
       </section>
     </main>

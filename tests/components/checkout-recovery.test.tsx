@@ -91,7 +91,8 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     await screen.findAllByText("Revisa este campo.");
     const documentNumber = screen.getByLabelText("Número de documento") as HTMLInputElement;
     const email = screen.getByLabelText("Correo electrónico") as HTMLInputElement;
-    await waitFor(() => expect(document.activeElement).toBe(documentNumber));
+    const errorSummary = await screen.findByRole("alert", { name: "Revisa los datos de contacto" });
+    await waitFor(() => expect(document.activeElement).toBe(errorSummary));
     expect(documentNumber.getAttribute("aria-invalid")).toBe("true");
     expect(email.getAttribute("aria-invalid")).toBe("true");
     const emailErrorId = email.getAttribute("aria-errormessage");
@@ -130,11 +131,12 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
 
     const error = await screen.findByText("Revisa este campo.");
     const documentType = screen.getByLabelText("Tipo de documento") as HTMLSelectElement;
-    await waitFor(() => expect(document.activeElement).toBe(documentType));
+    const errorSummary = await screen.findByRole("alert", { name: "Revisa los datos de contacto" });
+    await waitFor(() => expect(document.activeElement).toBe(errorSummary));
     expect(documentType.getAttribute("aria-invalid")).toBe("true");
     expect(documentType.getAttribute("aria-describedby")).toBe(error.id);
     expect(documentType.getAttribute("aria-errormessage")).toBe(error.id);
-    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
 
     fireEvent.change(documentType, { target: { value: "RUC" } });
     expect(documentType.getAttribute("aria-invalid")).toBe(null);
@@ -341,8 +343,14 @@ describe("CheckoutFlow recovery in Backend MOCK mode", () => {
     fillContact();
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
     const verifyButton = await screen.findByRole("button", { name: "Verificar operación original" });
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+    const originalIdempotencyKey = api.createOrder.mock.calls[0]?.[2];
+    expect(originalIdempotencyKey).toBeTruthy();
+
     fireEvent.click(verifyButton);
     await waitFor(() => expect(api.createOrder).toHaveBeenCalledTimes(2));
+    expect(api.createOrder.mock.calls[1]?.[2]).toBe(originalIdempotencyKey);
+    expect(api.createOrder.mock.calls[1]?.[0]).toBe(api.createOrder.mock.calls[0]?.[0]);
     expect((screen.getByRole("button", { name: /Verificar operación original/ }) as HTMLButtonElement).disabled).toBe(true);
 
     resolveRecoveredPost({ checkoutOperationId: "operation-1", state: "SUBMITTED" });
