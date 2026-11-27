@@ -51,7 +51,7 @@ export function FavoritesList({ products, onRemove, removingProductId, returnPat
         {product.price && <p className="favorites-card-price">{new Intl.NumberFormat("es-PE", {
           style: "currency", currency: product.price.currency,
         }).format(product.price.amount)}</p>}
-        <div className="favorites-stock-block"><p className="favorites-stock">{unavailable ? "Producto no disponible"
+        <div className="favorites-stock-block"><p className={`favorites-stock${undetermined ? " favorites-stock--pending" : ""}`}>{unavailable ? "Producto no disponible"
           : outOfStock ? "Sin existencias" : undetermined ? "Disponibilidad por confirmar" : "Disponible"}</p></div>
         {onAddToCart && !unavailable && <Button className={styles.cartAction} disabled={cannotPurchase || busy} loading={operation === "adding"}
           title={undetermined ? "Disponibilidad por confirmar" : undefined}
