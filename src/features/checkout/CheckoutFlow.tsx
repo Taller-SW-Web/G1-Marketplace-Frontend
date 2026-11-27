@@ -64,6 +64,9 @@ function mapContactFieldErrors(fields: string[] | undefined): ContactFieldErrors
   return errors;
 }
 
+/** Modo `bff`: el flujo usa la sesión de la cuenta y el BFF real (se resuelve en la compilación). */
+const checkoutBffEnabled = process.env.NEXT_PUBLIC_CHECKOUT_MODE === "bff";
+
 export function CheckoutFlow() {
   const [step, setStep] = useState<Step>("address");
   const [addresses, setAddresses] = useState<CheckoutAddress[]>(backendMockEnabled ? [] : checkoutFixtureAddresses);
@@ -592,9 +595,9 @@ export function CheckoutFlow() {
   return (
     <main className="checkout-page container">
       <header className="checkout-heading">
-        <p className="checkout-eyebrow">{backendMockEnabled ? "Backend MOCK · entorno local" : "Fixtures locales"}</p>
+        <p className="checkout-eyebrow">{checkoutBffEnabled ? "Conectado al BFF · compra de homologación" : backendMockEnabled ? "Backend MOCK · entorno local" : "Fixtures locales"}</p>
         <h1>Finaliza tu compra</h1>
-        <p>Datos de prueba · no se realizan cobros reales</p>
+        <p>{checkoutBffEnabled ? "Tu pedido se registra en Ventas · el pago lo simula Ventas y no hay cobro real" : "Datos de prueba · no se realizan cobros reales"}</p>
       </header>
       {notice && step !== "order" && <p role="alert" className="checkout-error">{notice}</p>}
       <nav className="checkout-progress" aria-label="Progreso de compra">
@@ -667,7 +670,7 @@ export function CheckoutFlow() {
               onSubmit={createOrder} onBack={() => setStep("summary")} />
           </>}
       </section>}
-      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
+      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} bff={checkoutBffEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
     </main>
   );
 }

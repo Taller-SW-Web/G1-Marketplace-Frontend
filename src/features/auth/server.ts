@@ -24,7 +24,8 @@ export function authRequestGuard(request: Request, mutation: boolean) {
   return null;
 }
 
-export async function bffFetch(request: Request, path: string, method: string, body?: unknown) {
+export async function bffFetch(request: Request, path: string, method: string, body?: unknown,
+  extra?: { headers?: Record<string, string>; cookies?: string[] }) {
   const base = new URL(process.env.MARKETPLACE_API_URL ?? "http://127.0.0.1:10000");
   if (base.username || base.password || base.search || base.hash || base.pathname !== "/"
     || (base.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && base.protocol === "http:"
@@ -34,8 +35,8 @@ export async function bffFetch(request: Request, path: string, method: string, b
     .filter(value => cookiePattern.test(value)).join("; ");
   return fetch(new URL(path, base), { method, cache: "no-store", redirect: "error",
     signal: AbortSignal.any([request.signal, AbortSignal.timeout(20000)]),
-    headers: { Accept: "application/json", Origin: webOrigin(), Cookie: cookies,
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}) },
+    headers: { Accept: "application/json", Origin: webOrigin(), Cookie: [cookies, ...(extra?.cookies ?? [])].filter(Boolean).join("; "),
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(extra?.headers ?? {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 }

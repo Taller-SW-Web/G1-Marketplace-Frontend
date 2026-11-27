@@ -328,4 +328,11 @@ export const checkoutApi = {
   },
 };
 
-export const backendMockEnabled = process.env.NEXT_PUBLIC_CHECKOUT_MODE === "backend-mock";
+export type CheckoutMode = "local-fixtures" | "backend-mock" | "bff";
+const configuredCheckoutMode = process.env.NEXT_PUBLIC_CHECKOUT_MODE;
+export const checkoutMode: CheckoutMode =
+  configuredCheckoutMode === "backend-mock" || configuredCheckoutMode === "bff" ? configuredCheckoutMode : "local-fixtures";
+/** El flujo usa `/api/checkout/*` (Backend MOCK local o BFF real) en lugar de fixtures. */
+export const backendMockEnabled = checkoutMode !== "local-fixtures";
+/** El flujo usa la sesión de la cuenta y el BFF real (direcciones de G7, cotización y pedido en Ventas). */
+export const checkoutBffEnabled = checkoutMode === "bff";
