@@ -6,7 +6,7 @@ import { useCurrentCart } from '@/features/cart/useCurrentCart';
 
 export default function CarritoPage() {
   const router = useRouter();
-  const { cart, status, errorMessage, isBusy, retry, handleQuantityChange, handleRemove } =
+  const { cart, status, errorMessage, removedItemName, isBusy, retry, handleQuantityChange, handleRemove } =
     useCurrentCart(false);
 
   const handleCheckout = () => {
@@ -19,6 +19,7 @@ export default function CarritoPage() {
         cart={cart}
         status={status}
         errorMessage={errorMessage}
+        removedItemName={removedItemName}
         onRetry={retry}
         onCheckout={handleCheckout}
         onQuantityChange={handleQuantityChange}
