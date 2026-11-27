@@ -1,6 +1,6 @@
 # Evidencia QA local — Checkout F-022–F-027 (Frontend)
 
-**Corte base:** `develop` en `6d4491f1d0e34162af9bcaca24a5a5988fd45d89` (5-nov-2026).
+**Corte revisado:** `develop` en `1f02acc128b0eb4dc200c6519811b41ee6b551c1` (27-nov-2026).
 **Modo:** pruebas unitarias/componentes y E2E con fixtures o dobles; ningún proveedor externo real.
 
 Esta evidencia complementa las implementaciones fusionadas en [PR #108](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/108) y [PR #109](https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/pull/109). No cierra los gates INT ni acredita despliegue, grants, titularidad de direcciones o pago real.
@@ -18,14 +18,22 @@ Esta evidencia complementa las implementaciones fusionadas en [PR #108](https://
 
 ## Validación ejecutada
 
-En la rama `test/checkout-qa-evidence-f022-f027`:
+Validación local reproducida sobre el corte anterior; resultados de esta sesión:
 
 - `npm run typecheck` — aprobado.
-- `npm run test:components` — **34 archivos y 309 pruebas aprobadas**. La salida incluyó registros `ECONNREFUSED`, pero no hubo fallos en la suite.
-- `npm run test:checkout:e2e` — **3 aprobadas; 1 omitida** (smoke opcional del Backend MOCK).
+- `npm run test:components` — **54 archivos y 480 pruebas aprobadas**.
+- `npm run test:server` — **12 archivos y 139 pruebas aprobadas**.
+- `npx playwright test --config playwright.checkout.config.ts` — **3 aprobadas; 1 omitida** (smoke opcional del Backend MOCK).
 - `npm run lint` — aprobado.
-- `git diff --check` — aprobado.
-- Pruebas dirigidas de `checkout-api.test.ts` y `checkout-recovery.test.tsx` — **30 aprobadas**.
+- `git status --short` antes de documentar — árbol limpio; el corte revisado no contenía cambios sin confirmar.
+
+La cobertura de F-025 se localiza en `tests/components/checkout-flow.test.tsx`, `checkout-payment-confirmation.test.tsx` y `checkout-recovery.test.tsx`; el E2E cubre consentimiento y etiqueta claramente el resultado fixture. Estos resultados son de mocks/fixtures y no constituyen evidencia de integración con un proveedor real ni de despliegue.
+
+La dependencia transversal OPS #200 figura cerrada con evidencia de configuración y despliegue FE/BFF; esto habilita la base operativa, pero no sustituye la evidencia funcional REAL de F-025.
+
+## Smoke de Backend MOCK
+
+El smoke opt-in de `tests/checkout.spec.ts` requiere un Backend local desechable en `127.0.0.1:10000`, el emisor de identidad mock en `127.0.0.1:4010` y las variables `CHECKOUT_MODE=backend-mock` y `NEXT_PUBLIC_CHECKOUT_MODE=backend-mock`. Se ejecutó con PostgreSQL temporal en Docker (puerto 55432, almacenamiento temporal) y las migraciones del backend local. En el primer intento, el guard CSP detectó imágenes sintéticas de `https://placehold.co` bloqueadas. Se corrigió la configuración E2E para añadir ese hostname exacto solo al servidor local cuando se selecciona `backend-mock`; la CSP de producción y su lista de hosts no cambiaron. Reejecución: `npx playwright test --config playwright.checkout.config.ts -g "backend-mock quotes"` — **1 aprobada**; verifica añadir al carrito, versión persistida, creación de cotización y cantidad/SKU. No se llamó a servicios externos de checkout ni al BFF de producción. Los procesos y la base de datos temporales se detuvieron y eliminaron al finalizar.
 
 ## Límites
 
