@@ -17,7 +17,7 @@ Fecha: 2026-11-27 (UTC). Issue #32 permanece abierta.
 | Filtro actual `q=G6 QA Marketplace Desempate`, `minPrice=40`, `maxPrice=50`, página 0, tamaño 2 | Una lectura GET al BFF Render, `2026-11-27T16:02:46Z`: HTTP 503 `CATALOG_UNAVAILABLE`, `X-Catalog-Source: REAL`, `X-Request-Id: bee19da7-cbe6-474d-bf5c-5fe7e4b860fb`. No se devolvieron productos ni precios. No hubo reintento. | **BLOCKED (BFF REAL)** |
 | Aplicación del rango 40–50 desde los controles de la UI publicada | Se inició una sola navegación Playwright a `https://g1-marketplace-frontend.vercel.app/catalogo`. La herramienta siguió pendiente por más de 31 s; se detuvo y no devolvió status HTTP, encabezados, snapshot ni solicitudes. No se alcanzaron controles, por lo que no se envió el filtro desde UI. | **BLOCKED (herramienta sin respuesta)** |
 
-Para la lectura REAL, el resultado esperado era el producto ID `8ad24563-c9da-4305-b650-1dd23963c2d3` (`G6 QA Marketplace Desempate`, S/49.90), porque el ID `93f7f500-077d-432e-be98-31cb9ee0d66d` cuesta S/39.90. La respuesta 503 impidió comprobarlo. No se llamó G6 directamente.
+Para la lectura REAL, el resultado esperado era el producto ID `8ad24563-c9da-4305-b650-1dd47a14fffb` (`G6 QA Marketplace Desempate`, S/49.90), porque el ID `93f7f500-077d-432e-be98-31cb9ee0d66d` cuesta S/39.90. La respuesta 503 impidió comprobarlo. No se llamó G6 directamente.
 
 ## Contexto previo, separado de esta prueba
 
