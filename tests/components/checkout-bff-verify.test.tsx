@@ -102,6 +102,14 @@ describe("CheckoutFlow in bff mode: verification is read-only", () => {
     expect(api.createOrder.mock.calls[1]?.[2]).toBe(originalKey);
   });
 
+  it("tells the person how long to wait when the initial POST fails with Retry-After", async () => {
+    await reachOrderForm();
+    fillContact();
+    fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
+    await screen.findByText(/Espera 5 s antes de verificar/);
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+  });
+
   it("passes the Retry-After of a pending operation to the person", async () => {
     api.getOperation.mockResolvedValueOnce({ checkoutOperationId: "operation-1", state: "SUBMITTED", retryAfterSeconds: 7 });
     await reachOrderForm();

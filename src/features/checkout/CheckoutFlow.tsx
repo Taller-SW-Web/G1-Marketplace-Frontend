@@ -510,7 +510,10 @@ export function CheckoutFlow() {
           return;
         }
         setOrderSubmission("UNCERTAIN");
-        setNotice(checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave."));
+        const wait = error instanceof CheckoutApiError && error.retryAfterSeconds
+          ? ` Espera ${error.retryAfterSeconds} s antes de verificar.`
+          : "";
+        setNotice(`${checkoutErrorMessage(error, "Resultado no confirmado. Verifica la operación original; no repitas con otra clave.")}${wait}`);
       });
   }
 

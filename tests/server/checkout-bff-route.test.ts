@@ -151,6 +151,34 @@ describe("checkout route in bff mode", () => {
     expect(addresses.status).toBe(503);
   });
 
+  it("holds a really delayed backend response until the proxy deadline and then answers 504 with Retry-After", async () => {
+    const operationId = "00000000-0000-4000-8000-000000000001";
+    const deadline = new AbortController();
+    const timeouts: number[] = [];
+    const spy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => { timeouts.push(ms); return deadline.signal; });
+    let abortedAfterWaiting = false;
+    vi.stubGlobal("fetch", vi.fn((_url: URL, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener("abort", () => { abortedAfterWaiting = true; reject(Object.assign(new Error("timeout"), { name: "TimeoutError" })); });
+    })));
+    const pending = POST(request("orders", {
+      method: "POST",
+      headers: { Cookie: SESSION, "Content-Type": "application/json", Origin: ORIGIN, "Idempotency-Key": "key-0001-abcdef" },
+      body: JSON.stringify({ checkoutOperationId: operationId, contact: { fullName: "Prueba", phone: "+51900000001" } }),
+    }), ctx("orders"));
+    let settled = false;
+    void pending.then(() => { settled = true; });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(settled).toBe(false); // la respuesta del BFF sigue pendiente: el proxy espera
+    deadline.abort(Object.assign(new Error("timeout"), { name: "TimeoutError" }));
+    const response = await pending;
+    spy.mockRestore();
+    expect(abortedAfterWaiting).toBe(true);
+    expect(timeouts).toEqual([55_000]);
+    expect(response.status).toBe(504);
+    expect(response.headers.get("Retry-After")).toBe("5");
+    expect(await response.json()).toEqual({ error: { code: "CHECKOUT_BACKEND_TIMEOUT" } });
+  });
+
   it("never sends a second POST while verifying: the verification of an operation is a single GET", async () => {
     const upstream = vi.fn().mockResolvedValue(Response.json({ error: { code: "ORDER_NOT_SUBMITTED" } }, { status: 409 }));
     vi.stubGlobal("fetch", upstream);
