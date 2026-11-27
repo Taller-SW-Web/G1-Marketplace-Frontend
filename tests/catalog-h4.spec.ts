@@ -109,10 +109,22 @@ test('H4 ordering is global across pages and page recovery keeps criteria', asyn
   await page.getByRole('button', { name: 'Volver a la primera página' }).click();
   await expect(page.locator('.product-card')).toHaveCount(4);
   expect(new URL(page.url()).searchParams.get('q')).toBe('running');
+  const sortedResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === '/api/catalog/products' && url.searchParams.get('sort') === 'NAME_ASC';
+  });
   await page.getByLabel('Ordenar por').selectOption('NAME_ASC');
+  const sortedPage = await (await sortedResponse).json();
+  await expect(page.locator('.product-card h2')).toHaveText(sortedPage.data.map((product: { name: string }) => product.name));
   const first = await page.locator('.product-card h2').allTextContents();
+  const nextResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === '/api/catalog/products' && url.searchParams.get('page') === '1';
+  });
   await page.getByRole('button', { name: 'Siguiente →' }).click();
   await expect(page).toHaveURL(/page=1/);
+  const nextPage = await (await nextResponse).json();
+  await expect(page.locator('.product-card h2')).toHaveText(nextPage.data.map((product: { name: string }) => product.name));
   const second = await page.locator('.product-card h2').allTextContents();
   expect([...first, ...second]).toEqual([...first, ...second].sort((a, b) => a.localeCompare(b, 'es')));
   await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
