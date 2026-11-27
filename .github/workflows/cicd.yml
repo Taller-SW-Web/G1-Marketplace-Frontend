@@ -36,6 +36,22 @@ jobs:
         run: npm run typecheck
       - name: Test del runner REAL local (sin red)
         run: npm run test:demo:catalogo:real
+      - name: Test de componentes con cobertura (Vitest)
+        run: npm run test:components:cov
+      - name: Test de servidor con cobertura (Vitest)
+        run: npm run test:server:cov
+      - name: Publicar reporte de cobertura Vitest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: |
+            coverage/components/coverage-summary.json
+            coverage/components/lcov.info
+            coverage/server/coverage-summary.json
+            coverage/server/lcov.info
+          if-no-files-found: warn
+          retention-days: 30
       - name: Pruebas unitarias de componentes (Vitest)
         run: npm run test:components
       - name: Pruebas unitarias de servidor (Vitest)
