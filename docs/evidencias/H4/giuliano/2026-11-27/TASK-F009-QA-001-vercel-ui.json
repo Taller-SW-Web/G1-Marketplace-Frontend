@@ -1,0 +1,73 @@
+{
+  "captured_at_utc": "2026-11-27T20:41:13.990Z",
+  "task": "TASK-F009-QA-001",
+  "issue": "https://github.com/Taller-SW-Web/G1-Marketplace-Frontend/issues/34",
+  "scope": "Published Vercel UI only. No direct BFF/API request was sent; the request and response below were initiated/observed through the page.",
+  "deployment": {
+    "url": "https://g1-marketplace-frontend.vercel.app/catalogo?q=G6%20QA%20Marketplace%20Desempate&pageSize=1",
+    "github_main_sha_at_capture": "ce72b5d73e422dae77f56c4e6edb04983377dc31",
+    "sha_attribution": "GitHub main branch HEAD was independently read at capture time. Andres had reported this SHA as the Vercel FE deployment SHA; this run did not verify the Vercel runtime deployment SHA."
+  },
+  "browser": {
+    "method": "Local Google Chrome controlled with Playwright; rendered DOM and page-generated network traffic observed.",
+    "navigation": "domcontentloaded",
+    "duration_ms": 3715,
+    "viewport": "1440x1000",
+    "page_title": "Catálogo | Inka Athletics",
+    "page_errors": 0
+  },
+  "route_state": {
+    "path": "/catalogo",
+    "search_query": "G6 QA Marketplace Desempate",
+    "page_size": 1,
+    "page_parameter": "omitted; response pageNumber=0 and UI label says Página 1 de 2",
+    "visible_result_text": "2 productos; Mostrando 1–1 de 2 productos; Página 1 de 2; Siguiente button visible"
+  },
+  "ui_generated_request": {
+    "method": "GET",
+    "path": "/api/catalog/products?q=G6+QA+Marketplace+Desempate&pageSize=1"
+  },
+  "ui_generated_response": {
+    "status": 200,
+    "X-Catalog-Source": "REAL",
+    "Cache-Control": "no-store",
+    "X-Request-Id": "b507f65e-c187-46bc-a5b0-ca8ebfba6228",
+    "totalElements": 2,
+    "totalPages": 2,
+    "pageNumber": 0,
+    "products": [
+      {
+        "id": "8ad24563-c9da-4305-b650-1dd47a14fffb",
+        "slug": "g6-qa-marketplace-ord-002",
+        "name": "G6 QA Marketplace Desempate"
+      }
+    ]
+  },
+  "ui_observations": {
+    "sort_selector_present_after_response": false,
+    "visible_select_elements": 0,
+    "pagination_next_button_present": true,
+    "sort_actions_attempted": [],
+    "pagination_actions_attempted": [],
+    "invalid_sort_input_attempted": false
+  },
+  "criteria": {
+    "NAME_ASC_and_NAME_DESC_visible_order": "not verified; no Ordenar por selector in rendered UI",
+    "invalid_enum_rejected_before_provider": "not tested; UI offers no sort control and no direct request was sent",
+    "page_reset_when_sort_changes": "not tested; no sort control",
+    "global_order_and_tie_break_across_pages": "not verified; only page 0 was rendered/observed; page 1 was not clicked",
+    "visual_state_observed": "one matching product card, 1–1 of 2 products, Página 1 de 2, Siguiente visible"
+  },
+  "result": "INCONCLUSIVE for FE #34 visual acceptance. The published catalog response is successful and REAL, but the rendered page exposes no sort selector, so the requested order changes, reset behavior, and sorted continuity across pages could not be exercised. This is not evidence that sorting is incorrect or that Vercel/BFF is down.",
+  "dependencies_and_scope": {
+    "FE_33": "implementation is in merged Frontend #124; independent acceptance remains separate and is not inferred from this run",
+    "BE_56": "closed per prior dependency review; not retested",
+    "BE_57": "separate APIM integration evidence is not a substitute for published UI acceptance; not retested here",
+    "issue_state": "FE #34 remained open at the time of evidence publication; no state was changed"
+  },
+  "capture": {
+    "file": "vercel-catalog-order.png",
+    "sha256": "cce5bac3076f5a86ad0bda883c185c3a06d9b5e7c1486621642a2110e4b115ac"
+  },
+  "sanitization": "No cookies, credentials, authorization headers, HAR, or personal data recorded."
+}
