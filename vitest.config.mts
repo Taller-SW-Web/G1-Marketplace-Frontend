@@ -11,5 +11,12 @@ export default defineConfig({
       "tests/routes/**/*.test.ts",
     ],
     setupFiles: ["./tests/components/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "lcov"],
+      reportsDirectory: "./coverage/components",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.d.ts", "src/app/**/layout.tsx"],
+    },
   },
 });
