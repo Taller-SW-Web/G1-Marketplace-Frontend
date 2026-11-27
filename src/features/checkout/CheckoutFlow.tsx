@@ -488,7 +488,7 @@ export function CheckoutFlow() {
       return true;
     }
     setOrderSubmission("UNCERTAIN");
-    setNotice("El pedido aún no tiene un resultado final verificado. Consulta o reintenta la misma operación; no se creará otra.");
+    setNotice(`El pedido aún no tiene un resultado final verificado. ${operation.retryAfterSeconds ? `Vuelve a verificar en ${operation.retryAfterSeconds} s. ` : ""}Consulta o reintenta la misma operación; no se creará otra.`);
     return false;
   }
 
@@ -561,14 +561,27 @@ export function CheckoutFlow() {
           return;
         }
         if (!finishVerifiedOrder(operation) && operation.state === "SUBMITTED" && operation.recoveryRequired) {
+          // En modo BFF verificar es solo lectura: ningún POST implícito.
+          if (checkoutBffEnabled) {
+            setNotice("El pedido necesita recuperación. Conservamos tu operación original y no se creó otro pedido; vuelve a verificar en unos minutos.");
+            return undefined;
+          }
           return submitBackendOrder();
         }
         return undefined;
       }).catch((error: unknown) => {
         if (error instanceof CheckoutApiError && error.code === "ORDER_NOT_SUBMITTED") {
+          if (checkoutBffEnabled) {
+            // La operación original nunca se registró: el reenvío lo decide la persona, con la misma operación y clave.
+            setOrderSubmission("READY");
+            setNotice("La operación original no llegó a registrarse. Puedes crear el pedido de nuevo: se conserva la misma operación y la misma clave.");
+            return undefined;
+          }
           return submitBackendOrder();
         }
-        setNotice(checkoutErrorMessage(error, "No se pudo verificar. Conservamos la operación original."));
+        setNotice(checkoutErrorMessage(error, error instanceof CheckoutApiError && error.retryAfterSeconds
+          ? `No se pudo verificar todavía. Vuelve a intentarlo en ${error.retryAfterSeconds} s; conservamos la operación original.`
+          : "No se pudo verificar. Conservamos la operación original."));
         return undefined;
       }).finally(() => setBusy(false));
       return;

@@ -132,7 +132,7 @@ describe("checkout route in bff mode", () => {
     expect(timeouts).toEqual([55_000, 20_000]);
   });
 
-  it("answers 202 with Retry-After and the original operation when the backend is slower than the proxy deadline", async () => {
+  it("answers 504 with Retry-After, without claiming a state, when the backend is slower than the proxy deadline", async () => {
     const operationId = "00000000-0000-4000-8000-000000000001";
     const slow = Object.assign(new Error("timeout"), { name: "TimeoutError" });
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(slow));
@@ -141,14 +141,24 @@ describe("checkout route in bff mode", () => {
       headers: { Cookie: SESSION, "Content-Type": "application/json", Origin: ORIGIN, "Idempotency-Key": "key-0001-abcdef" },
       body: JSON.stringify({ checkoutOperationId: operationId, contact: { fullName: "Prueba", phone: "+51900000001" } }),
     }), ctx("orders"));
-    expect(created.status).toBe(202);
+    expect(created.status).toBe(504);
     expect(created.headers.get("Retry-After")).toBe("5");
-    expect(await created.json()).toEqual({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } });
+    expect(await created.json()).toEqual({ error: { code: "CHECKOUT_BACKEND_TIMEOUT" } });
     const verified = await GET(request(`operations/${operationId}`, { headers: { Cookie: SESSION } }), ctx("operations", operationId));
-    expect(verified.status).toBe(202);
-    expect(await verified.json()).toEqual({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } });
+    expect(verified.status).toBe(504);
+    expect(await verified.json()).toEqual({ error: { code: "CHECKOUT_BACKEND_TIMEOUT" } });
     const addresses = await GET(request("delivery-addresses", { headers: { Cookie: SESSION } }), ctx("delivery-addresses"));
     expect(addresses.status).toBe(503);
+  });
+
+  it("never sends a second POST while verifying: the verification of an operation is a single GET", async () => {
+    const upstream = vi.fn().mockResolvedValue(Response.json({ error: { code: "ORDER_NOT_SUBMITTED" } }, { status: 409 }));
+    vi.stubGlobal("fetch", upstream);
+    const operationId = "00000000-0000-4000-8000-000000000001";
+    const response = await GET(request(`operations/${operationId}`, { headers: { Cookie: SESSION } }), ctx("operations", operationId));
+    expect(response.status).toBe(409);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect((upstream.mock.calls[0][1] as RequestInit).method).toBe("GET");
   });
 
   it("keeps the mode disabled in production when it is not configured", async () => {

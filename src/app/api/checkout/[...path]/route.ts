@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
-// El BFF puede tardar hasta 30 s en crear el pedido en Ventas y esperar hasta 60 s más para confirmar su estado.
-// El proxy no puede esperar tanto (límite de la función): a los 55 s responde 202 con Retry-After y la operación
-// original, que el BFF sigue procesando, se consulta después con la misma clave.
+// El BFF espera hasta 30 s para crear el pedido en Ventas y hasta G5_ORDER_POLL_MAX_MS más para confirmar su estado
+// (en producción 15 s, para responder 202 dentro de este plazo). Si aun así no hay respuesta a los 55 s (límite de la
+// función), el proxy responde 504 con Retry-After sin afirmar el estado; el BFF sigue procesando y la operación
+// original se consulta después con la misma clave, solo en lectura.
 export const maxDuration = 60;
 const PENDING_TIMEOUT_MS = 55_000;
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -31,7 +32,6 @@ function allowedEndpoint(path: string[], method: string) {
 }
 
 const NO_STORE = { "Cache-Control": "no-store, private" };
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function checkoutError(code: string, status: number) {
   return Response.json({ error: { code } }, { status, headers: NO_STORE });
@@ -79,15 +79,10 @@ async function forwardToBff(request: NextRequest, endpoint: string) {
   } catch (error) {
     const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
     if (timedOut && isPendingEndpoint) {
-      const operationId = endpoint.startsWith("operations/")
-        ? endpoint.slice("operations/".length)
-        : isRecord(body) && typeof body.checkoutOperationId === "string" ? body.checkoutOperationId : undefined;
-      if (operationId && /^[0-9a-f-]{36}$/i.test(operationId)) {
-        // Resultado todavía incierto: no es un error ni un pago confirmado.
-        return Response.json({ data: { checkoutOperationId: operationId, state: "SUBMITTED" } }, {
-          status: 202, headers: { ...NO_STORE, "Retry-After": PENDING_RETRY_AFTER_SECONDS },
-        });
-      }
+      // El proxy no sabe si el BFF registró la operación: no afirma SUBMITTED, solo que no hubo respuesta a tiempo.
+      return Response.json({ error: { code: "CHECKOUT_BACKEND_TIMEOUT" } }, {
+        status: 504, headers: { ...NO_STORE, "Retry-After": PENDING_RETRY_AFTER_SECONDS },
+      });
     }
     return checkoutError("CHECKOUT_BACKEND_UNAVAILABLE", 503);
   }

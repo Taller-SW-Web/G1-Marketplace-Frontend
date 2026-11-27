@@ -10,6 +10,8 @@ export type CheckoutOperation = {
   orderCreatedAt?: string;
   recoveryRequired?: boolean;
   failureCode?: string;
+  /** Segundos que el BFF pide esperar antes de volver a consultar (cabecera Retry-After). */
+  retryAfterSeconds?: number;
 };
 export type Contact = {
   fullName: string;
@@ -61,6 +63,7 @@ function parseOperation(value: unknown, operationId?: string): CheckoutOperation
     state: value.state as CheckoutOperation["state"],
     ...(typeof value.recoveryRequired === "boolean" ? { recoveryRequired: value.recoveryRequired } : {}),
     ...(typeof value.failureCode === "string" ? { failureCode: value.failureCode } : {}),
+    ...(typeof value.retryAfterSeconds === "number" ? { retryAfterSeconds: value.retryAfterSeconds } : {}),
   };
 
   if (value.order !== undefined) {
@@ -109,7 +112,7 @@ function parseOperation(value: unknown, operationId?: string): CheckoutOperation
 }
 
 export class CheckoutApiError extends Error {
-  constructor(readonly status: number, readonly code: string, readonly fields?: string[]) {
+  constructor(readonly status: number, readonly code: string, readonly fields?: string[], readonly retryAfterSeconds?: number) {
     super(code);
   }
 }
@@ -176,15 +179,19 @@ async function request<T>(path: string, method: "GET" | "POST", body?: unknown, 
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     cache: "no-store",
   });
+  const retryHeader = response.headers.get("retry-after");
+  const retryAfterSeconds = retryHeader && /^\d{1,5}$/.test(retryHeader) ? Number(retryHeader) : undefined;
   let payload: unknown;
-  try { payload = await response.json(); } catch { throw new CheckoutApiError(response.status, "INVALID_BACKEND_RESPONSE"); }
+  try { payload = await response.json(); } catch { throw new CheckoutApiError(response.status, "INVALID_BACKEND_RESPONSE", undefined, retryAfterSeconds); }
   if (!response.ok) {
     const error = isRecord(payload) ? payload.error : undefined;
     const code = isRecord(error) && typeof error.code === "string" ? error.code : "CHECKOUT_REQUEST_FAILED";
-    throw new CheckoutApiError(response.status, code, parseValidationFields(payload));
+    throw new CheckoutApiError(response.status, code, parseValidationFields(payload), retryAfterSeconds);
   }
   if (typeof payload !== "object" || payload === null || !("data" in payload)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
-  return (payload as Envelope<T>).data;
+  const data = (payload as Envelope<T>).data;
+  if (retryAfterSeconds !== undefined && isRecord(data)) return { ...data, retryAfterSeconds } as T;
+  return data;
 }
 
 async function requestCurrentCart(): Promise<CheckoutCartSnapshot> {
