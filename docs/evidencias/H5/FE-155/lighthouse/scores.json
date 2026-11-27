@@ -1,0 +1,65 @@
+{
+  "sha": "93fdc79f9e2c52eee4ff29ac80f107c9e9b0821e",
+  "baseUrl": "https://g1-marketplace-frontend.vercel.app",
+  "generatedAt": "2026-11-26T06:36:51.693Z",
+  "results": [
+    {
+      "route": "inicio",
+      "path": "/",
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 96,
+        "seo": 100
+      },
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/",
+      "fetchTime": "2026-11-26T06:35:12.319Z",
+      "lighthouseVersion": "13.6.0",
+      "accessibilityAudits": [],
+      "thresholds": {
+        "pass": true,
+        "failures": []
+      }
+    },
+    {
+      "route": "catalogo",
+      "path": "/catalogo",
+      "scores": {
+        "performance": 84,
+        "accessibility": 100,
+        "best-practices": 96,
+        "seo": 100
+      },
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/catalogo",
+      "fetchTime": "2026-11-26T06:35:34.492Z",
+      "lighthouseVersion": "13.6.0",
+      "accessibilityAudits": [],
+      "thresholds": {
+        "pass": false,
+        "failures": [
+          "performance: 84 < 90"
+        ]
+      }
+    },
+    {
+      "route": "ficha",
+      "path": "/productos/producto-demostracion-4",
+      "scores": {
+        "performance": 86,
+        "accessibility": 100,
+        "best-practices": 96,
+        "seo": 100
+      },
+      "finalUrl": "https://g1-marketplace-frontend.vercel.app/productos/producto-demostracion-4",
+      "fetchTime": "2026-11-26T06:35:53.860Z",
+      "lighthouseVersion": "13.6.0",
+      "accessibilityAudits": [],
+      "thresholds": {
+        "pass": false,
+        "failures": [
+          "performance: 86 < 90"
+        ]
+      }
+    }
+  ]
+}

@@ -4,9 +4,12 @@ import { FavoriteControl } from "@/features/wishlist/FavoriteControl";
 export function ProductCard({
   product,
   returnPath,
+  priority = false,
 }: {
   product: ProductCardDTO;
   returnPath: string;
+  /** Las primeras tarjetas se cargan de inmediato para no retrasar el LCP. */
+  priority?: boolean;
 }) {
   return (
     <article className="product-card">
@@ -18,7 +21,8 @@ export function ProductCard({
           <img
             src={product.image?.url ?? "/images/product-placeholder.svg"}
             alt={product.image?.alt ?? `Imagen no disponible para ${product.name}`}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : undefined}
             width="280"
             height="187"
           />

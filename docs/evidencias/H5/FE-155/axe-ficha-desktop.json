@@ -1,0 +1,9 @@
+{
+  "route": "ficha",
+  "url": "http://127.0.0.1:3105/productos/producto-demostracion-4",
+  "project": "desktop",
+  "generatedAt": "2026-11-25T01:13:26.808Z",
+  "violations": [],
+  "passes": 29,
+  "incomplete": 2
+}
