@@ -19,6 +19,7 @@ vi.mock("../../src/features/checkout/api", () => ({
 }));
 
 import { CheckoutFlow } from "../../src/features/checkout/CheckoutFlow";
+import { OrderConfirmationSummary } from "../../src/features/checkout/CheckoutComponents";
 import { OrderConfirmationLookup } from "../../src/features/checkout/OrderConfirmationLookup";
 
 beforeEach(() => {
@@ -60,7 +61,18 @@ function fillContact() {
 }
 
 describe("Checkout payment and confirmation acceptance", () => {
-  const paidOperation = { checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-1", orderState: "PAGADO", orderTotal: 110, orderCreatedAt: "2026-10-27T10:00:00Z" };
+  const paidOperation = { checkoutOperationId: "op-1", state: "SUCCEEDED", orderId: "PED-1", orderState: "PAGADO", orderTotal: 110, orderCreatedAt: "2026-10-27T10:00:00Z" } as const;
+
+  it("labels BFF confirmations explicitly and keeps the email notice as a preview", () => {
+    render(<OrderConfirmationSummary orderId="PED-1" operationId="op-1" operation={paidOperation} quote={null}
+      backendMockEnabled bff copyMessage="" onCopy={vi.fn()} />);
+
+    expect(screen.getByText("Estado verificado por BFF · PAGADO")).toBeDefined();
+    expect(screen.getByText("Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real.")).toBeDefined();
+    expect(screen.getByText("Pago simulado confirmado por Ventas")).toBeDefined();
+    expect(screen.queryByText(/Backend MOCK confirmó/)).toBeNull();
+    expect(screen.getByRole("note").textContent).toContain("Vista previa:");
+  });
 
   it("sends only one preparation request for rapid repeated submits", async () => {
     let resolvePreparation!: (value: { checkoutOperationId: string; state: string }) => void;
