@@ -11,6 +11,7 @@ export interface CartPageContainerProps {
   cart: CartSnapshot | null;
   status: 'loading' | 'ready' | 'empty' | 'error';
   errorMessage?: string;
+  removedItemName?: string;
   onRetry?: () => void;
   onCheckout?: () => void;
   onQuantityChange?: (sku: string, qty: number) => void;
@@ -27,6 +28,7 @@ export function CartPageContainer({
   cart,
   status,
   errorMessage,
+  removedItemName,
   onRetry,
   onCheckout = () => {},
   onQuantityChange,
@@ -68,10 +70,15 @@ export function CartPageContainer({
   const items = cart?.items ?? [];
   const isEmpty = status === 'empty' || items.length === 0;
 
+  const removalNotice = <p role="status" aria-live="polite" className={removedItemName ? 'cart-loading-banner' : 'sr-only'}>
+    {removedItemName && `Quitaste ${removedItemName} del carrito.`}
+  </p>;
+
   if (isEmpty) {
     return (
       <main className="cart-page-container container">
         <h1 className="cart-page-title">Carrito de compras</h1>
+        {removalNotice}
         <div className="cart-empty-wrapper">
           <EmptyState
             title="Tu carrito está vacío"
@@ -110,6 +117,11 @@ export function CartPageContainer({
         </span>
       </div>
 
+      {removalNotice}
+      {errorMessage && <div className="cart-error-state" role="alert">
+        <p>{errorMessage}</p>
+        {onRetry && <Button onClick={onRetry}>Reintentar carga</Button>}
+      </div>}
       <div className="cart-grid-layout">
         {/* Listado de ítems */}
         <section className="cart-lines-list" aria-label="Productos en tu carrito">

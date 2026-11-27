@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/h5",
-  testMatch: "ux-evidence.spec.ts",
+  testMatch: ["ux-evidence.spec.ts", "ux-faltantes.spec.ts"],
   workers: 1,
   reporter: "list",
   use: {
@@ -14,7 +14,14 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --webpack --port 3115",
     url: "http://127.0.0.1:3115/carrito",
-    env: { H5_CART_OVERLAY_QA: "true", NEXT_TELEMETRY_DISABLED: "1" },
+    env: {
+      H5_CART_OVERLAY_QA: "true",
+      G1_AUTH_ENABLED: "true",
+      H3_FRONTEND_SANDBOX_ENABLED: "true",
+      H4_CONNECTED_TEST: "true",
+      NEXT_PUBLIC_CHECKOUT_MODE: "backend-mock",
+      NEXT_TELEMETRY_DISABLED: "1",
+    },
     reuseExistingServer: false,
     timeout: 120000,
   },
