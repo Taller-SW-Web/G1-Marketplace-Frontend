@@ -643,10 +643,16 @@ export function CheckoutFlow() {
       </header>
       {notice && step !== "order" && <p role="alert" className="checkout-error">{notice}</p>}
       <nav className="checkout-progress" aria-label="Progreso de compra">
-        {progress.map((label, index) => {
-          const current = ["address", "summary", "prepare", "order", "confirmed"].indexOf(step);
-          return <span key={label} aria-current={current === index ? "step" : undefined} className={current >= index ? "is-active" : ""}>{index + 1}. {label}</span>;
-        })}
+        <ol>
+          {progress.map((label, index) => {
+            const current = ["address", "summary", "prepare", "order", "confirmed"].indexOf(step);
+            const state = current > index ? "is-done" : current === index ? "is-active is-current" : "";
+            return <li key={label} aria-current={current === index ? "step" : undefined} className={state}>
+              <span className="checkout-progress__marker" aria-hidden="true">{current > index ? "✓" : index + 1}</span>
+              <span className="checkout-progress__label"><span className="sr-only">Paso {index + 1}: </span>{label}{current > index && <span className="sr-only"> (completado)</span>}</span>
+            </li>;
+          })}
+        </ol>
       </nav>
       {step === "address" && <AddressStepContainer
         backendMockEnabled={backendMockEnabled}

@@ -216,7 +216,7 @@ type CheckoutOrderSummaryProps = {
 
 export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryProps) {
   return <>
-    <p>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
+    <p className="checkout-summary-address"><span className="checkout-summary-address__label">Entrega en</span>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
     <h3>Productos ({quote.lines.length})</h3>
     <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
     <dl className="checkout-totals">

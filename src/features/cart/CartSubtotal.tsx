@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/shared/ui/Button';
 
 export interface CartSubtotalProps {
@@ -7,6 +8,8 @@ export interface CartSubtotalProps {
   canCheckout: boolean;
   onCheckout: () => void;
   isBusy?: boolean;
+  /** Unidades en el carrito; solo para el desglose visual del resumen. */
+  itemCount?: number;
 }
 
 /**
@@ -19,6 +22,7 @@ export function CartSubtotal({
   canCheckout,
   onCheckout,
   isBusy = false,
+  itemCount,
 }: CartSubtotalProps) {
   const isPending = subtotal === null;
   const isCheckoutDisabled = isPending || !canCheckout || isBusy;
@@ -26,6 +30,19 @@ export function CartSubtotal({
   return (
     <aside className="cart-subtotal-card" aria-label="Resumen de compra">
       <h2 className="cart-subtotal-title">Resumen de tu pedido</h2>
+
+      {itemCount !== undefined && (
+        <dl className="cart-subtotal-breakdown">
+          <div>
+            <dt>Productos ({itemCount})</dt>
+            <dd>{isPending ? 'Por confirmar' : `S/ ${subtotal.amount.toFixed(2)}`}</dd>
+          </div>
+          <div>
+            <dt>Envío</dt>
+            <dd>Se calcula en el checkout</dd>
+          </div>
+        </dl>
+      )}
 
       <div className="cart-subtotal-row">
         <span>Subtotal estimado</span>
@@ -57,6 +74,7 @@ export function CartSubtotal({
         >
           Iniciar Checkout
         </Button>
+        <Link className="cart-continue-link" href="/catalogo">Seguir comprando</Link>
       </div>
     </aside>
   );

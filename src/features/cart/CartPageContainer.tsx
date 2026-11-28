@@ -76,7 +76,12 @@ export function CartPageContainer({
           <EmptyState
             title="Tu carrito está vacío"
             description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
-            icon="🛒"
+            icon={
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 7h12l-1.2 12.1a1 1 0 0 1-1 .9H8.2a1 1 0 0 1-1-.9L6 7Z" />
+                <path d="M9 7V6a3 3 0 0 1 6 0v1" />
+              </svg>
+            }
             actions={
               <Link href="/catalogo">
                 <Button type="button" variant="primary">
@@ -130,6 +135,7 @@ export function CartPageContainer({
           canCheckout={!hasIncompletePrices && items.length > 0}
           onCheckout={onCheckout}
           isBusy={isBusy}
+          itemCount={items.reduce((acc, it) => acc + it.quantity, 0)}
         />
       </div>
     </main>
