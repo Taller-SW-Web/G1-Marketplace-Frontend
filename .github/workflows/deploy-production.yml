@@ -6,6 +6,9 @@ name: Deploy producción (aprobación manual)
 # apruebe, el job queda en «Waiting for review» y NO se despliega.
 # Requiere el secreto VERCEL_DEPLOY_HOOK_URL y que Vercel no despliegue `main`
 # automáticamente (si no, despliega por su cuenta al fusionar, antes de la aprobación).
+# Para verificar que el SHA aprobado quedó activo se usa la API de Vercel con los secretos
+# VERCEL_TOKEN y VERCEL_PROJECT_ID (y opcionalmente VERCEL_TEAM_ID); sin ellos, solo se
+# verifica que el sitio responde y se emite una advertencia.
 
 on:
   push:
@@ -57,11 +60,42 @@ jobs:
           echo "Respuesta de Vercel: ${response}"
           { echo "### Despliegue a producción (Frontend)"; echo "- Commit: \`${GITHUB_SHA}\`"; echo "- Respuesta de Vercel: \`${response}\`"; } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Esperar a que el despliegue de producción quede listo con el SHA esperado
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::Faltan VERCEL_TOKEN o VERCEL_PROJECT_ID: no se puede confirmar el SHA activo; solo se verificará que el sitio responde."
+            echo "- Verificación del SHA activo: OMITIDA (sin VERCEL_TOKEN/VERCEL_PROJECT_ID)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          team=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then team="&teamId=${VERCEL_TEAM_ID}"; fi
+          for i in $(seq 1 60); do
+            deploy=$(curl -fsS -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=production&limit=10${team}" \
+              | jq -c --arg sha "$GITHUB_SHA" '.deployments | map(select(.meta.githubCommitSha == $sha)) | .[0] // empty')
+            state=$(echo "$deploy" | jq -r '.readyState // .state // "no_encontrado"')
+            id=$(echo "$deploy" | jq -r '.uid // "-"')
+            echo "intento $i: despliegue ${id} estado=${state}"
+            case "$state" in
+              READY)
+                echo "- Despliegue \`${id}\` listo con el SHA \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+                exit 0 ;;
+              ERROR|CANCELED)
+                echo "::error::El despliegue ${id} terminó en estado ${state}"
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Tiempo agotado esperando que el despliegue quede listo"
+          exit 1
+
       - name: Verificar que el sitio responde
         run: |
-          # Confirma disponibilidad; el commit en producción se confirma en el panel de Vercel.
-          sleep 90
-          for i in $(seq 1 30); do
+          for i in $(seq 1 20); do
             code=$(curl -s -o /dev/null -w "%{http_code}" https://g1-marketplace-frontend.vercel.app/registro || true)
             echo "intento $i: HTTP $code"
             if [ "$code" = "200" ]; then exit 0; fi
