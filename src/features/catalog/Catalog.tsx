@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { isCatalogPage, isCatalogFilters, isHome } from "./api";
 import { CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
 import { CatalogSortSelect } from "./CatalogSortSelect";
+import { CategoryStrip } from "./CategoryStrip";
 import { CatalogPagination } from "./CatalogPagination";
 import { catalogHref, criteriaError, recoverCatalogHref } from "./criteria";
 import { useCatalog } from "./useCatalog";
@@ -94,11 +95,7 @@ function CatalogResults({
       {categoryLinks.length > 0 && (
         <div className="catalog-hero">
           <div className="catalog-hero-top">
-            <nav aria-label="Migas de navegación" className="catalog-hero-crumbs">
-              <Link href="/">Inicio</Link>
-              <span aria-hidden="true">/</span>
-              <span aria-current="page">Catálogo</span>
-            </nav>
+            <h1 className="catalog-hero-title" ref={heading} tabIndex={-1}>Todo el catálogo</h1>
             {state.status === "ready" && (
               <p className="catalog-hero-count">
                 <strong>{state.data.page.totalElements}</strong>
@@ -106,29 +103,22 @@ function CatalogResults({
               </p>
             )}
           </div>
-          <nav className="catalog-hero-categories" aria-label="Atajos a categorías">
-            {categoryLinks.map((category) => {
-              const href = catalogHref(query, { categoryIds: category.categoryId });
-              return (
-                <Link key={category.categoryId} href={href}
-                  aria-current={params.get("categoryIds") === category.categoryId ? "true" : undefined}
-                  onClick={(event) => {
-                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                    event.preventDefault();
-                    applyCriteria(href);
-                  }}>
-                  {category.name}
-                </Link>
-              );
-            })}
-          </nav>
+          <CategoryStrip
+            onSelect={applyCriteria}
+            items={categoryLinks.map((category) => ({
+              id: category.categoryId,
+              name: category.name,
+              href: catalogHref(query, { categoryIds: category.categoryId }),
+              current: params.get("categoryIds") === category.categoryId,
+            }))}
+          />
         </div>
       )}
       <div className="catalog-body">
       <CatalogFilters variant="panel" query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
       <section className="catalog-results" aria-label="Productos del catálogo">
         <div className="catalog-result-toolbar">
-          <h1 className="sr-only" ref={heading} tabIndex={-1}>Catálogo</h1>
+          {categoryLinks.length === 0 && <h1 className="sr-only" ref={heading} tabIndex={-1}>Catálogo</h1>}
           <p className="result-count" role="status" aria-live="polite">
             {q && <span className="catalog-search-summary">Mostrando resultados para “{q}”</span>}
             {state.status === "ready"
