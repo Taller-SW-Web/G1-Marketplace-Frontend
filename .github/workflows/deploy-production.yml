@@ -1,0 +1,53 @@
+name: Deploy producción (aprobación manual)
+
+# Despliegue del Frontend a producción con aprobación obligatoria.
+# El job usa el environment `production`, que exige la aprobación de los revisores
+# configurados en GitHub (Settings > Environments > production). Hasta que uno
+# apruebe, el job queda en «Waiting for review» y NO se despliega.
+# Requiere el secreto VERCEL_DEPLOY_HOOK_URL y que Vercel no despliegue `main`
+# automáticamente (si no, despliega por su cuenta al fusionar, antes de la aprobación).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production-frontend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-production:
+    name: Despliegue a producción (requiere aprobación)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://g1-marketplace-frontend.vercel.app
+    steps:
+      - name: Solicitar el despliegue de main en Vercel
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::error::Falta el secreto VERCEL_DEPLOY_HOOK_URL"
+            exit 1
+          fi
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL" -o /dev/null
+          echo "Despliegue solicitado para ${GITHUB_SHA} (aprobado en el environment production)"
+
+      - name: Verificar que el sitio responde
+        run: |
+          # Confirma disponibilidad; el commit en producción se confirma en el panel de Vercel.
+          sleep 90
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://g1-marketplace-frontend.vercel.app/registro || true)
+            echo "intento $i: HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "::error::el sitio no respondió 200"
+          exit 1
