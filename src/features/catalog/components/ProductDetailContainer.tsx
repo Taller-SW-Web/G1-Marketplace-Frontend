@@ -15,6 +15,7 @@ import { RelatedProductsRegion } from "./RelatedProductsRegion";
 import { TechnicalSpecifications } from "./TechnicalSpecifications";
 import { AddedToCartFeedback } from "@/features/cart/AddedToCartFeedback";
 import { useAddCartItem } from "@/features/cart/useAddCartItem";
+import "./product-detail.css";
 
 interface Props {
   slug: string;
@@ -74,7 +75,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
 
   if (state.kind === "loading") {
     return (
-      <div className="container product-page detail-skeleton" aria-busy="true">
+      <div className="container product-page product-showcase detail-skeleton" aria-busy="true">
         <LoadingState label="Cargando la ficha del producto" className="detail-skeleton-grid">
           <Skeleton className="skeleton-image" />
           <div className="detail-skeleton-copy">
@@ -90,7 +91,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
 
   if (state.kind === "not_available") {
     return (
-      <div className="container product-page">
+      <div className="container product-page product-showcase">
         <div className="detail-message">
           <h1>Producto no disponible</h1>
           <p>Vuelve al catálogo para seguir explorando.</p>
@@ -104,7 +105,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
 
   if (state.kind === "error") {
     return (
-      <div className="container product-page">
+      <div className="container product-page product-showcase">
         <div className="detail-message" data-error-code={state.code}>
           <h1>No pudimos cargar este producto</h1>
           <p role="alert">
@@ -127,7 +128,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
   const canAddToCart = showCart && state.source === "MOCK";
 
   return (
-    <div className="container product-page">
+    <div className="container product-page product-showcase">
       <nav aria-label="Migas de navegación" className="breadcrumbs">
         <Link href="/">Inicio</Link>
         <span aria-hidden="true">/</span>
@@ -144,28 +145,33 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
         </p>
       )}
 
+      <header className="detail-identity">
+        <p className="detail-brand">Marca: {product.brand.name}</p>
+        <h1>{product.name}</h1>
+      </header>
+
       <div className="detail-layout">
         <ProductGallery
           media={galleryMedia}
           onOpenViewer={(index) => setViewerState({ slug, open: true, index })}
         />
         <div className="detail-summary">
-          <p className="detail-brand">Marca: {product.brand.name}</p>
-          <h1>{product.name}</h1>
           <ProductCommerce
             slug={slug}
             productId={product.productId}
             showCart={canAddToCart}
+            showUnavailableCart={showCart && !canAddToCart}
             busy={isBusy}
             onAdd={addItem}
             onVariantImageChange={onVariantImageChange}
           />
-          <TechnicalSpecifications
-            specs={product.technicalSpecifications}
-            description={product.description}
-          />
         </div>
       </div>
+
+      <TechnicalSpecifications
+        specs={product.technicalSpecifications}
+        description={product.description}
+      />
 
       <RelatedProductsRegion slug={slug} />
 

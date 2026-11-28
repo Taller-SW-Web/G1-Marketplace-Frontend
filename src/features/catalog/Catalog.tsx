@@ -12,6 +12,7 @@ import { ProductCard } from "./ProductCard";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
+import "./catalog-listing.css";
 
 export function Catalog() {
   const params = useSearchParams();
@@ -24,7 +25,7 @@ export function Catalog() {
   const invalidCriteria = criteriaError(query);
   // Invalid URL input never requests products.
   return invalidQuery || invalidCriteria ? (
-    <div className="container catalog-page empty-state">
+    <div className="container catalog-page catalog-listing empty-state">
       <Link className="breadcrumb" href="/">
         Inicio /
       </Link>
@@ -61,6 +62,9 @@ function CatalogResults({
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
   const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
+  const categoryLinks = filters.state.status === "ready" ? filters.state.data.categories :
+    categories.state.status === "ready" ? categories.state.data.categories : [];
+  const brands = filters.state.status === "ready" ? filters.state.data.brands : [];
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -86,28 +90,45 @@ function CatalogResults({
     navigate(url);
   }
   return (
-    <div className="container catalog-page">
-      <nav aria-label="Migas de navegación" className="breadcrumbs">
-        <Link href="/">Inicio</Link>
-        <span aria-hidden="true">/</span>
-        <span>Catálogo</span>
-      </nav>
-      <div className="catalog-heading">
-        <div>
-          <h1 ref={heading} tabIndex={-1}>
-            {q ? (
-              <>
-                Resultados para <span>“{q}”</span>
-              </>
-            ) : (
-              "Catálogo"
-            )}
-          </h1>
-          <p className="catalog-description">
-            {q ? "Explora los productos que coinciden con tu búsqueda." : "Todo para moverte a tu ritmo."}
-          </p>
+    <div className="container catalog-page catalog-listing">
+      <header className="catalog-heading catalog-hero">
+        <nav aria-label="Migas de navegación" className="breadcrumbs">
+          <Link href="/">Inicio</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Catálogo</span>
+        </nav>
+        <div className="catalog-hero-copy">
+          <div>
+            <h1 ref={heading} tabIndex={-1}>
+              {q ? <>Resultados para <span>“{q}”</span></> : "Todo el catálogo"}
+            </h1>
+            <p className="catalog-description">
+              {q ? "Explora los productos que coinciden con tu búsqueda." : "Encuentra el equipo para tu próximo entrenamiento."}
+            </p>
+          </div>
+          {state.status === "ready" && (
+            <p className="catalog-hero-count">
+              <strong>{state.data.page.totalElements}</strong>
+              {state.data.page.totalElements === 1 ? "producto" : "productos"}
+            </p>
+          )}
         </div>
-      </div>
+        {categoryLinks.length > 0 && (
+          <nav className="catalog-hero-categories" aria-label="Atajos a categorías">
+            {categoryLinks.slice(0, 6).map((category) => (
+              <Link key={category.categoryId} href={catalogHref(query, { categoryIds: category.categoryId })}
+                aria-current={params.get("categoryIds") === category.categoryId ? "true" : undefined}
+                onClick={(event) => {
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  applyCriteria(catalogHref(query, { categoryIds: category.categoryId }));
+                }}>
+                {category.name}
+              </Link>
+            ))}
+          </nav>
+        )}
+      </header>
       {q && (
         <div className="active-criteria" aria-label="Criterios aplicados">
           {q && (
@@ -149,6 +170,7 @@ function CatalogResults({
                       key={product.productId}
                       product={product}
                       returnPath={returnPath}
+                      listing={{ brand: brands.find((brand) => brand.brandId === product.brandId)?.name }}
                     />
                   ))}
                 </div>

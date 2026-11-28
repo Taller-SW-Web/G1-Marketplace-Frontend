@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { ProductCardDTO } from "./types";
+import { ListingPrice } from "./ListingPrice";
 import { FavoriteControl } from "@/features/wishlist/FavoriteControl";
 export function ProductCard({
   product,
   returnPath,
+  listing,
 }: {
   product: ProductCardDTO;
   returnPath: string;
+  listing?: { brand?: string };
 }) {
   return (
     <article className="product-card">
@@ -24,14 +27,15 @@ export function ProductCard({
           />
         </div>
         <div className="product-info">
-          <p className="product-category">Catálogo</p>
+          {listing ? (listing.brand && <p className="product-category">{listing.brand}</p>) : <p className="product-category">Catálogo</p>}
           <h2>{product.name}</h2>
+          {listing && <ListingPrice slug={product.slug} productId={product.productId} />}
           <span className="product-detail-label">
-            Ver producto <span aria-hidden="true">↗</span>
+            {listing ? "Ver detalle" : "Ver producto"} <span aria-hidden="true">↗</span>
           </span>
         </div>
       </Link>
-      <FavoriteControl productId={product.productId} />
+      <FavoriteControl productId={product.productId} compact={Boolean(listing)} />
     </article>
   );
 }
