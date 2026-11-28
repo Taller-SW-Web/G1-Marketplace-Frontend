@@ -10,9 +10,10 @@ const QA_HEADER_CATEGORY_IDS = new Set([
 ]);
 
 // H3 category links only: this is not the later multi-filter panel.
-export function CategoryNavigation({ sidebar = false, activeId }: {
+export function CategoryNavigation({ sidebar = false, activeId, onNavigate }: {
   sidebar?: boolean;
   activeId?: string | null;
+  onNavigate?: () => void;
 }) {
   const { state } = useCatalog("home", isHome);
   const categories = state.status === "ready" ? state.data.categories : [];
@@ -22,13 +23,13 @@ export function CategoryNavigation({ sidebar = false, activeId }: {
 
   return (
     <nav className={sidebar ? "category-navigation category-navigation--sidebar" : "category-navigation"}
-      aria-label={sidebar ? "Explorar categorías" : "Navegación principal"}>
-      {sidebar && <h2>Categorías</h2>}
-      <Link href="/catalogo" aria-current={sidebar && !activeId ? "page" : undefined}>
+      aria-label={sidebar || onNavigate ? "Explorar categorías" : "Navegación principal"}>
+      {(sidebar || onNavigate) && <h2>Categorías</h2>}
+      <Link href="/catalogo" onClick={onNavigate} aria-current={sidebar && !activeId ? "page" : undefined}>
         <span className="desktop-label">Todo el catálogo</span><span className="mobile-label">Catálogo</span>
       </Link>
       {navigationCategories.map((category) => (
-        <Link key={category.categoryId}
+        <Link key={category.categoryId} onClick={onNavigate}
           href={`/catalogo?categoryIds=${encodeURIComponent(category.categoryId)}`}
           aria-current={sidebar && activeId === category.categoryId ? "page" : undefined}>
           {category.name}
