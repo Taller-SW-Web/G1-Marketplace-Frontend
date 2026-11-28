@@ -124,9 +124,7 @@ export function ListingCardPhotos({ product, href, children }: {
             height="187"
             onError={() => { if (photo) setFailed(previous => new Set(previous).add(photo.url)); }}
           />
-          <span className="listing-image-detail" aria-hidden="true">
-            Ver detalle <span>↗</span>
-          </span>
+          <span className="listing-image-detail" aria-hidden="true">Ver detalle</span>
         </div>
         {children}
       </Link>
