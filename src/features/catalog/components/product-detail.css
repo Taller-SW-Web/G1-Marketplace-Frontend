@@ -180,22 +180,45 @@
   gap: 12px;
 }
 .product-showcase .viewer-gallery { display: grid; min-width: 0; gap: 8px; }
+.product-showcase .viewer-stage { position: relative; min-width: 0; }
 .product-showcase .viewer-media {
   display: block;
   min-height: 0;
   height: clamp(185px, 62dvh, 760px);
   overflow: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 .product-showcase .viewer-media img {
   max-height: none;
   max-width: none;
 }
 .product-showcase .viewer-media[data-zoom="1"] { overflow: hidden; }
+.product-showcase .viewer-media:not([data-zoom="1"]) { cursor: crosshair; }
 .product-showcase .viewer-media .gallery-fallback { min-height: 100%; }
-.product-showcase .viewer-controls { gap: 6px; }
-.product-showcase .viewer-controls button { padding-inline: 10px; }
-.product-showcase .viewer-zoom { min-width: auto; padding-inline: 4px; }
+.product-showcase .viewer-header-actions { display: flex; align-items: center; gap: 8px; }
+.product-showcase .viewer-controls { flex-wrap: nowrap; gap: 4px; }
+.product-showcase .viewer-controls button { padding-inline: 0; font-size: 1.125rem; }
+.product-showcase .viewer-nav {
+  position: absolute;
+  inset-block-start: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: rgb(27 24 18 / .82);
+  color: #fff;
+  font: 1.75rem/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+.product-showcase .viewer-nav--previous { inset-inline-start: 10px; }
+.product-showcase .viewer-nav--next { inset-inline-end: 10px; }
+.product-showcase .viewer-nav:hover:not(:disabled) { background: var(--surface-ink); }
+.product-showcase .viewer-nav:disabled { opacity: .45; cursor: default; }
 
 @media (max-width: 767px) {
   .product-showcase .viewer-dialog { max-height: calc(100dvh - 16px); }
@@ -217,7 +240,7 @@
     grid-template-areas: "thumbs photo";
     align-items: start;
   }
-  .product-showcase .viewer-media { grid-area: photo; }
+  .product-showcase .viewer-stage { grid-area: photo; }
   .product-showcase :is(.product-gallery, .viewer-gallery) > .gallery-thumbs {
     grid-area: thumbs;
     flex-direction: column;
