@@ -44,12 +44,28 @@ describe("precio del listado", () => {
       return loadListingPrice(id, id);
     });
     expect(loadListingPrice("queue-0", "queue-0")).toBe(jobs[0]);
-    expect(await Promise.all(jobs)).toEqual(Array(9).fill(price));
+    expect(await Promise.all(jobs)).toEqual(Array(9).fill({ price, onlySku: "TEST-SKU" }));
     expect(peak).toBe(4);
     expect(loadListingPrice("queue-0", "queue-0")).toBe(jobs[0]);
     expect(fetchProductVariants).toHaveBeenCalledTimes(9);
     expect(fetchProductPrice).toHaveBeenCalledTimes(9);
     expect(fetchProductPrice).toHaveBeenCalledWith("queue-0", "TEST-SKU", expect.any(AbortSignal));
+  });
+
+  it("muestra el precio de la primera variante sin ofrecer compra directa si hay varias", async () => {
+    vi.mocked(fetchProductVariants).mockResolvedValue({ data: {
+      productId: "multi", hasVariants: true, attributes: [],
+      variants: [
+        { variantId: "1", sku: "SKU-S", status: "ACTIVE", attributes: {}, image: null },
+        { variantId: "2", sku: "SKU-M", status: "ACTIVE", attributes: {}, image: null },
+      ],
+    } });
+    vi.mocked(fetchProductPrice).mockResolvedValue({ data: { productId: "multi", sku: "SKU-S", price }, meta: {
+      channel: "MARKETPLACE", retrievedAt: "2026-01-01T00:00:00.000Z",
+    } });
+    await expect(loadListingPrice("multi", "multi")).resolves.toEqual({ price });
+    expect(fetchProductPrice).toHaveBeenCalledTimes(1);
+    expect(fetchProductPrice).toHaveBeenCalledWith("multi", "SKU-S", expect.any(AbortSignal));
   });
 
   it("muestra el pendiente cuando no hay SKU y evita una segunda petición", async () => {

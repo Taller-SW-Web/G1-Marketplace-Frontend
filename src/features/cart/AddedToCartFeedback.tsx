@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { Button } from '@/shared/ui/Button';
 import type { AddedToCartFeedbackProps } from './types';
+
+type FeedbackProps = Omit<AddedToCartFeedbackProps, 'onViewCart'> & (
+  | { cartHref: string; onViewCart?: never }
+  | { cartHref?: never; onViewCart: AddedToCartFeedbackProps['onViewCart'] }
+);
 
 /**
  * CMP-F016-002 · AddedToCartFeedback (Overlay O-005)
@@ -16,7 +22,8 @@ export function AddedToCartFeedback({
   onViewCart,
   onContinue,
   onClose,
-}: AddedToCartFeedbackProps) {
+  cartHref,
+}: FeedbackProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -120,15 +127,19 @@ export function AddedToCartFeedback({
       </div>
 
       <div className="feedback-actions">
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={onViewCart}
-          className="feedback-view-cart-btn"
-        >
-          Ver carrito
-        </Button>
+        {cartHref ? (
+          <Link href={cartHref} className="button button--primary button--sm feedback-view-cart-btn">Ir al carrito</Link>
+        ) : (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={onViewCart}
+            className="feedback-view-cart-btn"
+          >
+            Ver carrito
+          </Button>
+        )}
         <Button
           type="button"
           variant="secondary"

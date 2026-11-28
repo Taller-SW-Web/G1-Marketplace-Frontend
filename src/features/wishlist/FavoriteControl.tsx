@@ -20,7 +20,7 @@ export function FavoriteControl({ productId, announce = true, compact = false }:
   }, [authOpen]);
   if (!session.enabled) return null;
   return <div className="favorite-control">
-    <FavoriteToggle productId={productId} confirmed={state.confirmed} uncertain={state.uncertain}
+    <FavoriteToggle productId={productId} confirmed={state.confirmed} uncertain={state.uncertain} iconOnly={compact}
       busy={sessionBusy || !!state.pending} authenticated={!!session.identity}
       onSave={id => { void mutate(id, "save"); }} onRemove={id => { void mutate(id, "remove"); }}
       onRequireAuth={() => { invoker.current = document.activeElement as HTMLElement; setAuthOpen(true); }} />

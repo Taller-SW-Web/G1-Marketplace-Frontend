@@ -10,7 +10,8 @@ const MAX_CACHED = 96;
 const FRESH_MS = 120_000;
 const PENDING_MS = 20_000;
 
-type CacheEntry = { result: Promise<PriceDTO | null>; until?: number };
+type ListingPrice = { price: PriceDTO; onlySku?: string };
+type CacheEntry = { result: Promise<ListingPrice | null>; until?: number };
 const cache = new Map<string, CacheEntry>();
 const queue: Array<() => void> = [];
 let active = 0;
@@ -27,7 +28,8 @@ async function readPrice(slug: string, productId: string) {
   const variant = data.hasVariants ? data.variants[0] : undefined;
   if (!variant || data.productId !== productId) return null;
   const { data: result } = await fetchProductPrice(slug, variant.sku, AbortSignal.timeout(8_000));
-  return result.productId === productId && result.sku === variant.sku ? result.price : null;
+  if (result.productId !== productId || result.sku !== variant.sku) return null;
+  return { price: result.price, ...(data.variants.length === 1 ? { onlySku: variant.sku } : {}) };
 }
 
 /** Una lectura en curso por producto. Cada trabajo tiene una sola petición activa. */
@@ -40,7 +42,8 @@ export function loadListingPrice(slug: string, productId: string) {
   const entry: CacheEntry = {
     result: new Promise((resolve) => {
       queue.push(() => {
-        void readPrice(slug, productId).catch(() => null).then((price) => {
+        void readPrice(slug, productId).catch(() => null).then((listing) => {
+          const price = listing?.price;
           const now = Date.now();
           const saleEnd = price?.saleAmount !== null && price?.validUntil
             ? Date.parse(price.validUntil)
@@ -50,7 +53,7 @@ export function loadListingPrice(slug: string, productId: string) {
             if (cache.size <= MAX_CACHED) break;
             if (oldEntry.until !== undefined) cache.delete(oldKey);
           }
-          resolve(price);
+          resolve(listing);
         }).finally(() => {
           active -= 1;
           runNext();
@@ -63,10 +66,10 @@ export function loadListingPrice(slug: string, productId: string) {
   return entry.result;
 }
 
-type ListingPriceState =
+export type ListingPriceState =
   | { kind: "loading" }
   | { kind: "pending" }
-  | { kind: "ready"; price: PriceDTO };
+  | ({ kind: "ready" } & ListingPrice);
 const LOADING: ListingPriceState = { kind: "loading" };
 const PENDING: ListingPriceState = { kind: "pending" };
 
@@ -78,8 +81,8 @@ export function useListingPrice(slug: string, productId: string) {
     if (!element) return;
     let mounted = true;
     const start = () => {
-      void loadListingPrice(slug, productId).then((price) => {
-        if (mounted) setResult({ slug, productId, state: price ? { kind: "ready", price } : PENDING });
+      void loadListingPrice(slug, productId).then((listing) => {
+        if (mounted) setResult({ slug, productId, state: listing ? { kind: "ready", ...listing } : PENDING });
       });
     };
     if (typeof IntersectionObserver === "undefined") {

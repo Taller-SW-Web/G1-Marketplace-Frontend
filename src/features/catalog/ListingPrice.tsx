@@ -1,12 +1,12 @@
 "use client";
 
-import { useListingPrice } from "./hooks/useListingPrice";
+import type { Ref } from "react";
+import type { ListingPriceState } from "./hooks/useListingPrice";
 import { formatMoney } from "./money";
 
-export function ListingPrice({ slug, productId }: { slug: string; productId: string }) {
-  const { ref, state } = useListingPrice(slug, productId);
+export function ListingPrice({ priceRef, state }: { priceRef: Ref<HTMLDivElement>; state: ListingPriceState }) {
   return (
-    <div className="listing-price" ref={ref} aria-busy={state.kind === "loading"}>
+    <div className="listing-price" ref={priceRef} aria-busy={state.kind === "loading"}>
       {state.kind === "loading" && (
         <>
           <span className="listing-price-shimmer" aria-hidden="true" />
