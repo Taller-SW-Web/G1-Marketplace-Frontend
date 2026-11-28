@@ -56,7 +56,26 @@ describe("CheckoutFlow local fixtures", () => {
     expect(clipboardWrite).toHaveBeenCalledWith(expect.stringMatching(/^PED-MOCK-/));
     expect(screen.getByText(/Resultado de fixture/)).toBeDefined();
     expect(screen.getByText("PAGADO (fixture)")).toBeDefined();
-    expect(screen.getByRole("region", { name: "¡Pedido confirmado!" }).textContent).toContain("No se llamó al Backend");
+    expect(screen.getByRole("region", { name: "¡Pedido confirmado!" }).textContent).toContain("No hubo cobro real.");
+    expect(screen.queryByText(/Estamos registrando tu pedido/)).toBeNull();
+  });
+
+  it("shows and quotes the current cart when checkout starts from the cart", async () => {
+    const currentCart = { data: { cartId: "cart-1", version: 7, items: [{
+      sku: "SKU-REAL", product: { name: "Botines de prueba", imageUrl: "/fixtures/product-1.svg" },
+      quantity: 2, unitPrice: { amount: 89.90, currency: "PEN", version: 1 },
+    }] } };
+    const fetchCart = vi.fn(async () => Response.json(currentCart));
+    vi.stubGlobal("fetch", fetchCart);
+    render(<CheckoutFlow fromCart />);
+
+    expect((await screen.findByRole("list", { name: "Productos del pedido" })).textContent).toContain("Botines de prueba");
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
+    await screen.findByRole("heading", { name: "Resumen de envío" });
+
+    expect(screen.getByRole("list", { name: "Productos del pedido" }).textContent).toContain("Botines de prueba×2");
+    expect(screen.getByText("Total estimado").parentElement?.textContent).toMatch(/194\.80/);
+    expect(fetchCart.mock.calls).toHaveLength(2);
   });
 
   it("does not create a preparation until the no-charge consent is checked", async () => {

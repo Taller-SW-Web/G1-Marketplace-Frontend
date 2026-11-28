@@ -6,6 +6,7 @@ import { CartLine } from './CartLine';
 import { CartSubtotal } from './CartSubtotal';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Button } from '@/shared/ui/Button';
+import { CartIllustration } from '@/shared/ui/Illustrations';
 
 export interface CartPageContainerProps {
   cart: CartSnapshot | null;
@@ -76,7 +77,7 @@ export function CartPageContainer({
           <EmptyState
             title="Tu carrito está vacío"
             description="Aún no has agregado productos. Explora nuestra tienda y encuentra el mejor equipamiento deportivo."
-            icon="🛒"
+            icon={<CartIllustration />}
             actions={
               <Link href="/catalogo">
                 <Button type="button" variant="primary">
@@ -130,6 +131,7 @@ export function CartPageContainer({
           canCheckout={!hasIncompletePrices && items.length > 0}
           onCheckout={onCheckout}
           isBusy={isBusy}
+          itemCount={items.reduce((acc, it) => acc + it.quantity, 0)}
         />
       </div>
     </main>

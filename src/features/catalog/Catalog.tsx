@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { isCatalogPage, isCatalogFilters, isHome } from "./api";
 import { CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
 import { CatalogSortSelect } from "./CatalogSortSelect";
+import { CategoryStrip } from "./CategoryStrip";
 import { CatalogPagination } from "./CatalogPagination";
 import { catalogHref, criteriaError, recoverCatalogHref } from "./criteria";
 import { useCatalog } from "./useCatalog";
@@ -12,6 +13,7 @@ import { ProductCard } from "./ProductCard";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
+import "./catalog-listing.css";
 
 export function Catalog() {
   const params = useSearchParams();
@@ -24,7 +26,7 @@ export function Catalog() {
   const invalidCriteria = criteriaError(query);
   // Invalid URL input never requests products.
   return invalidQuery || invalidCriteria ? (
-    <div className="container catalog-page empty-state">
+    <div className="container catalog-page catalog-listing empty-state">
       <Link className="breadcrumb" href="/">
         Inicio /
       </Link>
@@ -61,6 +63,9 @@ function CatalogResults({
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
   const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
+  const categoryLinks = filters.state.status === "ready" ? filters.state.data.categories :
+    categories.state.status === "ready" ? categories.state.data.categories : [];
+  const brands = filters.state.status === "ready" ? filters.state.data.brands : [];
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -86,106 +91,105 @@ function CatalogResults({
     navigate(url);
   }
   return (
-    <div className="container catalog-page">
-      <nav aria-label="Migas de navegación" className="breadcrumbs">
-        <Link href="/">Inicio</Link>
-        <span aria-hidden="true">/</span>
-        <span>Catálogo</span>
-      </nav>
-      <div className="catalog-heading">
-        <div>
-          <h1 ref={heading} tabIndex={-1}>
-            {q ? (
-              <>
-                Resultados para <span>“{q}”</span>
-              </>
-            ) : (
-              "Catálogo"
+    <div className="container catalog-page catalog-listing">
+      {categoryLinks.length > 0 && (
+        <div className="catalog-hero">
+          <div className="catalog-hero-top">
+            <h1 className="catalog-hero-title" ref={heading} tabIndex={-1}>Todo el catálogo</h1>
+            {state.status === "ready" && (
+              <p className="catalog-hero-count">
+                <strong>{state.data.page.totalElements}</strong>
+                {state.data.page.totalElements === 1 ? "producto" : "productos"}
+              </p>
             )}
-          </h1>
-          <p className="catalog-description">
-            {q ? "Explora los productos que coinciden con tu búsqueda." : "Todo para moverte a tu ritmo."}
-          </p>
+          </div>
+          <CategoryStrip
+            onSelect={applyCriteria}
+            items={categoryLinks.map((category) => ({
+              id: category.categoryId,
+              name: category.name,
+              href: catalogHref(query, { categoryIds: category.categoryId }),
+              current: params.get("categoryIds") === category.categoryId,
+            }))}
+          />
         </div>
-      </div>
-      {q && (
-        <div className="active-criteria" aria-label="Criterios aplicados">
-          {q && (
+      )}
+      <div className="catalog-body">
+      <CatalogFilters variant="panel" query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
+      <section className="catalog-results" aria-label="Productos del catálogo">
+        <div className="catalog-result-toolbar">
+          {categoryLinks.length === 0 && <h1 className="sr-only" ref={heading} tabIndex={-1}>Catálogo</h1>}
+          <p className="result-count" role="status" aria-live="polite">
+            {q && <span className="catalog-search-summary">Mostrando resultados para “{q}”</span>}
+            {state.status === "ready"
+              ? `${state.data.page.totalElements} ${state.data.page.totalElements === 1 ? "producto" : "productos"}`
+              : state.status === "loading" ? "Buscando productos…" : null}
+          </p>
+          <div className="catalog-toolbar-controls">
+            <CatalogFilters variant="trigger" query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
+            <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
+          </div>
+        </div>
+        {q && (
+          <div className="active-criteria" aria-label="Criterios aplicados">
             <button onClick={clearSearch} aria-label={`Quitar búsqueda ${q}`}>
               Búsqueda: {q} <span aria-hidden="true">×</span>
             </button>
-          )}
-
-        </div>
-      )}
-      <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
-      <div className="catalog-layout">
-        <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
-        <section className="catalog-results" aria-label="Productos del catálogo">
-          <div className="catalog-result-toolbar">
-          <p className="result-count" role="status" aria-live="polite">
-            {state.status === "ready"
-              ? `${state.data.page.totalElements} productos${
-                  params.get("sort") === "NAME_ASC" ? " · Nombre: A a Z" :
-                  params.get("sort") === "NAME_DESC" ? " · Nombre: Z a A" : ""
-                }`
-              : state.status === "loading"
-                ? "Buscando productos…"
-                : ""}
-          </p>
-          <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
           </div>
-          {state.status === "loading" && <ProductSkeletons />}
-          {state.status === "error" && (
-            <ErrorState message={state.message} onRetry={retry} />
-          )}
-          {state.status === "ready" && (
-            <>
-              {state.source === "MOCK" && <MockNotice />}
-              {state.data.data.length ? (
-                <div className="product-grid">
-                  {state.data.data.map((product) => (
-                    <ProductCard
-                      key={product.productId}
-                      product={product}
-                      returnPath={returnPath}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<img src="/figma/search-32.svg" alt="" width="32" height="32" />}
-                  title={
-                    state.data.page.number >= state.data.page.totalPages &&
-                      state.data.page.number > 0
-                      ? "Esta página ya no tiene productos"
-                      : "No encontramos productos con estos criterios"
-                  }
-                  description={
-                    q
-                      ? "Prueba con otras palabras o elimina un criterio para seguir explorando."
-                      : "Vuelve al catálogo para explorar otras opciones."
-                  }
-                  actions={
-                    <>
-                      {state.data.page.number > 0 && <Button onClick={() => changePage(0)}>Volver a la primera página</Button>}
-                      {q && <Button onClick={clearSearch}>Limpiar búsqueda</Button>}
-                      <Link className="text-link" href="/catalogo">
-                        Ver catálogo completo
-                      </Link>
-                    </>
-                  }
-                />
-              )}
-              {state.data.data.length > 0 && (
-                <p className="result-range">
-                  Mostrando {state.data.page.number * state.data.page.size + 1}–{state.data.page.number * state.data.page.size + state.data.data.length} de {state.data.page.totalElements} productos
-                </p>
-              )}
-              <CatalogPagination page={state.data.page} onChange={changePage} />
-            </>
-          )}
-        </section>
+        )}
+        <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
+        {state.status === "loading" && <ProductSkeletons />}
+        {state.status === "error" && (
+          <ErrorState message={state.message} onRetry={retry} />
+        )}
+        {state.status === "ready" && (
+          <>
+            {state.source === "MOCK" && <MockNotice />}
+            {state.data.data.length ? (
+              <div className="product-grid">
+                {state.data.data.map((product) => (
+                  <ProductCard
+                    key={product.productId}
+                    product={product}
+                    returnPath={returnPath}
+                    listing={{ brand: brands.find((brand) => brand.brandId === product.brandId)?.name }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<img src="/figma/search-32.svg" alt="" width="32" height="32" />}
+                title={
+                  state.data.page.number >= state.data.page.totalPages &&
+                    state.data.page.number > 0
+                    ? "Esta página ya no tiene productos"
+                    : "No encontramos productos con estos criterios"
+                }
+                description={
+                  q
+                    ? "Prueba con otras palabras o elimina un criterio para seguir explorando."
+                    : "Vuelve al catálogo para explorar otras opciones."
+                }
+                actions={
+                  <>
+                    {state.data.page.number > 0 && <Button onClick={() => changePage(0)}>Volver a la primera página</Button>}
+                    {q && <Button onClick={clearSearch}>Limpiar búsqueda</Button>}
+                    <Link className="text-link" href="/catalogo">
+                      Ver catálogo completo
+                    </Link>
+                  </>
+                }
+              />
+            )}
+            {state.data.data.length > 0 && (
+              <p className="result-range">
+                Mostrando {state.data.page.number * state.data.page.size + 1}–{state.data.page.number * state.data.page.size + state.data.data.length} de {state.data.page.totalElements} productos
+              </p>
+            )}
+            <CatalogPagination page={state.data.page} onChange={changePage} />
+          </>
+        )}
+      </section>
       </div>
     </div>
   );

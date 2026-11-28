@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import type { FavoriteProduct } from "./contract";
 import type { ItemOperation } from "./FavoritesController";
 import { FavoritesHeading } from "./FavoritesHeading";
+import "./favorites-list.css";
 export type { FavoriteProduct } from "./contract";
 
 export function FavoritesList({ products, onRemove, removingProductId, returnPath = "/favoritos", showAssurances = false,
@@ -48,10 +49,10 @@ export function FavoritesList({ products, onRemove, removingProductId, returnPat
         {product.slug && !unavailable ? <Link className="favorites-card-link" href={`/productos/${encodeURIComponent(product.slug)}?returnTo=${encodeURIComponent(returnPath)}`}>{content}</Link>
           : <div className="favorites-card-link">{content}</div>}
         <img className="favorites-card-heart" src="/figma/favorite-heart-19.svg" width="19" height="19" alt="" aria-hidden="true" />
-        {product.price && <p className="favorites-card-price">{new Intl.NumberFormat("es-PE", {
+        {product.price ? <p className="favorites-card-price">{new Intl.NumberFormat("es-PE", {
           style: "currency", currency: product.price.currency,
-        }).format(product.price.amount)}</p>}
-        <div className="favorites-stock-block"><p className={`favorites-stock${undetermined ? " favorites-stock--pending" : ""}`}>{unavailable ? "Producto no disponible"
+        }).format(product.price.amount)}</p> : !unavailable && <p className="favorites-card-price commerce-badge commerce-badge--pending">Precio por confirmar</p>}
+        <div className="favorites-stock-block"><p className={`favorites-stock commerce-badge${undetermined ? " favorites-stock--pending commerce-badge--pending" : ""}`}>{unavailable ? "Producto no disponible"
           : outOfStock ? "Sin existencias" : undetermined ? "Disponibilidad por confirmar" : "Disponible"}</p></div>
         {onAddToCart && !unavailable && <Button className={styles.cartAction} disabled={cannotPurchase || busy} loading={operation === "adding"}
           title={undetermined ? "Disponibilidad por confirmar" : undefined}
@@ -68,7 +69,7 @@ export function FavoritesList({ products, onRemove, removingProductId, returnPat
     })}</ul>;
   }
 
-  return <div className="favorites-list">
+  return <div className="favorites-list favorites-collection">
     <FavoritesHeading count={products.length + Object.values(pending).filter(value => value === "removing" || value === "remove-uncertain").length}
       description={products.length || confirmingRemoval ? "Guarda los productos que te gustan y encuéntralos aquí." : "Aquí aparecerán los productos que marques con el corazón."} />
     {feedback}

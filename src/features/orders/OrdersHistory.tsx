@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Skeleton, LoadingState } from "@/shared/ui/Skeleton";
+import "./orders-ux.css";
+import { OrdersIllustration } from "@/shared/ui/Illustrations";
 import { OrdersRequestError, readOrders } from "./api";
 import { OrderList } from "./OrderList";
 import { OrdersFilterForm } from "./OrdersFilterForm";
@@ -49,6 +51,7 @@ function OrdersResults({ data, source, filters, onClearFilters }: {
       {data.data.length === 0 ? (
         <EmptyState
           className="orders-empty"
+          icon={<OrdersIllustration />}
           title={hasOrderFilters(filters) ? "No hay pedidos con estos filtros" : "Aún no has realizado pedidos"}
           description={hasOrderFilters(filters)
             ? "Prueba con otros criterios o limpia los filtros para volver a consultar tus pedidos."

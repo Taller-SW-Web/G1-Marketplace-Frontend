@@ -80,7 +80,8 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
     response.url().endsWith("/api/checkout/quotes") && response.request().method() === "POST",
   );
   await page.goto("/checkout");
-  await expect(page.getByText(/Se encontraron 1 productos para esta compra/)).toBeVisible();
+  await expect(page.getByText("Se encontró 1 producto para esta compra.")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Productos del pedido" }).getByLabel("Cantidad: 1")).toBeVisible();
   await page.getByRole("button", { name: "Continuar al resumen" }).click();
   const quoteResponse = await quoteResponsePromise;
   expect(quoteResponse.ok()).toBeTruthy();
@@ -91,5 +92,5 @@ test("backend-mock quotes the persisted Cart snapshot and version", async ({ pag
   expect(quote.cartVersion).toBe(cart.version);
   expect(quote.lines).toEqual([{ sku, quantity: 1 }]);
   await expect(page.getByRole("heading", { name: "Resumen de envío" })).toBeVisible();
-  await expect(page.getByText(`${sku} × 1`)).toBeVisible();
+  await expect(page.getByRole("list", { name: "Productos del pedido" }).getByLabel("Cantidad: 1")).toBeVisible();
 });

@@ -22,6 +22,9 @@ export interface CartItemDTO {
   attention?: string | null;
 }
 
+export type CartItemPresentation = Pick<CartItemDTO, 'name' | 'imageUrl' | 'variantName'>;
+export type CartItemPreview = CartItemPresentation & Pick<CartItemDTO, 'sku' | 'quantity'>;
+
 export interface CartSnapshot {
   cartId: string | null;
   version: number;

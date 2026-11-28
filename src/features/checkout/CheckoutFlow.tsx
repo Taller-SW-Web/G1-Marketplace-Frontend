@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { getCartApi } from "@/features/cart/api";
 import { Button } from "../../shared/ui/Button";
 import {
   AddressStepContainer,
@@ -68,17 +69,18 @@ function mapContactFieldErrors(fields: string[] | undefined): ContactFieldErrors
 /** Modo `bff`: el flujo usa la sesión de la cuenta y el BFF real (se resuelve en la compilación). */
 const checkoutBffEnabled = process.env.NEXT_PUBLIC_CHECKOUT_MODE === "bff";
 
-export function CheckoutFlow() {
+export function CheckoutFlow({ fromCart = false }: { fromCart?: boolean } = {}) {
+  const usesCurrentCart = backendMockEnabled || fromCart;
   const [step, setStep] = useState<Step>("address");
   const [addresses, setAddresses] = useState<CheckoutAddress[]>(backendMockEnabled ? [] : checkoutFixtureAddresses);
   const [selectedId, setSelectedId] = useState(backendMockEnabled ? "" : checkoutFixtureAddresses[0]?.addressId ?? "");
   const [addressLoading, setAddressLoading] = useState(backendMockEnabled);
-  const [cartSnapshot, setCartSnapshot] = useState<CheckoutCartSnapshot | null>(backendMockEnabled ? null : {
+  const [cartSnapshot, setCartSnapshot] = useState<CheckoutCartSnapshot | null>(usesCurrentCart ? null : {
     cartId: null,
     version: checkoutFixtureCart.version,
     items: checkoutFixtureCart.lines,
   });
-  const [cartStatus, setCartStatus] = useState<"loading" | "ready" | "empty" | "error">(backendMockEnabled ? "loading" : "ready");
+  const [cartStatus, setCartStatus] = useState<"loading" | "ready" | "empty" | "error">(usesCurrentCart ? "loading" : "ready");
   const [cartError, setCartError] = useState("");
   const [cartReloadKey, setCartReloadKey] = useState(0);
   const [addressReloadKey, setAddressReloadKey] = useState(0);
@@ -179,10 +181,21 @@ export function CheckoutFlow() {
     }).finally(() => { if (active) setAddressLoading(false); });
     return () => { active = false; };
   }, [addressReloadKey, requireAddressAuthentication]);
+  const readShoppingCart = useCallback(async (): Promise<CheckoutCartSnapshot> => {
+    if (backendMockEnabled) return checkoutApi.getCurrentCart();
+    const snapshot = await getCartApi(false);
+    if (snapshot.items.some(item => !item.unitPrice || item.unitPrice.currency !== "PEN" ||
+      !Number.isFinite(item.unitPrice.amount) || item.unitPrice.amount < 0 || item.attention)) {
+      throw new CheckoutApiError(409, "CART_INCOMPLETE");
+    }
+    const subtotal = snapshot.subtotal?.amount ??
+      snapshot.items.reduce((sum, item) => sum + (item.unitPrice?.amount ?? 0) * item.quantity, 0);
+    return { ...snapshot, subtotal: Math.round(subtotal * 100) / 100 };
+  }, []);
   useEffect(() => {
-    if (!backendMockEnabled) return;
+    if (!usesCurrentCart) return;
     let active = true;
-    checkoutApi.getCurrentCart().then((snapshot) => {
+    readShoppingCart().then((snapshot) => {
       if (!active) return;
       setCartSnapshot(snapshot);
       setCartStatus(snapshot.items.length > 0 ? "ready" : "empty");
@@ -192,7 +205,7 @@ export function CheckoutFlow() {
       setCartError(checkoutErrorMessage(error, "No pudimos consultar el carrito."));
     });
     return () => { active = false; };
-  }, [cartReloadKey]);
+  }, [cartReloadKey, readShoppingCart, usesCurrentCart]);
   const selectedAddress = addresses.find((address) => address.addressId === selectedId);
   const expired = quote !== null && now > 0 && quote.expiresAt <= now;
 
@@ -236,19 +249,22 @@ export function CheckoutFlow() {
   }
 
   async function quoteCurrentCart(addressId: string): Promise<CheckoutQuote> {
-    if (!backendMockEnabled) return createFixtureQuote(addressId);
-    const snapshot = await checkoutApi.getCurrentCart();
+    if (!usesCurrentCart) return createFixtureQuote(addressId);
+    const snapshot = await readShoppingCart();
     setCartSnapshot(snapshot);
     if (snapshot.items.length === 0) {
       setCartStatus("empty");
       throw new CheckoutApiError(409, "CART_EMPTY");
     }
     setCartStatus("ready");
+    if (!backendMockEnabled) {
+      return createFixtureQuote(addressId, Date.now(), { version: snapshot.version, lines: snapshot.items, subtotal: snapshot.subtotal ?? 0 });
+    }
     return checkoutApi.createQuote(addressId, snapshot.version);
   }
 
   async function continueToSummary() {
-    if (!selectedAddress || busy || (backendMockEnabled && cartStatus !== "ready")) return;
+    if (!selectedAddress || busy || cartStatus !== "ready") return;
     setBusy(true);
     setNotice("");
     const requestId = ++quoteRequest.current;
@@ -558,6 +574,7 @@ export function CheckoutFlow() {
       submitting.current = false;
       setOrderId(`PED-MOCK-${String(Date.now()).slice(-5)}`);
       setVerifiedOrder(null);
+      setNotice("");
       setStep("confirmed");
     }, 350);
   }
@@ -641,17 +658,22 @@ export function CheckoutFlow() {
         <h1>Finaliza tu compra</h1>
         <p>{checkoutBffEnabled ? "Tu pedido se registra en Ventas · el pago lo simula Ventas y no hay cobro real" : "Datos de prueba · no se realizan cobros reales"}</p>
       </header>
-      {notice && step !== "order" && <p role="alert" className="checkout-error">{notice}</p>}
+      {notice && step !== "order" && step !== "confirmed" && <p role="alert" className="checkout-error">{notice}</p>}
       <nav className="checkout-progress" aria-label="Progreso de compra">
-        {progress.map((label, index) => {
-          const current = ["address", "summary", "prepare", "order", "confirmed"].indexOf(step);
-          return <span key={label} aria-current={current === index ? "step" : undefined} className={current >= index ? "is-active" : ""}>{index + 1}. {label}</span>;
-        })}
+        <ol>
+          {progress.map((label, index) => {
+            const current = ["address", "summary", "prepare", "order", "confirmed"].indexOf(step);
+            const state = current > index ? "is-done" : current === index ? "is-active is-current" : "";
+            return <li key={label} aria-current={current === index ? "step" : undefined} className={state}>
+              <span className="checkout-progress__marker" aria-hidden="true">{current > index ? "✓" : index + 1}</span>
+              <span className="checkout-progress__label"><span className="sr-only">Paso {index + 1}: </span>{label}{current > index && <span className="sr-only"> (completado)</span>}</span>
+            </li>;
+          })}
+        </ol>
       </nav>
       {step === "address" && <AddressStepContainer
-        backendMockEnabled={backendMockEnabled}
         cartStatus={cartStatus}
-        cartCount={cartSnapshot?.items.reduce((total, item) => total + item.quantity, 0) ?? 0}
+        cartItems={cartSnapshot?.items ?? []}
         cartError={cartError}
         addressLoading={addressLoading}
         addressLoadError={addressLoadError}
@@ -687,7 +709,7 @@ export function CheckoutFlow() {
       />}
       {step === "summary" && quote && <CheckoutQuoteContainer quote={quote} backendMockEnabled={backendMockEnabled}
         expired={expired} invalid={quoteInvalid} stockUnavailable={stockUnavailable}>
-        <CheckoutOrderSummary quote={quote} address={selectedAddress} />
+        <CheckoutOrderSummary quote={quote} address={selectedAddress} cartItems={cartSnapshot?.items ?? []} />
         {quote.selectedBenefit ? <SelectedBenefit benefit={quote.selectedBenefit} busy={busy} disabled={quoteInvalid}
           message={couponMessage} onRemove={removeCoupon} /> : <CouponForm value={coupon} busy={busy}
           disabled={quoteInvalid || expired} hint={backendMockEnabled ? "Ingresa tu código promocional" : "Prueba SAVE20 o DEPORTE20"}
@@ -712,7 +734,7 @@ export function CheckoutFlow() {
               onSubmit={createOrder} onBack={() => setStep("summary")} />
           </>}
       </section>}
-      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} backendMockEnabled={backendMockEnabled} bff={checkoutBffEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
+      {step === "confirmed" && <OrderConfirmationContainer orderId={orderId} operationId={operationId} operation={verifiedOrder} quote={quote} cartItems={cartSnapshot?.items ?? []} backendMockEnabled={backendMockEnabled} bff={checkoutBffEnabled} copyMessage={copyMessage} onCopy={copyOrderCode} />}
     </main>
   );
 }

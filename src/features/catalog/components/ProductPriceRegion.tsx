@@ -41,7 +41,7 @@ export function ProductPriceRegion({ state, retry }: Props) {
           pendiente, no como fallo, para no romper la ficha REAL mínima. */}
       {state.kind === "unavailable" && state.code === "PRICING_UNAVAILABLE" && (
         <div className="price-unavailable" data-price-status="UNDETERMINED">
-          <p>Precio por confirmar.</p>
+          <p className="commerce-badge commerce-badge--pending">Precio por confirmar.</p>
           <Button variant="secondary" size="sm" onClick={retry}>
             Reintentar
           </Button>

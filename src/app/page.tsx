@@ -1,4 +1,4 @@
-import { Home } from "@/features/catalog/Home";
+import { HomeLanding } from "@/features/home/HomeLanding";
 export default function Page() {
-  return <Home />;
+  return <HomeLanding />;
 }

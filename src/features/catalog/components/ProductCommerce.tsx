@@ -1,5 +1,6 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
+import { Button } from "@/shared/ui/Button";
 import { AddToCartAction } from "@/features/cart/AddToCartAction";
 import type {
   AddToCartPayload,
@@ -18,6 +19,7 @@ interface Props {
   slug: string;
   productId: string;
   showCart: boolean;
+  showUnavailableCart?: boolean;
   busy: boolean;
   onAdd: (payload: AddToCartPayload) => void;
   /** Imagen de la variante resuelta; la ficha la usa como vista principal. */
@@ -39,10 +41,12 @@ export function ProductCommerce({
   slug,
   productId,
   showCart,
+  showUnavailableCart,
   busy,
   onAdd,
   onVariantImageChange,
 }: Props) {
+  const unavailableReason = useId();
   const variants = useProductVariants(slug);
 
   // Mientras las variantes cargan no se sabe si el producto es simple: se
@@ -75,6 +79,8 @@ export function ProductCommerce({
 
   return (
     <div className="product-commerce">
+      <ProductPriceRegion state={price.state} retry={price.retry} />
+
       <ProductVariantsRegion
         state={variants.state}
         selection={variants.selection}
@@ -82,14 +88,12 @@ export function ProductCommerce({
         onRetry={variants.retry}
       />
 
-      <ProductPriceRegion state={price.state} retry={price.retry} />
-
       <AvailabilityRegion
         state={availability.state}
         retry={availability.retry}
       />
 
-      {showCart && cartAvailability && (
+      {showCart && cartAvailability ? (
         <div className="detail-cart-action-wrapper">
           <AddToCartAction
             productId={productId}
@@ -100,6 +104,13 @@ export function ProductCommerce({
             onAdd={onAdd}
             onRetryAvailability={availability.retry}
           />
+        </div>
+      ) : showUnavailableCart && (
+        <div className="detail-cart-action-wrapper detail-cart-unavailable">
+          <Button disabled fullWidth aria-describedby={unavailableReason}>Agregar al carrito</Button>
+          <p id={unavailableReason}>
+            {priceReady ? "La compra de este producto aún no está habilitada." : "El precio o la disponibilidad aún están por confirmar."}
+          </p>
         </div>
       )}
     </div>

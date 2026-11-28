@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "../../src/features/auth/AccountMenu";
 import { useAuth } from "../../src/features/auth/AuthProvider";
@@ -20,6 +20,8 @@ describe("authenticated account navigation", () => {
 
     render(<AccountMenu />);
 
+    fireEvent.click(screen.getByText("Fernando"));
+    fireEvent.click(screen.getByText("Mi cuenta"));
     expect(screen.getByRole("link", { name: "Mis pedidos" }).getAttribute("href")).toBe("/mis-pedidos");
     expect(screen.getByText("Fernando Saire")).toBeTruthy();
   });
@@ -32,6 +34,7 @@ describe("authenticated account navigation", () => {
     render(<AccountMenu />);
 
     expect(screen.queryByRole("link", { name: "Mis pedidos" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Iniciar sesión" }).getAttribute("href")).toBe("/login");
+    expect(screen.getByRole("link", { name: "Ingresar" }).getAttribute("href")).toBe("/login");
+    expect(screen.getByRole("link", { name: "Registrarse" }).getAttribute("href")).toBe("/registro");
   });
 });

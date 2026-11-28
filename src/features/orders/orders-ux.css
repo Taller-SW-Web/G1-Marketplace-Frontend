@@ -1,0 +1,294 @@
+/* ===== UX B · 27/11 · Mis pedidos V-015 a V-017 (solo presentación) =====
+ * Chips con contraste AA y un color por estado, tabla más limpia, detalle con
+ * avance del pedido y línea de tiempo vertical del seguimiento. */
+
+/* Chips de estado: un tono por estado, texto ≥ 4.5:1 */
+:is(.orders-page, .order-detail-page) .order-status {
+  min-height: 26px;
+  padding: 3px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+:is(.orders-page, .order-detail-page) .order-status--paid { border-color: #c5cbf7; background: #eef0ff; color: #3341b3; }
+:is(.orders-page, .order-detail-page) .order-status--preparing { border-color: #f2cf86; background: #fff6df; color: #7a4b00; }
+:is(.orders-page, .order-detail-page) .order-status--transit { border-color: #b6dcf7; background: #e7f5ff; color: #155a9c; }
+:is(.orders-page, .order-detail-page) .order-status--delivered { border-color: #b2e2c0; background: #eaf8ed; color: #1f6b30; }
+:is(.orders-page, .order-detail-page) .order-status--cancelled { border-color: #ffc9c9; background: #fff1f1; color: #b42318; }
+
+/* Encabezado y filtros */
+.orders-page .orders-heading h1 { line-height: 1.05; }
+.orders-page .orders-filter-form {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.04), 0 8px 24px rgba(27, 24, 18, 0.05);
+}
+.orders-page .orders-filter-form .button { min-height: 44px; }
+
+/* Tabla de escritorio */
+.orders-page .orders-table-wrap {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.04), 0 8px 24px rgba(27, 24, 18, 0.05);
+}
+.orders-page .orders-table thead { background: var(--surface-cloud); }
+.orders-page .orders-table thead th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.orders-page .orders-table th,
+.orders-page .orders-table td { border-bottom-color: var(--surface-subtle); vertical-align: middle; }
+.orders-page .orders-table tbody tr { transition: background-color 140ms ease; }
+.orders-page .orders-table tbody tr:hover { background: #fffaf4; }
+.orders-page .orders-table tbody th {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+.orders-page .orders-table td:nth-child(3) { font-weight: 700; font-variant-numeric: tabular-nums; }
+.orders-page .orders-table td:last-child a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--surface-ink);
+  border-radius: var(--radius-full);
+  color: var(--surface-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.orders-page .orders-table td:last-child a:hover { background: var(--surface-ink); color: var(--text-inverse); text-decoration: none; }
+.orders-page .orders-table td:last-child a:focus-visible { outline: 3px solid var(--accent-signal); outline-offset: 2px; }
+
+/* Tarjetas móviles */
+.orders-page .order-card {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.04), 0 6px 18px rgba(27, 24, 18, 0.05);
+}
+.orders-page .order-card__id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.orders-page .order-card__summary strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.orders-page .order-card__actions .button { min-height: 44px; width: 100%; justify-content: center; }
+
+/* Detalle y seguimiento */
+.order-detail-page { padding-top: 20px; }
+.order-detail-page .orders-heading h1 { line-height: 1.05; }
+.order-detail-page .order-detail-section {
+  padding: 28px;
+  border-color: var(--border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.04), 0 12px 32px rgba(27, 24, 18, 0.06);
+}
+.order-detail-page .order-detail-summary {
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--surface-subtle);
+}
+.order-detail-page .order-detail-summary dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.order-detail-page .order-detail-summary dd { margin-top: 6px; font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.order-detail-page .order-detail-summary div:last-child dd { font-size: 22px; font-weight: 800; }
+.order-detail-page .order-detail-cta { margin: 20px 0 0; }
+.order-detail-page .order-detail-cta .button { min-height: 48px; }
+
+/* Avance del pedido (Pagado → Entregado) */
+.order-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.order-progress li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.order-progress li::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+}
+.order-progress li:first-child::before { display: none; }
+.order-progress li.is-done::before,
+.order-progress li.is-current::before { background: var(--success-strong); }
+.order-progress__marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-full);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.order-progress li.is-done .order-progress__marker { border-color: var(--success-strong); background: var(--success-strong); color: #fff; }
+.order-progress li.is-current .order-progress__marker { border-color: var(--success-strong); color: var(--success-strong); box-shadow: 0 0 0 5px #e3f6e6; }
+.order-progress li.is-done,
+.order-progress li.is-current { color: var(--text-primary); }
+.order-progress li.is-current .order-progress__label { font-weight: 800; }
+.order-progress-cancelled {
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--error-strong);
+  border-radius: var(--radius-sm);
+  background: var(--error-background);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Seguimiento V-017 */
+.order-detail-page .shipment-tracking__eyebrow {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.order-detail-page .shipment-tracking__state {
+  margin: 4px 0 8px;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.1;
+}
+.order-detail-page .shipment-tracking__state--transit { color: #155a9c; }
+.order-detail-page .shipment-tracking__state--delivered { color: var(--success-strong); }
+.order-detail-page .shipment-tracking__state--preparing { color: var(--warning-strong); }
+.order-detail-page .shipment-tracking__state--cancelled { color: var(--error-strong); }
+.order-detail-page .shipment-tracking__eta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: var(--surface-cloud);
+  font-size: 14px;
+}
+.order-detail-page .shipment-tracking__eta time { font-weight: 700; }
+.order-detail-page .shipment-tracking__subtitle {
+  margin: 32px 0 16px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.order-detail-page .order-detail-timeline li {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 0 0 22px 32px;
+  border-top: 0;
+}
+.order-detail-page .order-detail-timeline li::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 7px;
+  width: 2px;
+  background: var(--border);
+}
+.order-detail-page .order-detail-timeline li:last-child { padding-bottom: 0; }
+.order-detail-page .order-detail-timeline li:last-child::before { display: none; }
+.order-detail-page .order-detail-timeline__dot {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: var(--radius-full);
+  background: #b5afa3;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.order-detail-page .order-detail-timeline li.is-latest .order-detail-timeline__dot {
+  background: var(--success-strong);
+  box-shadow: 0 0 0 4px #e3f6e6;
+}
+.order-detail-page .order-detail-timeline strong { font-size: 15px; }
+.order-detail-page .order-detail-timeline time { color: var(--text-secondary); font-size: 13px; }
+
+/* Estados vacíos y error */
+:is(.orders-page, .order-detail-page) .empty-state {
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.04), 0 8px 24px rgba(27, 24, 18, 0.05);
+}
+
+@media (max-width: 700px) {
+  .order-detail-page .order-detail-section { padding: 20px 16px; }
+  .order-detail-page .order-detail-summary { grid-template-columns: 1fr 1fr; }
+  .order-progress li { font-size: 11px; }
+  .order-detail-page .order-detail-cta .button { width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orders-page .orders-table tbody tr { transition: none; }
+}
+
+/* ===== Ronda 3 · chips con transición, entrada escalonada y estados vacíos ilustrados ===== */
+@keyframes orders-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes orders-dot { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes orders-pulse { 0%, 100% { box-shadow: 0 0 0 4px #e3f6e6; } 50% { box-shadow: 0 0 0 8px #e3f6e600; } }
+@keyframes orders-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+:is(.orders-page, .order-detail-page) .order-status {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.orders-page .orders-table tbody tr:hover .order-status,
+.orders-page .order-card:hover .order-status { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(27, 24, 18, .08); }
+.orders-page .orders-table tbody tr,
+.orders-page .order-card { animation: orders-in 260ms ease both; }
+.orders-page .orders-table tbody tr:nth-child(2), .orders-page .order-card:nth-child(2) { animation-delay: 50ms; }
+.orders-page .orders-table tbody tr:nth-child(3), .orders-page .order-card:nth-child(3) { animation-delay: 100ms; }
+.orders-page .orders-table tbody tr:nth-child(4), .orders-page .order-card:nth-child(4) { animation-delay: 150ms; }
+.orders-page .orders-table tbody tr:nth-child(n + 5), .orders-page .order-card:nth-child(n + 5) { animation-delay: 200ms; }
+.order-detail-page .order-detail-section { animation: orders-in 300ms ease both; }
+.order-detail-page .order-detail-timeline li { animation: orders-in 320ms ease both; }
+.order-detail-page .order-detail-timeline li:nth-child(2) { animation-delay: 120ms; }
+.order-detail-page .order-detail-timeline li:nth-child(3) { animation-delay: 240ms; }
+.order-detail-page .order-detail-timeline li:nth-child(n + 4) { animation-delay: 360ms; }
+.order-detail-page .order-detail-timeline li.is-latest .order-detail-timeline__dot { animation: orders-pulse 2.4s 600ms ease-in-out infinite; }
+.order-progress li::before { transition: background-color 300ms ease; }
+.order-progress__marker { transition: background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease; }
+.order-progress li { animation: orders-in 280ms ease both; }
+.order-progress li:nth-child(2) { animation-delay: 80ms; }
+.order-progress li:nth-child(3) { animation-delay: 160ms; }
+.order-progress li:nth-child(4) { animation-delay: 240ms; }
+:is(.orders-page, .order-detail-page) .empty-state .empty-symbol { width: auto; height: auto; background: transparent; border-radius: 0; }
+:is(.orders-page, .order-detail-page) .illustration__spark { animation: orders-float 2.4s ease-in-out infinite; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.orders-page, .order-detail-page) .order-status,
+  .order-progress li::before, .order-progress__marker { transition: none; }
+  .orders-page .orders-table tbody tr, .orders-page .order-card, .order-detail-page .order-detail-section,
+  .order-detail-page .order-detail-timeline li,
+  .order-detail-page .order-detail-timeline li.is-latest .order-detail-timeline__dot,
+  .order-progress li, :is(.orders-page, .order-detail-page) .illustration__spark { animation: none; }
+  .orders-page .orders-table tbody tr:hover .order-status, .orders-page .order-card:hover .order-status { transform: none; }
+}

@@ -38,7 +38,8 @@ afterEach(() => vi.unstubAllGlobals());
 
 async function reachPreparation() {
   render(<CheckoutFlow />);
-  await screen.findByText(/Se encontraron 1 productos/);
+  const products = await screen.findByRole("list", { name: "Productos del pedido" });
+  expect(products.textContent).toContain("SKU-1×1");
   fireEvent.click(screen.getByRole("button", { name: "Continuar al resumen" }));
   await screen.findByRole("heading", { name: "Resumen de envío" });
   fireEvent.click(screen.getByRole("button", { name: "Continuar al pago simulado" }));

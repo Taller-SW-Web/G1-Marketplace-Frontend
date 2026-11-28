@@ -50,7 +50,11 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
 
   return (
     <section className="product-gallery" aria-label="Galería del producto">
-      <div className="gallery-main">
+      <button type="button" className="gallery-main" aria-label="Ampliar imagen"
+        onClick={(event) => {
+          event.currentTarget.focus({ preventScroll: true });
+          onOpenViewer(selectedIndex);
+        }}>
         {isFailed ? (
           <div
             className="gallery-fallback"
@@ -61,6 +65,7 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
           </div>
         ) : (
           <img
+            key={item.mediaId}
             src={item.url}
             alt={item.alt}
             width="600"
@@ -69,17 +74,20 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
             onError={() => markFailed(item.mediaId)}
           />
         )}
-      </div>
+        <span className="gallery-expand-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6" />
+          </svg>
+        </span>
+      </button>
+
+      {total > 1 && (
+        <GalleryThumbnails media={media} selectedIndex={selectedIndex} failed={current.failed}
+          onSelect={selectIndex} onError={markFailed} />
+      )}
 
       <div className="gallery-toolbar">
-        <button
-          type="button"
-          className="gallery-zoom"
-          aria-label="Ampliar imagen"
-          onClick={() => onOpenViewer(selectedIndex)}
-        >
-          Ampliar imagen
-        </button>
         <span className="gallery-position" role="status">
           Imagen {selectedIndex + 1} de {total}
         </span>
@@ -102,40 +110,34 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
           Siguiente
         </button>
       </div>
-
-      <ul className="gallery-thumbs">
-        {media.map((mediaItem, index) => {
-          const thumbFailed = current.failed.has(mediaItem.mediaId);
-          return (
-            <li key={mediaItem.mediaId}>
-              <button
-                type="button"
-                className="gallery-thumb"
-                aria-pressed={index === selectedIndex}
-                aria-label={
-                  thumbFailed
-                    ? `Imagen ${index + 1} de ${total}, no disponible`
-                    : `Imagen ${index + 1} de ${total}`
-                }
-                onClick={() => selectIndex(index)}
-              >
-                {thumbFailed ? (
-                  <span className="thumb-fallback">Imagen no disponible</span>
-                ) : (
-                  <img
-                    src={mediaItem.url}
-                    alt=""
-                    width="72"
-                    height="48"
-                    loading="lazy"
-                    onError={() => markFailed(mediaItem.mediaId)}
-                  />
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
     </section>
+  );
+}
+
+export function GalleryThumbnails({ media, selectedIndex, failed, onSelect, onError }: {
+  media: ProductMediaDTO[];
+  selectedIndex: number;
+  failed: ReadonlySet<string>;
+  onSelect: (index: number) => void;
+  onError: (mediaId: string) => void;
+}) {
+  return (
+    <ul className="gallery-thumbs" aria-label="Miniaturas del producto">
+      {media.map((item, index) => {
+        const unavailable = failed.has(item.mediaId);
+        return (
+          <li key={item.mediaId}>
+            <button type="button" className="gallery-thumb" aria-pressed={index === selectedIndex}
+              aria-label={`Imagen ${index + 1} de ${media.length}${unavailable ? ", no disponible" : ""}`}
+              onClick={() => onSelect(index)}>
+              {unavailable ? <span className="thumb-fallback">Imagen no disponible</span> : (
+                <img src={item.url} alt="" width="72" height="48" loading="lazy"
+                  onError={() => onError(item.mediaId)} />
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

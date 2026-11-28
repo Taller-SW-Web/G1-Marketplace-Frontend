@@ -27,7 +27,11 @@ export function PriceDisplay({ price, retrievedAt }: Props) {
 
       {hasOffer && (
         <p className="price-offer">
-          <span className="price-badge">
+          <span className="price-reference">
+            <span>Precio regular: </span>
+            <s>{formatMoney(price.regularAmount, price.currency)}</s>
+          </span>
+          <span className="price-badge commerce-badge commerce-badge--offer">
             Oferta
             {price.discountPercent !== null && (
               <span className="price-discount">
@@ -35,10 +39,6 @@ export function PriceDisplay({ price, retrievedAt }: Props) {
                 −{price.discountPercent} %
               </span>
             )}
-          </span>
-          <span className="price-reference">
-            <span>Precio regular: </span>
-            <s>{formatMoney(price.regularAmount, price.currency)}</s>
           </span>
         </p>
       )}

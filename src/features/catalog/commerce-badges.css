@@ -1,0 +1,24 @@
+.commerce-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: var(--radius-full);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font: 650 .75rem/1.2 Inter, system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.commerce-badge--pending {
+  background: var(--warning-background);
+  color: var(--warning-strong);
+}
+.commerce-badge--offer {
+  background: var(--action-soft);
+  color: var(--action-strong);
+}

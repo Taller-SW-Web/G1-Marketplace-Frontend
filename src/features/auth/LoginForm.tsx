@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
 import { AccessError, announceSessionChange, authCall, safeReturn } from "./client";
 import { focusFirstInvalid } from "./form-focus";
+import "./auth-ux.css";
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
@@ -16,6 +17,8 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
   const [contrasena, setContrasena] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Solo presentación: aviso visual mientras el navegador sigue la redirección ya existente.
+  const [signedIn, setSignedIn] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
@@ -56,6 +59,7 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
     if (activeRequest.current?.signal.aborted) return;
     if (result.authenticated !== true) throw new Error("Unexpected session");
     announceSessionChange();
+    setSignedIn(true);
     window.location.replace(safeReturn(new URLSearchParams(window.location.search).get("returnTo")));
   }
   async function sendCode() {
@@ -172,7 +176,12 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
           </div>
         )}
 
-        {challenge ? <form className="auth-form" onSubmit={verify}>
+        {signedIn && <div className="auth-success" role="status">
+          <svg className="auth-success__check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" /><path d="M15 27l7 7 15-16" /></svg>
+          <p>¡Listo! Entrando a tu cuenta…</p>
+        </div>}
+
+        {challenge ? <form className={`auth-form${busy ? " is-busy" : ""}`} onSubmit={verify}>
           {challenge.destination && <p>Correo: {challenge.destination}</p>}
           <TextField label="Código de verificación" name="codigo" inputMode="numeric" autoComplete="one-time-code"
             value={codigo} onChange={event => setCodigo(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -180,14 +189,14 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
           {remaining ? <p role="timer" aria-live="off">Tiempo para completar el acceso: {remaining} s</p>
             : challengeRemaining ? <p role="status">El código venció. Solicita uno nuevo.</p>
               : <p ref={expiredNotice} tabIndex={-1} role="status">El desafío venció. Vuelve a iniciar sesión.</p>}
-          <Button type="submit" loading={busy} preserveFocusWhileLoading disabled={codigo.length !== 6 || !remaining} fullWidth>Verificar código</Button>
+          <Button type="submit" loading={busy} loadingLabel="" preserveFocusWhileLoading disabled={codigo.length !== 6 || !remaining} fullWidth>{busy ? "Verificando…" : "Verificar código"}</Button>
           <button className="auth-text-link" type="button" disabled={busy || !challengeRemaining || !resendReady} onClick={async () => {
             setBusy(true); setFeedback(null);
             try { await sendCode(); } catch (error) { setFeedback({ kind: "error", message: error instanceof Error ? error.message : "No pudimos enviar el código." }); }
             finally { setBusy(false); }
           }}>Reenviar código</button>
           <button className="auth-text-link" type="button" disabled={busy} onClick={() => { setChallenge(null); setCodigo(""); setFeedback(null); }}>Volver al inicio de sesión</button>
-        </form> : <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        </form> : <form className={`auth-form${busy ? " is-busy" : ""}`} onSubmit={handleSubmit} noValidate>
           <TextField
             label="Correo electrónico"
             type="email"
@@ -237,8 +246,8 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
             {recoveryUrl
               ? <a className="auth-text-link" href={recoveryUrl} referrerPolicy="no-referrer">¿Olvidaste tu contraseña?</a>
               : <Link className="auth-text-link" href="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link>}
-            <Button type="submit" loading={busy} preserveFocusWhileLoading fullWidth>
-              Iniciar sesión
+            <Button type="submit" loading={busy} loadingLabel="" preserveFocusWhileLoading fullWidth>
+              {busy ? "Iniciando sesión…" : "Iniciar sesión"}
             </Button>
           </div>
         </form>}
@@ -246,7 +255,6 @@ export function LoginForm({ realAuth = false, recoveryUrl = null }: { realAuth?:
         <p className="auth-register">
           ¿No tienes cuenta? <Link className="auth-text-link" href="/registro">Crear cuenta</Link>
         </p>
-        {!realAuth && <p className="auth-demo-label">Corte H3 · Demostración con datos de prueba</p>}
       </div>
     </section>
   );

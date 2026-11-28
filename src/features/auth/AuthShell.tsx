@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
+import "./auth-ux.css";
 export function AuthBackLink() {
   return <Link className="auth-back-link" href="/"><span aria-hidden="true">←</span>Volver a la tienda</Link>;
 }

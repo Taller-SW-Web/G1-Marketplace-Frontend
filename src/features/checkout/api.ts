@@ -1,3 +1,5 @@
+import { readCartPresentation } from "@/features/cart/cart-presentation";
+import type { CartItemPreview } from "@/features/cart/types";
 import type { CheckoutAddress, CheckoutAddressInput, CheckoutQuote } from "./fixtures";
 
 type Envelope<T> = { data: T };
@@ -23,7 +25,8 @@ export type Contact = {
 export type CheckoutCartSnapshot = {
   cartId: string | null;
   version: number;
-  items: Array<{ sku: string; quantity: number }>;
+  items: CartItemPreview[];
+  subtotal?: number;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -137,6 +140,7 @@ const publicErrorMessages: Record<string, string> = {
   CART_BACKEND_UNAVAILABLE: "No pudimos consultar tu carrito. Inténtalo de nuevo.",
   CART_BACKEND_MODE_DISABLED: "La consulta del carrito no está disponible en este entorno.",
   CART_EMPTY: "Agrega un producto al carrito para continuar.",
+  CART_INCOMPLETE: "Algunos precios siguen por confirmar. Revisa el carrito antes de continuar.",
   CART_NOT_FOUND: "No encontramos un carrito activo. Vuelve al carrito para continuar.",
   CART_OWNERSHIP_CONFLICT: "Hay más de un carrito activo. Vuelve al carrito y revisa su contenido antes de continuar.",
   CHECKOUT_BACKEND_UNAVAILABLE: "No pudimos comunicarnos con Checkout. Inténtalo más tarde.",
@@ -220,7 +224,7 @@ async function requestCurrentCart(): Promise<CheckoutCartSnapshot> {
   return {
     cartId: data.cartId as string | null,
     version: data.version,
-    items: data.items.map((item) => ({ sku: item.sku as string, quantity: item.quantity as number })),
+    items: data.items.map((item) => ({ sku: item.sku as string, quantity: item.quantity as number, ...readCartPresentation(item) })),
   };
 }
 

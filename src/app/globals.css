@@ -1943,22 +1943,6 @@ body:has(.viewer-backdrop) {
   gap: 12px;
 }
 
-.viewer-zoom {
-  min-width: 12ch;
-  text-align: center;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--text-secondary);
-}
-
-.viewer-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
 .viewer-controls button:disabled {
   opacity: 0.45;
   cursor: not-allowed;

@@ -10,6 +10,8 @@ test("checkout cancel keeps the session and restores focus on desktop and mobile
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/checkout");
+    if (width < 768) await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("banner").getByText("Cuenta", { exact: true }).filter({ visible: true }).click();
     const trigger = page.getByRole("button", { name: "Cerrar sesión", exact: true });
     await trigger.click();
     const dialog = page.getByRole("dialog", { name: "¿Cerrar sesión?" });
@@ -18,7 +20,7 @@ test("checkout cancel keeps the session and restores focus on desktop and mobile
     else await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
     await expect(trigger).toBeFocused();
-    await expect(page.getByText("Cuenta fixture")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Cuenta", { exact: true }).filter({ visible: true })).toBeVisible();
     expect(logoutCalls).toBe(0);
   }
 });
@@ -38,6 +40,8 @@ test("pending and failed logout allow retry; local closure reports remote revoca
     await route.fulfill({ json: authenticated ? { authenticated: true, scope: "fixture-a", user: { id: "11111111-1111-4111-8111-111111111111", nombreCompleto: "Cuenta fixture", roles: ["CLIENTE"] } } : { authenticated: false, scope: "anonymous" } });
   });
   await page.goto("/checkout");
+  if ((page.viewportSize()?.width ?? 768) < 768) await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("banner").getByText("Cuenta", { exact: true }).filter({ visible: true }).click();
   await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "¿Cerrar sesión?" });
   await dialog.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
@@ -50,6 +54,7 @@ test("pending and failed logout allow retry; local closure reports remote revoca
   await dialog.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
   await expect(page).toHaveURL(/\?sesion=cierre-local$/);
   await expect(page.getByRole("status").filter({ hasText: "No pudimos confirmar la revocación remota" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
+  if ((page.viewportSize()?.width ?? 768) < 768) await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Ingresar", exact: true })).toBeVisible();
   expect(calls).toBe(2);
 });

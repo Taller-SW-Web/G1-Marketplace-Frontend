@@ -10,7 +10,7 @@ export default function CarritoPage() {
     useCurrentCart(false);
 
   const handleCheckout = () => {
-    router.push('/checkout');
+    router.push('/checkout?origen=carrito');
   };
 
   return (

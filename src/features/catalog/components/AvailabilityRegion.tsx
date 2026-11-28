@@ -73,7 +73,7 @@ export function AvailabilityRegion({ state, retry }: Props) {
         aria-live="polite"
         data-availability="UNDETERMINED"
       >
-        <p className="availability-status availability-undetermined">
+        <p className="availability-status availability-undetermined commerce-badge commerce-badge--pending">
           <AvailabilityIcon state="UNDETERMINED" />
           {LABELS.UNDETERMINED}
         </p>
@@ -104,7 +104,7 @@ export function AvailabilityRegion({ state, retry }: Props) {
   return (
     <section className="availability-region" aria-live="polite">
       <p
-        className={`availability-status ${MODIFIERS[state.availability]}`}
+        className={`availability-status commerce-badge ${MODIFIERS[state.availability]}`}
         data-availability={state.availability}
       >
         <AvailabilityIcon state={state.availability} />
