@@ -119,3 +119,55 @@
   font-weight: 800;
   vertical-align: -2px;
 }
+
+/* ===== Ronda 3 · microinteracciones (CSS sobre el estado busy existente) ===== */
+@keyframes auth-card-in { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes auth-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes auth-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes auth-draw { to { stroke-dashoffset: 0; } }
+@keyframes auth-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes auth-gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+.auth-page .auth-card { animation: auth-card-in 420ms cubic-bezier(.2, .8, .2, 1) both; }
+.auth-page .auth-card > * { animation: auth-fade-up 360ms ease both; }
+.auth-page .auth-card > *:nth-child(2) { animation-delay: 80ms; }
+.auth-page .auth-card > *:nth-child(3) { animation-delay: 140ms; }
+.auth-page .auth-card > *:nth-child(4) { animation-delay: 200ms; }
+.auth-page .auth-card > *:nth-child(n + 5) { animation-delay: 260ms; }
+.auth-page .auth-card::before { background-size: 200% 100%; animation: auth-gradient 8s ease-in-out infinite; }
+
+/* Realce de campos al enfocar */
+.auth-page .field-control { transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
+.auth-page .field-control:focus-within { box-shadow: 0 0 0 4px rgba(247, 103, 7, 0.16), 0 6px 16px rgba(27, 24, 18, 0.06); border-color: var(--action-primary); background: #fff; }
+.auth-page .field-control.has-error { animation: auth-shake 380ms ease; }
+.auth-page .auth-toggle { border-radius: var(--radius-sm); transition: background-color 150ms ease, color 150ms ease; }
+.auth-page .auth-toggle:hover { background: var(--surface-subtle); }
+
+/* Envío en curso: campos atenuados y no interactivos (readOnly ya lo impide) */
+.auth-page .auth-form { transition: opacity 200ms ease; }
+.auth-page .auth-form.is-busy .field-control { opacity: .6; pointer-events: none; }
+.auth-page .auth-form.is-busy .auth-text-link { opacity: .5; pointer-events: none; }
+.auth-page .button--full { transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
+.auth-page .button--full:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(247, 103, 7, .28); }
+.auth-page .button--full:active:not(:disabled) { transform: translateY(0); }
+
+/* Mensajes: error con vibración suave; éxito/info con aparición */
+.auth-page .auth-feedback { animation: auth-fade-up 240ms ease both; }
+.auth-page .auth-feedback--error { animation: auth-shake 420ms ease both; }
+.auth-page .auth-feedback--success::before { content: "✓"; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 8px; border-radius: 50%; background: var(--success-strong); color: #fff; font-size: 11px; font-weight: 800; vertical-align: -3px; }
+
+/* Éxito antes de la redirección */
+.auth-page .auth-success { display: grid; justify-items: center; gap: 8px; padding: 16px; border-radius: var(--radius-md); background: #eff9e4; color: var(--success-strong); font-weight: 700; animation: auth-fade-up 200ms ease both; }
+.auth-page .auth-success p { margin: 0; }
+.auth-success__check { width: 52px; height: 52px; animation: auth-pop 420ms ease both; }
+.auth-success__check circle { fill: #fff; stroke: var(--success-strong); stroke-width: 3; }
+.auth-success__check path { fill: none; stroke: var(--success-strong); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: auth-draw 360ms 180ms ease forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page .auth-card, .auth-page .auth-card > *, .auth-page .auth-card::before,
+  .auth-page .auth-feedback, .auth-page .auth-feedback--error, .auth-page .field-control.has-error,
+  .auth-page .auth-success, .auth-success__check, .auth-success__check path { animation: none; }
+  .auth-success__check path { stroke-dashoffset: 0; }
+  .auth-page .field-control, .auth-page .button--full, .auth-page .auth-form, .auth-page .auth-toggle { transition: none; }
+  .auth-page .button--full:hover:not(:disabled) { transform: none; }
+}
