@@ -22,6 +22,8 @@ export default defineConfig({
         "src/features/checkout/api.ts",
         "src/features/wishlist/{cart-contract,contract,types}.ts",
       ],
+      // Declaraciones y fixtures no son código de producción. La UI fuera de este
+      // alcance se mide por separado con vitest.config.mts.
       exclude: ["src/**/*.d.ts", "tests/**"],
     },
   },
