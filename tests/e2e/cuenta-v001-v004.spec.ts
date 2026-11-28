@@ -183,9 +183,7 @@ test.describe("V-001 Inicio de sesión", () => {
       await page.getByLabel("Código de verificación").fill("123456");
       await page.getByRole("button", { name: "Verificar código", exact: true }).click();
       await expect(page).toHaveURL("/");
-      await expect(page.getByRole("banner").locator(".marketplace-account-trigger").first()).toBeAttached();
-      await openMobileMenu(page);
-      await expect(page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true })).toBeVisible();
+      await expectSignedInHeader(page);
       expect(await webStorage(page)).not.toMatch(/eyJ|token|contrasena|Fixture-only/i);
       expect(await page.evaluate(() => document.cookie)).not.toMatch(/token|session/i);
     });
@@ -205,7 +203,7 @@ test.describe("V-001 Inicio de sesión", () => {
     await noHorizontalScroll(page);
     await fillLogin(page, "cliente@fixture.test");
     await expect(page).toHaveURL("/carrito");
-    await expect(page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true })).toBeVisible();
+    await expectSignedInHeader(page);
   });
 });
 
@@ -274,12 +272,19 @@ async function openMobileMenu(page: Page) {
   }
 }
 
+async function expectSignedInHeader(page: Page) {
+  const header = page.getByRole("banner");
+  await expect(header.locator(".marketplace-account-trigger").first()).toBeAttached();
+  await openMobileMenu(page);
+  await expect(header.getByText("Cliente", { exact: true }).filter({ visible: true })).toBeVisible();
+}
+
 test.describe("Cierre de sesión", () => {
 
   test("invalida la sesión y volver atrás no la recupera", async ({ page }) => {
     const state = await mockBff(page, { authenticated: true });
     await page.goto("/carrito");
-    await openMobileMenu(page);
+    await expectSignedInHeader(page);
     await page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true }).click();
     const logout = page.getByRole("button", { name: "Cerrar sesión", exact: true });
     await expect(logout).toBeVisible();
@@ -291,6 +296,7 @@ test.describe("Cierre de sesión", () => {
     await evidence(page, "logout-cerrada");
     await page.goBack();
     await expect(page).toHaveURL("/carrito");
+    await expect(page.getByRole("banner").locator(".marketplace-guest").first()).toBeAttached();
     await openMobileMenu(page);
     await expect(page.getByRole("banner").getByRole("link", { name: "Ingresar", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
