@@ -9,11 +9,11 @@ for (const width of [1366, 390]) {
   test(`editorial MOCK order and public cards at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Destacados para ti", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Destacados", exact: true })).toBeVisible();
     const cards = page.locator(".featured-section .product-card");
     await expect(cards).toHaveCount(2);
-    await expect(cards.locator(".product-card-link h2")).toHaveText(["Mochila deportiva 03", "Zapatillas de running 01"]);
-    await expect(cards.locator(".product-card-link").first()).toHaveAttribute("href", "/productos/producto-demostracion-3?returnTo=%2F");
+    await expect(cards.getByRole("heading")).toHaveText(["Mochila deportiva 03", "Zapatillas de running 01"]);
+    await expect(cards.getByRole("link", { name: "Ver opciones de Mochila deportiva 03" })).toHaveAttribute("href", "/productos/producto-demostracion-3?returnTo=%2F");
     await expect(page.getByRole("note")).toContainText("demostración");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `test-results/featured-mock-${width}.png`, fullPage: true });
@@ -22,11 +22,11 @@ for (const width of [1366, 390]) {
 
 test("curated card reaches its existing product detail and returns to Home", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".featured-section .product-card-link").first().click();
+  await page.getByRole("link", { name: "Ver opciones de Mochila deportiva 03" }).click();
   await expect(page).toHaveURL(/productos\/producto-demostracion-3/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Mochila deportiva 03");
   await page.goBack();
-  await expect(page.locator(".featured-section .product-card-link h2")).toHaveText(["Mochila deportiva 03", "Zapatillas de running 01"]);
+  await expect(page.locator(".featured-section .product-card h3")).toHaveText(["Mochila deportiva 03", "Zapatillas de running 01"]);
 });
 
 test("anonymous favorite asks for a session without making a wishlist mutation", async ({ page }) => {

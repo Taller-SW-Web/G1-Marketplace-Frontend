@@ -1,18 +1,15 @@
+import Image from "next/image";
 import type { Category } from "./types";
 
-// The illustration follows the category meaning, never its array position or ID.
-// Unknown categories remain text-only until an appropriate resource is supplied.
 export function CategoryArtwork({ category }: { category: Category; }) {
   const name = category.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const artwork = /hidrat|bottle|agua/.test(name) ? "bottle"
-    : /calzado|zapatilla|running|shoe/.test(name) ? "shoe"
-      : /ropa|entrena|training|shirt/.test(name) ? "shirt"
-        : /accesorio|aire libre|outdoor|mochila|bag/.test(name) ? "bag" : null;
-  if(!artwork) return null;
+  // Match the approved editorial art by category meaning, not by position or provider ID.
+  const asset = /calzado|zapatilla|running|shoe/.test(name) ? "/figma/hero-shoe.png"
+    : /ropa|indumentaria|textil|entrena|training|shirt/.test(name) ? "/figma/favorite-vest.png"
+      : /equipamiento|accesorio|hidrat|bottle|agua|aire libre|outdoor|mochila|bag/.test(name) ? "/figma/favorite-bottle.png" : null;
   return (
     <span className="category-artwork" aria-hidden="true">
-      <img className="desktop-artwork" src={`/figma/category-${artwork}.svg`} alt="" width="280" height="186.67" />
-      <img className="mobile-artwork" src={`/figma/category-${artwork}-mobile.svg`} alt="" width="139" height="92.6683" />
+      {asset ? <Image src={asset} alt="" fill sizes="(max-width: 360px) 50vw, 33vw" /> : <span>Sin imagen</span>}
     </span>
   );
 }

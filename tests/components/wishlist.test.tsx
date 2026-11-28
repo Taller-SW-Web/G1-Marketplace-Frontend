@@ -112,7 +112,7 @@ it("places the favorite outside the product link and preserves its destination",
   render(<WishlistProvider enabled><ProductCard returnPath="/catalogo" product={{ productId: "PRD-1", slug: "prueba", name: "Prueba", categoryId: "c", brandId: "b", image: { url: "/test.png", alt: "Prueba" } }} /></WishlistProvider>);
   const button = await screen.findByRole("button", { name: "Guardar en favoritos" });
   expect(button.closest("a")).toBe(null);
-  expect(screen.getByRole("link").getAttribute("href")).toContain("/productos/prueba?returnTo=");
+  expect(screen.getByRole("link", { name: "Ver opciones de Prueba" }).getAttribute("href")).toContain("/productos/prueba?returnTo=");
 });
 
 it("does not persist favorites locally or reconstruct state after remount", async () => {

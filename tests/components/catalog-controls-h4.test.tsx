@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { CatalogFilters, ActiveFilterChips } from '../../src/features/catalog/CatalogFilters';
+import { CatalogFilterPanel, ActiveFilterChips } from '../../src/features/catalog/CatalogFilters';
 import { CatalogPagination } from '../../src/features/catalog/CatalogPagination';
 import { CatalogSortSelect } from '../../src/features/catalog/CatalogSortSelect';
 import type { CatalogFiltersDTO, HomeDTO, QueryState } from '../../src/features/catalog/types';
@@ -16,7 +16,7 @@ const categories: QueryState<HomeDTO> = { status: 'ready', source: 'REAL', data:
 
 it('keeps real categories and price usable when brands fail, preserving an applied brand ID', () => {
   const apply = vi.fn();
-  const { container } = render(<CatalogFilters query="q=polo&brandIds=applied-brand&page=2" options={unavailable} fallbackCategories={categories} retry={vi.fn()} onApply={apply} />);
+  const { container } = render(<CatalogFilterPanel query="q=polo&brandIds=applied-brand&page=2" options={unavailable} fallbackCategories={categories} retry={vi.fn()} onApply={apply} />);
   const form = container.querySelector('.catalog-filters-desktop form')!;
   const [category, brand] = form.querySelectorAll('select');
   const min = form.querySelector('input')!;
@@ -38,7 +38,7 @@ it('allows price-only filtering without masters and keeps the draft when they re
   const apply = vi.fn();
   const retry = vi.fn();
   const props = { query: 'q=polo', retry, onApply: apply };
-  const { container, rerender } = render(<CatalogFilters {...props} options={unavailable} />);
+  const { container, rerender } = render(<CatalogFilterPanel {...props} options={unavailable} />);
   const form = container.querySelector('.catalog-filters-desktop form')!;
   expect(Array.from(form.querySelectorAll('select')).every(select => select.disabled)).toBe(true);
   fireEvent.change(form.querySelector('input')!, { target: { value: '25' } });
@@ -46,7 +46,7 @@ it('allows price-only filtering without masters and keeps the draft when they re
   expect(apply).toHaveBeenCalledWith('/catalogo?q=polo&minPrice=25');
   fireEvent.click(form.querySelector('button')!);
   expect(retry).toHaveBeenCalledOnce();
-  rerender(<CatalogFilters {...props} options={options} />);
+  rerender(<CatalogFilterPanel {...props} options={options} />);
   expect(container.querySelector<HTMLInputElement>('.catalog-filters-desktop input')!.value).toBe('25');
   expect(container.querySelector<HTMLSelectElement>('.catalog-filters-desktop select')!.disabled).toBe(false);
 });
@@ -60,7 +60,7 @@ it('uses validated fallback category names in applied chips while brands are una
 
 it('does not apply filter drafts until submit and prevents inverted prices', () => {
   const apply = vi.fn();
-  const { container } = render(<CatalogFilters query="q=polo&sort=NAME_DESC&page=3" options={options} retry={vi.fn()} onApply={apply} />);
+  const { container } = render(<CatalogFilterPanel query="q=polo&sort=NAME_DESC&page=3" options={options} retry={vi.fn()} onApply={apply} />);
   const form = container.querySelector('.catalog-filters-desktop form')!;
   const min = form.querySelector('input')!;
   const max = form.querySelectorAll('input')[1];

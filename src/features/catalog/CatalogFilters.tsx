@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import type { CatalogFiltersDTO, HomeDTO, QueryState } from './types';
 import { catalogHref, filterDraft, filterKeys, priceError } from './criteria';
@@ -20,24 +20,30 @@ function FilterForm({ query, options, fallbackCategories, retryCategories, onApp
   }}>
     <fieldset>
       <legend className="sr-only">Filtrar productos</legend>
-      <label htmlFor={`${id}-category`}>Categoría</label>
-      <select id={`${id}-category`} disabled={!categoriesReady} value={draft.categoryIds} onChange={event => update('categoryIds', event.target.value)}>
-        <option value="">Todas las categorías</option>
-        {draft.categoryIds && !categories.some(item => item.categoryId === draft.categoryIds) && <option value={draft.categoryIds}>Categoría aplicada: {draft.categoryIds}</option>}
-        {categories.map(item => <option key={item.categoryId} value={item.categoryId}>{item.name}</option>)}
-      </select>
-      <label htmlFor={`${id}-brand`}>Marca</label>
-      <select id={`${id}-brand`} disabled={options.status !== 'ready'} value={draft.brandIds} onChange={event => update('brandIds', event.target.value)}>
-        <option value="">Todas las marcas</option>
-        {draft.brandIds && !brands.some(item => item.brandId === draft.brandIds) && <option value={draft.brandIds}>Marca aplicada: {draft.brandIds}</option>}
-        {brands.map(item => <option key={item.brandId} value={item.brandId}>{item.name}</option>)}
-      </select>
+      <div className="catalog-facet">
+        <label className="sr-only" htmlFor={`${id}-category`}>Categoría</label>
+        <select id={`${id}-category`} disabled={!categoriesReady} value={draft.categoryIds} onChange={event => update('categoryIds', event.target.value)}>
+          <option value="">Categoría</option>
+          {draft.categoryIds && !categories.some(item => item.categoryId === draft.categoryIds) && <option value={draft.categoryIds}>Categoría aplicada: {draft.categoryIds}</option>}
+          {categories.map(item => <option key={item.categoryId} value={item.categoryId}>{item.name}</option>)}
+        </select>
+        <img src="/figma/h5-catalog/chevron.svg" alt="" width="22" height="22" />
+      </div>
+      <div className="catalog-facet">
+        <label className="sr-only" htmlFor={`${id}-brand`}>Marca</label>
+        <select id={`${id}-brand`} disabled={options.status !== 'ready'} value={draft.brandIds} onChange={event => update('brandIds', event.target.value)}>
+          <option value="">Marca</option>
+          {draft.brandIds && !brands.some(item => item.brandId === draft.brandIds) && <option value={draft.brandIds}>Marca aplicada: {draft.brandIds}</option>}
+          {brands.map(item => <option key={item.brandId} value={item.brandId}>{item.name}</option>)}
+        </select>
+        <img src="/figma/h5-catalog/chevron.svg" alt="" width="22" height="22" />
+      </div>
       <fieldset className="catalog-price-range">
-        <legend>Precio en soles (S/)</legend>
-        <label htmlFor={`${id}-min`}>Precio mínimo</label>
-        <input id={`${id}-min`} inputMode="decimal" type="text" value={draft.minPrice} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={event => update('minPrice', event.target.value)} />
-        <label htmlFor={`${id}-max`}>Precio máximo</label>
-        <input id={`${id}-max`} inputMode="decimal" type="text" value={draft.maxPrice} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={event => update('maxPrice', event.target.value)} />
+        <legend>Rango de precio</legend>
+        <label className="sr-only" htmlFor={`${id}-min`}>Precio mínimo</label>
+        <input id={`${id}-min`} placeholder="Desde S/" inputMode="decimal" type="text" value={draft.minPrice} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={event => update('minPrice', event.target.value)} />
+        <label className="sr-only" htmlFor={`${id}-max`}>Precio máximo</label>
+        <input id={`${id}-max`} placeholder="Hasta S/" inputMode="decimal" type="text" value={draft.maxPrice} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={event => update('maxPrice', event.target.value)} />
         {error && <p className="catalog-filter-error" id={`${id}-error`} role="alert">{error}</p>}
       </fieldset>
     </fieldset>
@@ -49,14 +55,20 @@ function FilterForm({ query, options, fallbackCategories, retryCategories, onApp
       {fallbackCategories?.status === 'error' && <><p role="alert">No pudimos cargar las categorías.</p>{retryCategories && <Button onClick={retryCategories}>Reintentar categorías</Button>}</>}
     </div>}
     <div className="catalog-filter-actions">
+      <Button type="submit" disabled={Boolean(error)}>Aplicar filtros</Button>
       <Button variant="secondary" disabled={!Object.values(draft).some(Boolean) && !Object.values(filterDraft(query)).some(Boolean)} onClick={() => {
         const empty = { categoryIds: '', brandIds: '', minPrice: '', maxPrice: '' };
         setDraft(empty);
         onApply(catalogHref(query, empty));
       }}>Limpiar</Button>
-      <Button type="submit" disabled={Boolean(error)}>Aplicar filtros</Button>
     </div>
   </form>;
+}
+
+export function CatalogFilterPanel(props: Props) {
+  return <aside className="catalog-filters-desktop" aria-label="Filtros del catálogo">
+    <h2>Filtros</h2><FilterForm key={props.query} {...props} />
+  </aside>;
 }
 
 export function CatalogFilters(props: Props) {
@@ -68,9 +80,14 @@ export function CatalogFilters(props: Props) {
   const titleId = useId();
   const summaryId = useId();
   const appliedCount = Object.values(filterDraft(props.query)).filter(Boolean).length;
-  return <aside className="catalog-filters" aria-label="Filtros del catálogo">
-    <div className="catalog-filters-desktop"><h2>Filtros</h2><FilterForm key={props.query} {...props} /></div>
-    <Button className="catalog-filters-trigger" ref={trigger} variant="secondary" aria-haspopup="dialog" aria-label={appliedCount ? `Filtros (${appliedCount})` : 'Filtros'} endIcon={<img src="/figma/catalog-filter-arrow-20.svg" alt="" width="20" height="20" />} onClick={() => {
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => { if (desktop.matches) dialog.current?.close(); };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, []);
+  return <div className="catalog-filters">
+    <Button className="catalog-filters-trigger" ref={trigger} size="sm" variant="secondary" aria-haspopup="dialog" aria-label={appliedCount ? `Filtros (${appliedCount})` : 'Filtros'} startIcon={<img src="/figma/h5-catalog/sliders.svg" alt="" width="22" height="22" />} onClick={() => {
       closingAfterApply.current = false;
       setVersion(previous => previous + 1);
       dialog.current?.showModal();
@@ -88,11 +105,12 @@ export function CatalogFilters(props: Props) {
       if (!closingAfterApply.current) trigger.current?.focus();
       closingAfterApply.current = false;
     }}>
-      <div className="catalog-filter-dialog-heading"><h2 id={titleId} tabIndex={-1} ref={title}>Filtros</h2><Button variant="secondary" onClick={() => dialog.current?.close()}>Cerrar</Button></div>
-      <p className="catalog-filter-summary" id={summaryId}>{appliedCount ? `${appliedCount} ${appliedCount === 1 ? 'filtro aplicado' : 'filtros aplicados'}` : 'Sin filtros aplicados'}</p>
+      <h2 id={titleId} tabIndex={-1} ref={title}>Filtros</h2>
+      <p className={`catalog-filter-summary${appliedCount ? '' : ' sr-only'}`} id={summaryId}>{appliedCount ? `${appliedCount} ${appliedCount === 1 ? 'filtro aplicado' : 'filtros aplicados'}` : 'Sin filtros aplicados'}</p>
       <FilterForm key={`${version}-${props.query}`} {...props} onApply={url => { closingAfterApply.current = true; dialog.current?.close(); props.onApply(url); }} />
+      <Button variant="secondary" size="sm" className="catalog-filter-cancel" onClick={() => dialog.current?.close()}>Cancelar</Button>
     </dialog>
-  </aside>;
+  </div>;
 }
 
 export function ActiveFilterChips({ query, options, fallbackCategories, onChange }: { query: string; options: QueryState<CatalogFiltersDTO>; fallbackCategories?: QueryState<HomeDTO>; onChange: (url: string) => void }) {
@@ -107,7 +125,9 @@ export function ActiveFilterChips({ query, options, fallbackCategories, onChange
   const active = filterKeys.filter(key => draft[key]);
   if (!active.length) return null;
   return <div className="active-criteria" aria-label="Filtros aplicados">
-    {active.map(key => <button type="button" key={key} aria-label={`Quitar ${names[key]} ${labels[key]}`} onClick={() => onChange(catalogHref(query, { [key]: undefined }))}>{labels[key]} <span aria-hidden="true">×</span></button>)}
+    {active.map(key => <button type="button" key={key} aria-label={`Quitar ${names[key]} ${labels[key]}`} onClick={() => onChange(catalogHref(query, { [key]: undefined }))}>
+      {labels[key]} <img src="/figma/h5-catalog/close.svg" alt="" width="22" height="22" />
+    </button>)}
     <button type="button" onClick={() => onChange(catalogHref(query, Object.fromEntries(filterKeys.map(key => [key, undefined]))))}>Limpiar filtros</button>
   </div>;
 }

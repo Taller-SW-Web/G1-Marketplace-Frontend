@@ -15,9 +15,9 @@ describe("ProductCard optional image", () => {
     render(<WishlistProvider enabled={false}><ProductCard product={product} returnPath="/catalogo?q=running&page=1" /></WishlistProvider>);
     expect(screen.getByRole("img", { name: "Imagen no disponible para Producto sin imagen" }).getAttribute("src"))
       .toBe("/images/product-placeholder.svg");
-    expect(screen.getByRole("heading", { name: product.name })).toBeTruthy();
-    expect(screen.getByRole("link").getAttribute("href"))
-      .toBe("/productos/producto-sin-imagen?returnTo=%2Fcatalogo%3Fq%3Drunning%26page%3D1");
+    const destination = "/productos/producto-sin-imagen?returnTo=%2Fcatalogo%3Fq%3Drunning%26page%3D1";
+    expect(screen.getByRole("heading", { name: product.name }).closest("a")?.getAttribute("href")).toBe(destination);
+    expect(screen.getByRole("link", { name: `Ver opciones de ${product.name}` }).getAttribute("href")).toBe(destination);
   });
 
   it("keeps a provided image and its alternative text", () => {

@@ -9,35 +9,8 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
   test("el usuario puede ver el producto, agregarlo al carrito y transicionar al checkout", async ({ page }) => {
-    // 1. Simular la respuesta del BFF para el producto y el carrito
-    const mockProduct = {
-      productId: "prod-e2e-001",
-      // The server-rendered product route checks the slug against the local
-      // Backend fixture before the browser request can be intercepted.
-      slug: "zapatillas-running-aero-x",
-      name: "Zapatillas Running Inka Pro",
-      brand: { brandId: "brand-inka", name: "Inka Athletics" },
-      description: "Zapatillas de alto rendimiento para asfalto.",
-      technicalSpecifications: [
-        { name: "Superficie", value: "Asfalto", displayOrder: 1 },
-      ],
-      media: [
-        { mediaId: "m1", type: "IMAGE" as const, url: "https://images.example.test/product-0.jpg", alt: "Zapatillas Running", displayOrder: 1 },
-      ],
-    };
-
+    // La ficha, precio y disponibilidad usan el fixture del BFF local.
     const cartItems: Array<{ sku: string; name?: string; quantity: number; unitPrice?: { amount: number; currency: string } }> = [];
-
-    // Interceptar llamadas al BFF de Catálogo
-    await page.route("**/api/catalog/products/*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        json: {
-          data: mockProduct,
-          meta: { source: "MOCK", retrievedAt: new Date().toISOString() },
-        },
-      });
-    });
 
     // Interceptar llamadas al BFF del Carrito para simular persistencia
     await page.route("**/api/cart/current/items", async (route) => {
@@ -108,7 +81,7 @@ test.describe("Integración E2E: Catálogo ➔ Carrito ➔ Checkout", () => {
     // 7. Verificar que el carrito ya no está vacío y renderiza el producto
     await expect(page.getByRole("heading", { name: "Carrito de compras" })).toBeVisible();
     await expect(page.getByText("Tu carrito está vacío")).not.toBeVisible();
-    await expect(page.getByText(/SKU: prod-e2e-001/i)).toBeVisible();
+    await expect(page.getByText(/SKU: PRD-MOCK-001/i)).toBeVisible();
 
     // 8. Verificar que el subtotal y el botón de Checkout están presentes
     await expect(page.locator(".cart-subtotal-amount")).toBeVisible();

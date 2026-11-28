@@ -32,11 +32,11 @@ test('H4 visual surfaces keep desktop hierarchy and usable mobile toolbar', asyn
   await page.screenshot({ path: 'test-results/h4-visual-inicio-desktop.png', fullPage: true });
   await page.goto('/catalogo?pageSize=4');
   await expect(page.locator('.product-card')).toHaveCount(4);
-  const panel = page.locator('.catalog-filters-desktop');
+  const panel = page.getByRole('complementary', { name: 'Filtros del catálogo' });
   await expect(panel).toHaveCSS('border-top-width', '1px');
-  await expect(page.locator('.catalog-filters-trigger')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Filtros', exact: true })).toHaveCount(0);
   const count = await page.locator('.result-count').boundingBox();
-  const sort = await page.getByLabel('Ordenar por').boundingBox();
+  const sort = await page.getByRole('combobox', { name: 'Ordenar por' }).boundingBox();
   expect(Math.abs(count!.y + count!.height / 2 - sort!.y - sort!.height / 2)).toBeLessThan(30);
   await page.screenshot({ path: 'test-results/h4-visual-catalogo-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -47,9 +47,11 @@ test('H4 visual surfaces keep desktop hierarchy and usable mobile toolbar', asyn
   await expect(page.locator('.product-card')).toHaveCount(4);
   const trigger = page.getByRole('button', { name: 'Filtros', exact: true });
   const buttonRect = await trigger.boundingBox();
-  expect(buttonRect!.width).toBeGreaterThanOrEqual(350);
-  const selectRect = await page.getByLabel('Ordenar por').boundingBox();
-  expect(selectRect!.width).toBeGreaterThanOrEqual(350);
+  const selectRect = await page.getByRole('combobox', { name: 'Ordenar por' }).boundingBox();
+  expect(buttonRect!.height).toBeGreaterThanOrEqual(44);
+  expect(selectRect!.height).toBeGreaterThanOrEqual(44);
+  expect(buttonRect!.y).toBe(selectRect!.y);
+  expect(buttonRect!.x + buttonRect!.width).toBeLessThan(selectRect!.x);
   await page.screenshot({ path: 'test-results/h4-visual-catalogo-mobile.png', fullPage: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Filtros', exact: true });
@@ -74,7 +76,7 @@ test('H4 home and catalog error or empty states preserve public navigation', asy
   await page.screenshot({ path: 'test-results/h4-visual-inicio-error-mobile.png' });
   await page.unroute('**/api/catalog/home');
   await page.goto('/catalogo?q=zzzh4noexiste');
-  await expect(page.getByRole('heading', { name: /No encontramos productos/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sin resultados' })).toBeVisible();
   await expect(page.getByRole('searchbox')).toHaveValue('zzzh4noexiste');
   await page.screenshot({ path: 'test-results/h4-visual-catalogo-empty-mobile.png' });
 });

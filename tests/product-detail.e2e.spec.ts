@@ -55,7 +55,8 @@ test.describe("F-011 · Frontend → BFF MOCK", () => {
 
     // El criterio de origen viaja en el handoff y sobrevive en la migra.
     await expect(
-      page.getByRole("link", { name: "Catálogo", exact: true }),
+      page.getByRole("navigation", { name: "Migas de navegación" })
+        .getByRole("link", { name: "Catálogo", exact: true }),
     ).toHaveAttribute("href", /\/catalogo\?categoryIds=running/);
   });
 
