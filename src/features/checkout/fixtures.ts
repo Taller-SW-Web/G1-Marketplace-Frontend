@@ -1,3 +1,5 @@
+import type { CartItemPreview } from "@/features/cart/types";
+
 // Read model returned by the BFF (BE #331 / SPECS #19): G7 has no phone, so the BFF
 // never returns it; label and reference only come when G7 has them.
 export type CheckoutAddress = {
@@ -32,7 +34,7 @@ export type CheckoutQuote = {
   total: number;
   addressId: string;
   cartVersion: number;
-  lines: Array<{ sku: string; quantity: number }>;
+  lines: CartItemPreview[];
   selectedBenefit?: { type: string; id: string; discount: number };
 };
 
@@ -41,13 +43,19 @@ export const checkoutFixtureAddresses: CheckoutAddress[] = [
   { addressId: "ADR-MOCK-0002", label: "Trabajo", street: "Jr. Comercio 450", district: "San Isidro", province: "Lima", department: "Lima", phone: "988888888" },
 ];
 
-export const checkoutFixtureCart = {
+type FixtureCart = { version: number; subtotal: number; lines: CartItemPreview[] };
+
+export const checkoutFixtureCart: FixtureCart = {
   version: 1,
-  lines: [{ sku: "SKU-MOCK-001", quantity: 1 }, { sku: "SKU-MOCK-002", quantity: 1 }],
+  subtotal: 340,
+  lines: [
+    { sku: "SKU-MOCK-001", quantity: 1, name: "Camiseta de entrenamiento (demo)", imageUrl: "/fixtures/product-0.svg" },
+    { sku: "SKU-MOCK-002", quantity: 1, name: "Calzado deportivo (demo)", imageUrl: "/fixtures/product-1.svg" },
+  ],
 };
 
-export function createFixtureQuote(addressId: string, now = Date.now()): CheckoutQuote {
-  const subtotal = checkoutFixtureCart.lines.length * 170;
+export function createFixtureQuote(addressId: string, now = Date.now(), cart = checkoutFixtureCart): CheckoutQuote {
+  const { subtotal, version, lines } = cart;
   return {
     quoteId: `Q-MOCK-${crypto.randomUUID()}`,
     expiresAt: now + 5 * 60_000,
@@ -57,8 +65,8 @@ export function createFixtureQuote(addressId: string, now = Date.now()): Checkou
     estimatedDays: 2,
     total: subtotal + 15,
     addressId,
-    cartVersion: checkoutFixtureCart.version,
-    lines: checkoutFixtureCart.lines,
+    cartVersion: version,
+    lines,
   };
 }
 

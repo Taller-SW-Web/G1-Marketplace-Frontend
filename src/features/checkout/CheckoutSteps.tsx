@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
+import type { CartItemPreview } from "@/features/cart/types";
+import { CheckoutItems } from "./CheckoutItems";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
 import { LoadingState, Skeleton } from "../../shared/ui/Skeleton";
@@ -127,9 +129,8 @@ export function NewDeliveryAddressForm({ values, error, fieldErrors, busy, first
 }
 
 type AddressStepContainerProps = {
-  backendMockEnabled: boolean;
   cartStatus: CartStatus;
-  cartCount: number;
+  cartItems: CartItemPreview[];
   cartError: string;
   addressLoading: boolean;
   addressLoadError: string;
@@ -153,7 +154,7 @@ type AddressStepContainerProps = {
 };
 
 export function AddressStepContainer(props: AddressStepContainerProps) {
-  const { backendMockEnabled, cartStatus, cartCount, cartError, addressLoading, addressLoadError,
+  const { cartStatus, cartItems, cartError, addressLoading, addressLoadError,
     addressRequiresAuthentication, addresses, selectedId, addingAddress, addressDraft, addressError, addressFieldErrors,
     addressStatusMessage, busy, onRetryCart, onRetryAddresses, onSelectAddress, onAddressDraftChange,
     onAddAddress, onCancelAddress, onSaveAddress, onContinue } = props;
@@ -172,7 +173,7 @@ export function AddressStepContainer(props: AddressStepContainerProps) {
     onCancelAddress();
   }
 
-  const cartBlocked = backendMockEnabled && cartStatus !== "ready";
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return <section className="checkout-card checkout-address-step" aria-labelledby="address-title">
     <div className="checkout-address-main">
@@ -194,16 +195,19 @@ export function AddressStepContainer(props: AddressStepContainerProps) {
     </div>
     <aside className="checkout-cart-summary" aria-labelledby="cart-summary-title">
       <h3 id="cart-summary-title">Tu pedido</h3>
-      {backendMockEnabled && cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
-      {cartStatus === "ready" && <p>Se encontraron {cartCount} productos para esta compra.</p>}
-      {backendMockEnabled && cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. No puedes continuar hasta revisarlo.</p>}
-      {backendMockEnabled && cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={onRetryCart}>Reintentar consulta del carrito</Button></div>}
+      {cartStatus === "loading" && <p role="status">Consultando tu carrito actual…</p>}
+      {cartStatus === "ready" && <>
+        <p className="checkout-muted">{cartCount === 1 ? "Se encontró 1 producto" : `Se encontraron ${cartCount} productos`} para esta compra.</p>
+        <CheckoutItems items={cartItems} />
+      </>}
+      {cartStatus === "empty" && <p role="alert" className="checkout-error">Tu carrito está vacío o ya no tiene productos disponibles. No puedes continuar hasta revisarlo.</p>}
+      {cartStatus === "error" && <div role="alert" className="checkout-error"><p>{cartError}</p><Button variant="secondary" onClick={onRetryCart}>Reintentar consulta del carrito</Button></div>}
       <p className="checkout-muted">El envío y el total se calculan en el siguiente paso.</p>
     </aside>
     <div className="checkout-actions checkout-address-actions">
       <Link className="button button--tertiary button--md" href="/carrito">Volver al carrito</Link>
       {!addingAddress && !addressLoadError && <Button onClick={onContinue} loading={busy}
-        disabled={!selectedAddress || busy || addressLoading || cartBlocked}>Continuar al resumen</Button>}
+        disabled={!selectedAddress || busy || addressLoading || cartStatus !== "ready"}>Continuar al resumen</Button>}
     </div>
   </section>;
 }
@@ -218,14 +222,15 @@ function estimatedArrival(days: number) {
 
 type CheckoutOrderSummaryProps = {
   quote: CheckoutQuote;
+  cartItems: CartItemPreview[];
   address?: CheckoutAddress;
 };
 
-export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryProps) {
+export function CheckoutOrderSummary({ quote, address, cartItems }: CheckoutOrderSummaryProps) {
   return <>
     <p className="checkout-summary-address"><span className="checkout-summary-address__label">Entrega en</span>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
     <h3>Productos ({quote.lines.length})</h3>
-    <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
+    <CheckoutItems items={quote.lines} cartItems={cartItems} />
     <dl className="checkout-totals">
       <div><dt>Subtotal</dt><dd>{formatCheckoutMoney(quote.subtotal)}</dd></div>
       <div><dt>Descuento</dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
@@ -269,7 +274,7 @@ type CouponFormProps = {
 
 export function CouponForm({ value, busy, disabled, hint, message, onChange, onSubmit }: CouponFormProps) {
   return <>
-    <form className="checkout-coupon" onSubmit={onSubmit}>
+    <form className="checkout-coupon checkout-coupon-form" onSubmit={onSubmit}>
       <TextField label="Código promocional" value={value} onChange={(event) => onChange(event.target.value)} hint={hint} />
       <Button type="submit" variant="secondary" loading={busy} disabled={disabled || busy}>Aplicar</Button>
     </form>

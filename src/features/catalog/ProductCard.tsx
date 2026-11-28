@@ -48,7 +48,7 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
         <div className="listing-card-actions">
           {sku ? (
             <Button className="listing-card-primary" loading={isBusy} loadingLabel="Agregando al carrito…"
-              onClick={() => void addItem({ productId: product.productId, sku, quantity: 1 })}>
+              onClick={() => void addItem({ productId: product.productId, sku, quantity: 1 }, { name: product.name, imageUrl: product.image?.url })}>
               Agregar al carrito
             </Button>
           ) : (

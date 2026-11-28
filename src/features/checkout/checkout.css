@@ -95,6 +95,71 @@
 }
 @media(prefers-reduced-motion:reduce){.checkout-progress__marker{transition:none}}
 .checkout-page .field-error{color:var(--error-strong);font-weight:500}
+.checkout-items { margin-block: 0 12px; }
+.checkout-items li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  text-align: start;
+}
+.checkout-item-photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.checkout-item-photo img { width: 100%; height: 100%; object-fit: contain; }
+.checkout-item-info { display: grid; gap: 2px; min-width: 0; font-size: .875rem; }
+.checkout-item-info small { color: var(--text-secondary); font-weight: 500; }
+.checkout-item-quantity { color: var(--text-secondary); font-size: .8125rem; white-space: nowrap; }
+
+.checkout-coupon-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px 12px;
+}
+.checkout-coupon-form .field { display: contents; }
+.checkout-coupon-form .field-label { grid-area: 1 / 1 / 2 / -1; }
+.checkout-coupon-form .field-control { grid-area: 2 / 1; min-width: 0; }
+.checkout-coupon-form .field-hint { grid-area: 3 / 1 / 4 / -1; }
+.checkout-coupon-form > .button { grid-area: 2 / 2; min-width: 100px; }
+
+.checkout-card.checkout-success--receipt {
+  max-width: 740px;
+  padding: 0;
+  overflow: hidden;
+}
+.checkout-success-hero {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: clamp(24px, 5vw, 46px) clamp(16px, 4vw, 36px);
+  background:
+    radial-gradient(ellipse at right top, rgb(247 103 7 / .43), transparent 58%),
+    radial-gradient(ellipse at bottom left, rgb(195 229 4 / .22), transparent 55%),
+    linear-gradient(140deg, #151410, #312315 72%, #21180e);
+  color: var(--text-inverse);
+  border-bottom: 4px solid var(--action-primary);
+}
+.checkout-success-hero .checkout-success-icon {
+  background: var(--accent-volt);
+  color: var(--surface-ink);
+  box-shadow: 0 0 0 7px rgb(195 229 4 / .14), 0 6px 36px rgb(195 229 4 / .28);
+}
+.checkout-success-hero .checkout-success-tag {
+  margin: 0;
+  background: rgb(195 229 4 / .16);
+  color: #e5f69c;
+}
+.checkout-success-hero h2 { margin: 0; font-size: clamp(28px, 5vw, 46px); line-height: 1.08; }
+.checkout-success-hero p:last-child { max-width: 45ch; color: rgb(247 245 240 / .9); }
+.checkout-success-receipt { padding: 6px clamp(16px, 4vw, 36px) clamp(24px, 4vw, 36px); }
+.checkout-success-receipt .checkout-actions { margin-bottom: 8px; }
 /* Ronda 2 · referencias (Baymard #543, NN/g errores, WCAG 2.2) */
 .checkout-eta{display:block;margin-top:2px;color:var(--text-secondary);font-size:12px;font-weight:600}
 .checkout-page .field-error::before,.checkout-page .checkout-error:not(.checkout-error-box)::before{content:"!";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:6px;border-radius:50%;background:var(--error-strong);color:#fff;font-size:11px;font-weight:800;vertical-align:-2px}

@@ -2,6 +2,8 @@ import { useEffect, useRef, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/TextField";
+import type { CartItemPreview } from "@/features/cart/types";
+import { CheckoutItems } from "./CheckoutItems";
 import { formatCheckoutMoney } from "./fixtures";
 import type { CheckoutOperation, Contact } from "./api";
 import type { CheckoutQuote } from "./fixtures";
@@ -90,22 +92,40 @@ type OrderConfirmationSummaryProps = {
   operationId: string;
   operation: CheckoutOperation | null;
   quote: CheckoutQuote | null;
+  cartItems: CartItemPreview[];
   backendMockEnabled: boolean;
   bff?: boolean;
   copyMessage: string;
   onCopy: () => void;
 };
 
-export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, bff = false, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
-  return <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">
-    <span className="checkout-success-icon" aria-hidden="true">✓</span>
-    <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
-    <h2 id="confirmed-title">¡Pedido confirmado!</h2>
-    <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
-    <dl className="checkout-totals"><div><dt>Código de pedido</dt><dd><code>{orderId}</code></dd></div><div><dt>Estado</dt><dd>PAGADO{backendMockEnabled ? "" : " (fixture)"}</dd></div><div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(operation?.orderTotal ?? quote?.total ?? 0)}</dd></div>{operation?.orderCreatedAt && <div><dt>Fecha del pedido</dt><dd>{new Date(operation.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}</dl>
-    <h3>Resumen de productos</h3><ul className="checkout-lines" aria-label="Productos del pedido">{quote?.lines.map((line) => <li key={line.sku}>{line.sku} × {line.quantity}</li>)}</ul>
-    <div className="checkout-actions"><Button variant="secondary" onClick={onCopy} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>{backendMockEnabled && operation && <Link className="button button--secondary button--md" href={`/checkout/confirmado/${encodeURIComponent(orderId)}?operationId=${encodeURIComponent(operationId)}`}>Ver mi pedido</Link>}<Button onClick={() => window.location.assign("/")}>Seguir comprando</Button></div>
-    {copyMessage && <p role="status" aria-live="polite">{copyMessage}</p>}<p className="checkout-muted">Operación de prueba {operationId.slice(0, 8)}…</p>
+export function OrderConfirmationSummary({ orderId, operationId, operation, quote, cartItems, backendMockEnabled, bff = false, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
+  return <section className="checkout-card checkout-success checkout-success--receipt" aria-labelledby="confirmed-title">
+    <header className="checkout-success-hero">
+      <span className="checkout-success-icon" aria-hidden="true">✓</span>
+      <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
+      <h2 id="confirmed-title">¡Pedido confirmado!</h2>
+      <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "El pedido y el pago se simularon en esta demostración. No hubo cobro real."}</p>
+    </header>
+    <div className="checkout-success-receipt">
+      <dl className="checkout-totals">
+        <div><dt>Código de pedido</dt><dd><code>{orderId}</code></dd></div>
+        <div><dt>Estado</dt><dd>PAGADO{backendMockEnabled ? "" : " (fixture)"}</dd></div>
+        <div className="checkout-total"><dt>Total confirmado</dt><dd>{formatCheckoutMoney(operation?.orderTotal ?? quote?.total ?? 0)}</dd></div>
+        {operation?.orderCreatedAt && <div><dt>Fecha del pedido</dt><dd>{new Date(operation.orderCreatedAt).toLocaleString("es-PE")}</dd></div>}
+      </dl>
+      {quote && <>
+        <h3>Resumen de productos</h3>
+        <CheckoutItems items={quote.lines} cartItems={cartItems} />
+      </>}
+      <div className="checkout-actions">
+        <Button variant="secondary" onClick={onCopy} aria-label={`Copiar código de pedido ${orderId}`}>Copiar código</Button>
+        {backendMockEnabled && operation && <Link className="button button--secondary button--md" href={`/checkout/confirmado/${encodeURIComponent(orderId)}?operationId=${encodeURIComponent(operationId)}`}>Ver mi pedido</Link>}
+        <Button onClick={() => window.location.assign("/")}>Seguir comprando</Button>
+      </div>
+      {copyMessage && <p role="status" aria-live="polite">{copyMessage}</p>}
+      <p className="checkout-muted">Operación de prueba {operationId.slice(0, 8)}…</p>
+    </div>
   </section>;
 }
 

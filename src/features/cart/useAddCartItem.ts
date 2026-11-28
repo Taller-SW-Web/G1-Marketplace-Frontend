@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { AddCartFlowState, AddToCartPayload, CartMutationResult } from './types';
+import type { AddCartFlowState, AddToCartPayload, CartItemPresentation, CartMutationResult } from './types';
 import { addCartItemApi } from './api';
+import { rememberCartPresentation } from './cart-presentation';
 
 export interface UseAddCartItemOptions {
   useMock?: boolean;
@@ -21,7 +22,7 @@ export function useAddCartItem(options: UseAddCartItemOptions = {}) {
   const isBusyRef = useRef(false);
 
   const addItem = useCallback(
-    async (payload: AddToCartPayload) => {
+    async (payload: AddToCartPayload, presentation?: CartItemPresentation) => {
       if (isBusyRef.current) {
         // Bloquear doble click
         return;
@@ -35,6 +36,8 @@ export function useAddCartItem(options: UseAddCartItemOptions = {}) {
         setLastResult(result);
 
         if (result.success) {
+          const sku = result.item?.sku ?? payload.sku;
+          if (!useMock && sku && presentation) rememberCartPresentation(sku, presentation);
           if (result.status === 409 || result.code === 'STOCK_LIMIT_REACHED') {
             setState('ADJUSTED');
           } else {

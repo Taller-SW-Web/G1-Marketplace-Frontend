@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { CartItemDTO } from './types';
 import { Button } from '@/shared/ui/Button';
 import { MoveCartToWishlistAction } from './MoveCartToWishlistAction';
+import { CartItemThumbnail, useCartItemPresentation } from './CartItemThumbnail';
 
 export interface CartLineProps {
   line: CartItemDTO;
@@ -28,6 +29,7 @@ export function CartLine({
 }: CartLineProps) {
   const [prevQuantity, setPrevQuantity] = useState(line.quantity);
   const [draftQuantity, setDraftQuantity] = useState(String(line.quantity));
+  const { name, imageUrl, variantName } = useCartItemPresentation(line);
 
   if (line.quantity !== prevQuantity) {
     setPrevQuantity(line.quantity);
@@ -75,21 +77,17 @@ export function CartLine({
     }
   };
 
-  const badgeInitial = (line.name || line.sku).trim().slice(0, 2).toUpperCase();
-
   return (
-    <article className="cart-line-item" aria-label={"Producto " + (line.name || line.sku)}>
+    <article className="cart-line-item" aria-label={"Producto " + name}>
       <div className="cart-line-main">
         <div className="cart-line-thumb" aria-hidden="true">
-          {line.imageUrl
-            ? <img src={line.imageUrl} alt="" loading="lazy" />
-            : <span>{badgeInitial}</span>}
+          <CartItemThumbnail imageUrl={imageUrl} />
         </div>
         <div className="cart-line-details">
           <div className="cart-line-header">
-            <h3 className="cart-line-title">{line.name || line.sku}</h3>
+            <h3 className="cart-line-title">{name}</h3>
             <span className="cart-line-meta">
-              {line.variantName && <span className="cart-line-variant">Talla/variante: {line.variantName}</span>}
+              {variantName && <span className="cart-line-variant">Talla/variante: {variantName}</span>}
               <span className="cart-line-sku">SKU: {line.sku}</span>
             </span>
           </div>
@@ -134,7 +132,7 @@ export function CartLine({
             onKeyDown={handleKeyDown}
             disabled={busy}
             className="cart-quantity-input"
-            aria-label={"Cantidad de " + (line.name || line.sku)}
+            aria-label={"Cantidad de " + name}
           />
           <Button
             type="button"
@@ -165,7 +163,7 @@ export function CartLine({
               disabled={busy}
               onClick={() => onRemove(line.sku)}
               className="cart-remove-btn"
-              aria-label={"Quitar " + (line.name || line.sku) + " del carrito"}
+              aria-label={"Quitar " + name + " del carrito"}
             >
               Eliminar
             </Button>

@@ -164,7 +164,7 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
             showCart={canAddToCart}
             showUnavailableCart={showCart && !canAddToCart}
             busy={isBusy}
-            onAdd={addItem}
+            onAdd={(payload) => void addItem(payload, { name: product.name, imageUrl: galleryMedia[0]?.url })}
             onVariantImageChange={onVariantImageChange}
           />
         </div>

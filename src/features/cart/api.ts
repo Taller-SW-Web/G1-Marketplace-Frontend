@@ -1,4 +1,5 @@
 import type { AddToCartPayload, CartItemDTO, CartMutationCode, CartMutationResult, CartSnapshot, CartMergeResult, MergeAdjustment, MoveToWishlistResult } from './types';
+import { readCartPresentation } from './cart-presentation';
 
 // Almacén en memoria para simular persistencia MOCK en Hito 3 si el backend no está disponible
 let mockCart: CartSnapshot = {
@@ -22,6 +23,11 @@ interface BffSuccessResponse {
     version: number;
     items?: CartItemDTO[];
   };
+}
+
+function normalizeMutationCart(data: BffSuccessResponse['data']): CartSnapshot | undefined {
+  if (!data) return;
+  return { ...data, items: (data.items ?? []).map(item => ({ ...item, ...readCartPresentation(item) })) };
 }
 
 /**
@@ -132,7 +138,7 @@ export async function addCartItemApi(
       };
     }
 
-    const cartData = json.data as CartSnapshot | undefined;
+    const cartData = normalizeMutationCart(json.data);
     const items = cartData?.items ?? [];
     return {
       success: true,
@@ -189,7 +195,7 @@ export async function getCartApi(useMock: boolean = true): Promise<CartSnapshot>
     version: data?.version ?? 0,
     items: (data?.items ?? []).map((it: CartItemDTO) => ({
       sku: it.sku,
-      name: it.name || it.sku.replace('INKA-', '').replace(/-/g, ' '),
+      ...readCartPresentation(it),
       quantity: it.quantity,
       unitPrice: it.unitPrice
         ? {
@@ -317,7 +323,7 @@ export async function updateCartItemQuantityApi(
       };
     }
 
-    const cartData = json.data as CartSnapshot | undefined;
+    const cartData = normalizeMutationCart(json.data);
     const items = cartData?.items ?? [];
     return {
       success: true,

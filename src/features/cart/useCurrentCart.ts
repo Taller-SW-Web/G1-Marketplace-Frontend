@@ -11,9 +11,9 @@ function mergeCartWithPresentation(incomingCart: CartSnapshot, previousCart: Car
       const existing = previousCart?.items.find((it) => it.sku === newItem.sku);
       return {
         ...newItem,
-        name: existing?.name ?? newItem.name ?? newItem.sku.replace('INKA-', '').replace(/-/g, ' '),
-        imageUrl: existing?.imageUrl ?? newItem.imageUrl,
-        variantName: existing?.variantName ?? newItem.variantName,
+        name: newItem.name ?? existing?.name,
+        imageUrl: newItem.imageUrl ?? existing?.imageUrl,
+        variantName: newItem.variantName ?? existing?.variantName,
       };
     }),
   };
