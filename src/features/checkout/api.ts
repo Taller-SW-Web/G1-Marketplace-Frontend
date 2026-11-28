@@ -262,21 +262,23 @@ function normalizeQuote(payload: unknown): CheckoutQuote {
   if (!isRecord(payload)) throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   const quote = payload as unknown as BackendQuote;
   const validMoney = (money: unknown): money is { amount: number } => isRecord(money) && typeof money.amount === "number" && Number.isFinite(money.amount);
-  const validLines = Array.isArray(quote.lines) && quote.lines.every((line) => isRecord(line) && typeof line.sku === "string" && typeof line.quantity === "number" && Number.isInteger(line.quantity) && line.quantity > 0);
+  const validLines = Array.isArray(quote.lines) && quote.lines.every((line) => {
+    if (!isRecord(line) || typeof line.sku !== "string" || typeof line.quantity !== "number" ||
+        !Number.isInteger(line.quantity) || line.quantity <= 0) return false;
+    return (line.productId === undefined || typeof line.productId === "string") &&
+      (line.unitPrice === undefined || (isRecord(line.unitPrice) && typeof line.unitPrice.amount === "number" &&
+        Number.isFinite(line.unitPrice.amount) && line.unitPrice.amount >= 0 && line.unitPrice.currency === "PEN"));
+  });
   const validSources = quote.sources === undefined || (isRecord(quote.sources) &&
     ["G6_REAL", "G5_FIXTURE", "MOCK"].includes(String(quote.sources.pricing)) &&
     ["G5_FIXTURE", "MOCK"].includes(String(quote.sources.shipping)) &&
     ["G5_FIXTURE", "MOCK"].includes(String(quote.sources.benefits)) &&
     ["G6_REAL", "G5_FIXTURE", "MOCK"].includes(String(quote.sources.inventoryRevalidation)));
-  const validLineMetadata = Array.isArray(quote.lines) && quote.lines.every((line) =>
-    (line.productId === undefined || typeof line.productId === "string") &&
-    (line.unitPrice === undefined || (isRecord(line.unitPrice) && typeof line.unitPrice.amount === "number" &&
-      Number.isFinite(line.unitPrice.amount) && line.unitPrice.amount >= 0 && line.unitPrice.currency === "PEN")));
   if (typeof quote.quoteId !== "string" || typeof quote.expiresAt !== "string" ||
       !validMoney(quote.subtotal) || !validMoney(quote.discount) || !validMoney(quote.shipping) ||
       typeof quote.shipping.estimatedDays !== "number" || !Number.isFinite(quote.shipping.estimatedDays) ||
       !validMoney(quote.total) || typeof quote.addressId !== "string" || !validLines ||
-      typeof quote.cartVersion !== "number" || !Number.isInteger(quote.cartVersion) || !validSources || !validLineMetadata ||
+      typeof quote.cartVersion !== "number" || !Number.isInteger(quote.cartVersion) || !validSources ||
       (quote.selectedBenefit !== undefined && (!isRecord(quote.selectedBenefit) || typeof quote.selectedBenefit.type !== "string" || typeof quote.selectedBenefit.id !== "string" || !validMoney(quote.selectedBenefit.discount)))) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   }

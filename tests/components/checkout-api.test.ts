@@ -92,6 +92,19 @@ describe("checkout Backend MOCK adapter", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ addressId: "address-1", cartVersion: 3 });
   });
 
+  it("rejects a null quote line as an invalid backend response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
+      quoteId: "quote-null-line", expiresAt: "2026-10-15T10:05:00.000Z",
+      subtotal: { amount: 170, currency: "PEN" }, discount: { amount: 0, currency: "PEN" },
+      shipping: { amount: 15, currency: "PEN", estimatedDays: 2 }, total: { amount: 185, currency: "PEN" },
+      addressId: "address-1", cartVersion: 3, lines: [null],
+    } }), { status: 200 })));
+
+    await expect(checkoutApi.createQuote("address-1", 3)).rejects.toMatchObject({
+      status: 502, code: "INVALID_BACKEND_RESPONSE",
+    });
+  });
+
   it("preserves public API errors instead of converting them to a successful fixture", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "CART_NOT_FOUND" } }), { status: 409 })));
 
