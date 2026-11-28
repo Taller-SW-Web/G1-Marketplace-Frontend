@@ -5,6 +5,7 @@ out/
 !.env.example
 playwright-report/
 test-results/
+coverage/
 *.tsbuildinfo
 npm-debug.log*
 
