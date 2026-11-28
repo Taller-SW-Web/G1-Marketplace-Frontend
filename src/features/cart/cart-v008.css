@@ -557,6 +557,19 @@
   }
 }
 
+/* WCAG 2.4.11: el foco no queda oculto bajo la barra fija; y la barra no esconde que falta el envío. */
+@media (max-width: 900px) {
+  :root:has(.cart-page-shell .cart-subtotal-card) {
+    scroll-padding-bottom: 120px;
+  }
+  .cart-page-shell .cart-subtotal-row::after {
+    content: "Envío en el checkout";
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+}
+
 @media (max-width: 420px) {
   .cart-page-shell .cart-line-thumb {
     width: 68px;

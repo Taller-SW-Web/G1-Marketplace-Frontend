@@ -95,3 +95,6 @@
 }
 @media(prefers-reduced-motion:reduce){.checkout-progress__marker{transition:none}}
 .checkout-page .field-error{color:var(--error-strong);font-weight:500}
+/* Ronda 2 · referencias (Baymard #543, NN/g errores, WCAG 2.2) */
+.checkout-eta{display:block;margin-top:2px;color:var(--text-secondary);font-size:12px;font-weight:600}
+.checkout-page .field-error::before,.checkout-page .checkout-error:not(.checkout-error-box)::before{content:"!";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:6px;border-radius:50%;background:var(--error-strong);color:#fff;font-size:11px;font-weight:800;vertical-align:-2px}

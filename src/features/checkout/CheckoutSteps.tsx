@@ -209,6 +209,13 @@ export function AddressStepContainer(props: AddressStepContainerProps) {
 }
 
 
+/** Fecha aproximada a partir del plazo de la cotización (Baymard: fecha concreta, no solo plazo). */
+function estimatedArrival(days: number) {
+  if (!Number.isFinite(days) || days < 0) return "";
+  const date = new Date(Date.now() + days * 86_400_000);
+  return `Llegada aprox. ${new Intl.DateTimeFormat("es-PE", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Lima" }).format(date)}`;
+}
+
 type CheckoutOrderSummaryProps = {
   quote: CheckoutQuote;
   address?: CheckoutAddress;
@@ -223,7 +230,7 @@ export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryPro
       <div><dt>Subtotal</dt><dd>{formatCheckoutMoney(quote.subtotal)}</dd></div>
       <div><dt>Descuento</dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
       <div><dt>Envío</dt><dd>{formatCheckoutMoney(quote.shipping)}</dd></div>
-      <div><dt>Plazo estimado de entrega</dt><dd>{quote.estimatedDays} días</dd></div>
+      <div><dt>Plazo estimado de entrega</dt><dd>{quote.estimatedDays} días<small className="checkout-eta">{estimatedArrival(quote.estimatedDays)}</small></dd></div>
       <div className="checkout-total"><dt>Total estimado</dt><dd>{formatCheckoutMoney(quote.total)}</dd></div>
     </dl>
   </>;

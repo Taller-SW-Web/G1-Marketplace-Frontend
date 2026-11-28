@@ -103,3 +103,19 @@
   .auth-page { padding: 16px; align-items: flex-start; }
   .auth-page .auth-card { padding: 28px 20px; }
 }
+
+/* Ronda 2 · NN/g: el error no depende solo del color (icono junto al mensaje) */
+.auth-page .field-error::before {
+  content: "!";
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--error-strong);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: -2px;
+}
