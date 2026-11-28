@@ -1,0 +1,105 @@
+/* ===== UX B · 27/11 · Cuenta: login, MFA, registro y recuperación (solo presentación) ===== */
+.auth-page {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(247, 103, 7, 0.10), transparent 32%),
+    radial-gradient(circle at 88% 92%, rgba(195, 229, 4, 0.12), transparent 30%),
+    linear-gradient(180deg, var(--surface-cloud), var(--surface-subtle));
+}
+.auth-page .auth-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(27, 24, 18, 0.08);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27, 24, 18, 0.05), 0 20px 48px rgba(27, 24, 18, 0.10);
+}
+.auth-page .auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--surface-ink) 0 70%, var(--action-primary) 70% 90%, var(--accent-volt) 90%);
+}
+.auth-page .auth-heading h1 { line-height: 1.05; }
+.auth-page .auth-heading p { color: var(--text-secondary); }
+.auth-page .auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+}
+.auth-page .auth-back-link:focus-visible,
+.auth-page .auth-text-link:focus-visible { outline: 3px solid var(--accent-signal); outline-offset: 2px; border-radius: var(--radius-sm); }
+.auth-page .field-control { border-radius: var(--radius-md); }
+.auth-page .field-control:focus-within { border-color: var(--surface-ink); box-shadow: 0 0 0 3px rgba(27, 24, 18, 0.12); }
+.auth-page .field-error { color: var(--error-strong); font-weight: 500; }
+.auth-page .button--full { min-height: 52px; font-size: 16px; }
+
+/* Mensajes: información, error y éxito con barra lateral y contraste AA */
+.auth-page .auth-feedback {
+  border: 1px solid #b6dcf7;
+  border-left: 4px solid var(--info);
+  background: var(--info-background);
+  color: var(--text-primary);
+}
+.auth-page .auth-feedback--error { border-color: #ffc9c9; border-left-color: var(--error-strong); background: var(--error-background); }
+.auth-page .auth-feedback--success { border-color: #b2e2c0; border-left-color: var(--success-strong); background: #eff9e4; }
+.auth-page .auth-feedback:focus-visible { outline: 3px solid var(--accent-signal); outline-offset: 2px; }
+
+/* Requisitos de contraseña no disponibles */
+.auth-page .auth-policy-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(240, 140, 0, 0.35);
+  border-radius: var(--radius-md);
+  background: var(--warning-background);
+  color: var(--warning-strong);
+  font-size: 14px;
+}
+.auth-page .auth-policy-message .auth-text-link {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--surface-ink);
+  border-radius: var(--radius-full);
+  background: #fff;
+  color: var(--surface-ink);
+  cursor: pointer;
+}
+
+/* Consentimiento con área táctil cómoda */
+.auth-page .auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-cloud);
+  cursor: pointer;
+}
+.auth-page .auth-consent input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--surface-ink); flex: none; }
+.auth-page .auth-consent:focus-within { outline: 3px solid var(--accent-signal); outline-offset: 2px; }
+
+/* Enlace de salida como acción secundaria en tarjetas sin formulario */
+.auth-page .auth-card > .auth-text-link {
+  align-self: stretch;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+  border: 1px solid var(--surface-ink);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.auth-page .auth-card > .auth-text-link:hover { background: var(--surface-ink); color: var(--text-inverse); text-decoration: none; }
+.auth-page .auth-small-copy { margin: 0; text-align: center; color: var(--text-secondary); }
+
+@media (max-width: 600px) {
+  .auth-page { padding: 16px; align-items: flex-start; }
+  .auth-page .auth-card { padding: 28px 20px; }
+}

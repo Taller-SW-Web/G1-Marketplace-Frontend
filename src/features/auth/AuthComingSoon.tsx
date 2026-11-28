@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./auth-ux.css";
 
 export function AuthComingSoon({ title, milestone }: { title: string; milestone: string }) {
   return (

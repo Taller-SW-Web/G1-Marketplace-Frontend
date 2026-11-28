@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/Button";
 import { TextField } from "@/shared/ui/TextField";
 import { AccessError, announceSessionChange, authCall, safeReturn } from "./client";
 import { focusFirstInvalid } from "./form-focus";
+import "./auth-ux.css";
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa tu correo y contraseña e inténtalo de nuevo.";
