@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Skeleton, LoadingState } from "@/shared/ui/Skeleton";
+import "./orders-ux.css";
 import { OrdersRequestError, readOrders } from "./api";
 import { OrderList } from "./OrderList";
 import { OrdersFilterForm } from "./OrdersFilterForm";

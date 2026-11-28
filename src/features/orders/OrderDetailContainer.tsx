@@ -6,6 +6,8 @@ import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { OrdersRequestError, readOrderDetail } from "./api";
 import type { OrderSummary } from "./types";
+import { OrderProgress, orderStateCode, orderStateTone } from "./OrderProgress";
+import "./orders-ux.css";
 
 function money(amount: number, currency: string) {
   return new Intl.NumberFormat("es-PE", { style: "currency", currency }).format(amount);
@@ -45,12 +47,13 @@ export function OrderDetailContainer({ orderId }: { orderId: string }) {
         <h2 id="order-summary-title">Resumen</h2>
         <dl className="order-detail-summary">
           <div><dt>Pedido</dt><dd>{detail.orderId}</dd></div>
-          <div><dt>Estado</dt><dd>{detail.state.replaceAll("_", " ")}</dd></div>
+          <div><dt>Estado</dt><dd><span className={`order-status order-status--${orderStateTone(detail.state)}`}><span className="order-status__dot" aria-hidden="true" />{orderStateCode(detail.state)}</span></dd></div>
           <div><dt>Fecha</dt><dd>{new Intl.DateTimeFormat("es-PE", { dateStyle: "long", timeZone: "America/Lima" }).format(new Date(detail.createdAt))}</dd></div>
           <div><dt>Total</dt><dd>{money(detail.total.amount, detail.total.currency)}</dd></div>
         </dl>
+        <OrderProgress state={detail.state} />
       </section>
-      <p><Link className="button button--secondary button--md" href={`/mis-pedidos/${encodeURIComponent(detail.orderId)}/seguimiento`}>Ver seguimiento</Link></p>
+      <p className="order-detail-cta"><Link className="button button--primary button--md" href={`/mis-pedidos/${encodeURIComponent(detail.orderId)}/seguimiento`}>Ver seguimiento</Link></p>
     </>}
   </main>;
 }

@@ -7,6 +7,7 @@ import { EmptyState } from "@/shared/ui/EmptyState";
 import { OrdersRequestError, readOrderTracking } from "./api";
 import { ShipmentTimeline } from "./ShipmentTimeline";
 import type { OrderTracking } from "./types";
+import "./orders-ux.css";
 
 export function ShipmentTrackingContainer({ orderId }: { orderId: string }) {
   type Result = { key: string } & ({ data: OrderTracking | null } | { error: string; denied: boolean });
