@@ -145,14 +145,17 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
         </p>
       )}
 
+      <header className="detail-identity">
+        <p className="detail-brand">Marca: {product.brand.name}</p>
+        <h1>{product.name}</h1>
+      </header>
+
       <div className="detail-layout">
         <ProductGallery
           media={galleryMedia}
           onOpenViewer={(index) => setViewerState({ slug, open: true, index })}
         />
         <div className="detail-summary">
-          <p className="detail-brand">Marca: {product.brand.name}</p>
-          <h1>{product.name}</h1>
           <ProductCommerce
             slug={slug}
             productId={product.productId}

@@ -79,14 +79,14 @@ export function ProductCommerce({
 
   return (
     <div className="product-commerce">
+      <ProductPriceRegion state={price.state} retry={price.retry} />
+
       <ProductVariantsRegion
         state={variants.state}
         selection={variants.selection}
         onSelectionChange={variants.select}
         onRetry={variants.retry}
       />
-
-      <ProductPriceRegion state={price.state} retry={price.retry} />
 
       <AvailabilityRegion
         state={availability.state}
@@ -109,7 +109,7 @@ export function ProductCommerce({
         <div className="detail-cart-action-wrapper detail-cart-unavailable">
           <Button disabled fullWidth aria-describedby={unavailableReason}>Agregar al carrito</Button>
           <p id={unavailableReason}>
-            {priceReady ? "La compra de este producto aún no está habilitada." : "Compra disponible cuando se confirme el precio y la disponibilidad."}
+            {priceReady ? "La compra de este producto aún no está habilitada." : "El precio o la disponibilidad aún están por confirmar."}
           </p>
         </div>
       )}

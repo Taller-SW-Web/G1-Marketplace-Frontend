@@ -71,39 +71,7 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
         )}
       </div>
 
-      <div className="gallery-toolbar">
-        <button
-          type="button"
-          className="gallery-zoom"
-          aria-label="Ampliar imagen"
-          onClick={() => onOpenViewer(selectedIndex)}
-        >
-          Ampliar imagen
-        </button>
-        <span className="gallery-position" role="status">
-          Imagen {selectedIndex + 1} de {total}
-        </span>
-        <button
-          type="button"
-          className="gallery-step"
-          aria-label="Imagen anterior"
-          disabled={selectedIndex === 0}
-          onClick={() => selectIndex(Math.max(0, selectedIndex - 1))}
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          className="gallery-step"
-          aria-label="Imagen siguiente"
-          disabled={selectedIndex >= total - 1}
-          onClick={() => selectIndex(Math.min(total - 1, selectedIndex + 1))}
-        >
-          Siguiente
-        </button>
-      </div>
-
-      <ul className="gallery-thumbs">
+      <ul className="gallery-thumbs" aria-label="Miniaturas del producto">
         {media.map((mediaItem, index) => {
           const thumbFailed = current.failed.has(mediaItem.mediaId);
           return (
@@ -136,6 +104,38 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
           );
         })}
       </ul>
+
+      <div className="gallery-toolbar">
+        <button
+          type="button"
+          className="gallery-zoom"
+          aria-label="Ampliar imagen"
+          onClick={() => onOpenViewer(selectedIndex)}
+        >
+          Ampliar imagen
+        </button>
+        <span className="gallery-position" role="status">
+          Imagen {selectedIndex + 1} de {total}
+        </span>
+        <button
+          type="button"
+          className="gallery-step"
+          aria-label="Imagen anterior"
+          disabled={selectedIndex === 0}
+          onClick={() => selectIndex(Math.max(0, selectedIndex - 1))}
+        >
+          Anterior
+        </button>
+        <button
+          type="button"
+          className="gallery-step"
+          aria-label="Imagen siguiente"
+          disabled={selectedIndex >= total - 1}
+          onClick={() => selectIndex(Math.min(total - 1, selectedIndex + 1))}
+        >
+          Siguiente
+        </button>
+      </div>
     </section>
   );
 }
