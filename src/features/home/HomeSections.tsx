@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
+import { CategoryArtwork } from "@/features/catalog/CategoryArtwork";
 import { ProductCard } from "@/features/catalog/ProductCard";
+import "@/features/catalog/catalog-listing.css";
 import type { ProductCardDTO } from "@/features/catalog/types";
 import { categoryHref, type CategoryTile } from "./selection";
 import { useReveal } from "./useReveal";
@@ -28,7 +30,7 @@ export function CategoryStrip({ tiles }: { tiles: CategoryTile[] }) {
           <li key={category.categoryId} style={{ "--i": index } as CSSProperties}>
             <Link className="home-category" href={categoryHref(category.categoryId)}>
               <span className="home-category__media">
-                {image ? <TileImage src={image.url} /> : <span className="home-tile__fallback" aria-hidden="true" />}
+                {image ? <TileImage src={image.url} /> : <span className="home-category__art"><CategoryArtwork category={category} /></span>}
               </span>
               <span className="home-category__name">{category.name}</span>
             </Link>
@@ -88,7 +90,7 @@ export function FeaturedRail({ products }: { products: ProductCardDTO[] }) {
           </button>
         </div>
       </div>
-      <ul ref={track} className="home-rail" tabIndex={0} aria-label="Productos destacados">
+      <ul ref={track} className="home-rail catalog-listing" tabIndex={0} aria-label="Productos destacados">
         {products.map((product) => (
           <li key={product.productId} className="home-rail__item">
             <ProductCard product={product} returnPath="/" listing={{}} />

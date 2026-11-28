@@ -544,3 +544,32 @@
 .home-landing { min-width: 0; width: 100%; }
 /* Las tarjetas tienen elementos absolutos: el carril debe ser su bloque contenedor para no ensanchar la página. */
 .home-rail, .home-categories { position: relative; }
+
+/* ---------- Ajustes tras revisión visual ---------- */
+.home-categories { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); }
+.home-category__art { display: grid; place-items: center; width: 100%; height: 100%; background: linear-gradient(135deg, #fff4ea, #f4f1ea); }
+.home-category__art .category-artwork { display: grid; place-items: center; width: 100%; height: 100%; }
+.home-category__art img { padding: 14%; }
+
+/* Banners: texto a la izquierda y foto en tarjeta blanca inclinada a la derecha */
+.home-promo { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: center; gap: 8px; padding: 24px; }
+.home-promo::before { display: none; }
+.home-promo__copy { max-width: none; padding: 4px; }
+.home-promo__media { position: relative; inset: auto; z-index: 0; align-self: center; justify-self: center; width: min(100%, 240px); aspect-ratio: 1; border-radius: 24px; background: #fff; overflow: hidden; box-shadow: 0 24px 50px rgba(0, 0, 0, .35); transform: rotate(-4deg); transition: transform 400ms cubic-bezier(.2, .8, .2, 1); }
+.home-promo__media img { padding: 10%; filter: none; }
+.home-promo:hover .home-promo__media { transform: rotate(0deg) scale(1.04); }
+.home-promo:hover .home-promo__media img { transform: scale(1.06); }
+
+/* Carril de destacados: tarjetas del catálogo a altura natural */
+.home-rail.catalog-listing { align-items: start; }
+.home-rail__item > * { height: auto; }
+
+@media (max-width: 760px) {
+  .home-promo { grid-template-columns: 1fr; padding: 20px; }
+  .home-promo__media { order: -1; width: 150px; justify-self: start; }
+  .home-promo__copy { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-promo__media { transition: none; }
+  .home-promo:hover .home-promo__media { transform: rotate(-4deg); }
+}
