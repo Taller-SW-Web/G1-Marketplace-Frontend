@@ -86,13 +86,14 @@ test("favorites use the shared site header and footer", async ({ page }) => {
     await page.goto("/favoritos");
     const header = page.getByRole("banner");
     await expect(header.getByRole("link", { name: "Inka Athletics, inicio" })).toBeVisible();
+    if (size.width < 768) await header.getByRole("button", { name: "Abrir buscador" }).click();
     await expect(header.getByRole("searchbox", { name: "Buscar productos" })).toBeVisible();
     await expect(header.getByRole("link", { name: "Favoritos" })).toBeVisible();
     await expect(header.getByRole("link", { name: "Carrito de compras" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Saltar al contenido" })).toHaveCount(1);
     await expect(page.getByRole("main")).toHaveCount(1);
     const footer = page.getByRole("contentinfo");
-    await expect(footer).toContainText("INKA ATHLETICS");
+    await expect(footer.getByRole("link", { name: "Inka Athletics", exact: true })).toBeVisible();
     const reachesBottom = await footer.evaluate(node => Math.abs(node.getBoundingClientRect().bottom - document.documentElement.scrollHeight) <= 1);
     expect(reachesBottom).toBe(true);
   }

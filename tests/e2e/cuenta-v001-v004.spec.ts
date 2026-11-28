@@ -183,7 +183,9 @@ test.describe("V-001 Inicio de sesión", () => {
       await page.getByLabel("Código de verificación").fill("123456");
       await page.getByRole("button", { name: "Verificar código", exact: true }).click();
       await expect(page).toHaveURL("/");
-      await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toBeVisible();
+      await expect(page.getByRole("banner").locator(".marketplace-account-trigger").first()).toBeAttached();
+      await openMobileMenu(page);
+      await expect(page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true })).toBeVisible();
       expect(await webStorage(page)).not.toMatch(/eyJ|token|contrasena|Fixture-only/i);
       expect(await page.evaluate(() => document.cookie)).not.toMatch(/token|session/i);
     });
@@ -203,7 +205,7 @@ test.describe("V-001 Inicio de sesión", () => {
     await noHorizontalScroll(page);
     await fillLogin(page, "cliente@fixture.test");
     await expect(page).toHaveURL("/carrito");
-    await expect(page.getByText("Cliente fixture")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true })).toBeVisible();
   });
 });
 
@@ -266,11 +268,19 @@ test.describe("V-003 / V-004 Recuperación y restablecimiento (SPA G7)", () => {
   });
 });
 
+async function openMobileMenu(page: Page) {
+  if ((page.viewportSize()?.width ?? 768) < 768) {
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+  }
+}
+
 test.describe("Cierre de sesión", () => {
 
   test("invalida la sesión y volver atrás no la recupera", async ({ page }) => {
     const state = await mockBff(page, { authenticated: true });
     await page.goto("/carrito");
+    await openMobileMenu(page);
+    await page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true }).click();
     const logout = page.getByRole("button", { name: "Cerrar sesión", exact: true });
     await expect(logout).toBeVisible();
     await evidence(page, "logout-antes");
@@ -281,9 +291,10 @@ test.describe("Cierre de sesión", () => {
     await evidence(page, "logout-cerrada");
     await page.goBack();
     await expect(page).toHaveURL("/carrito");
-    await expect(page.getByRole("link", { name: "Iniciar sesión" }).first()).toBeVisible();
+    await openMobileMenu(page);
+    await expect(page.getByRole("banner").getByRole("link", { name: "Ingresar", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Cerrar sesión", exact: true })).toHaveCount(0);
-    await expect(page.getByText("Cliente fixture")).toHaveCount(0);
+    await expect(page.getByRole("banner").getByText("Cliente", { exact: true }).filter({ visible: true })).toHaveCount(0);
     expect((await page.evaluate(() => fetch("/api/v1/auth/session").then(r => r.json()))).authenticated).toBe(false);
     await evidence(page, "logout-volver-atras");
   });

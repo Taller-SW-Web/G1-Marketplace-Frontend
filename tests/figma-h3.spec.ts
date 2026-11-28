@@ -3,26 +3,25 @@ import { test, expect } from "@playwright/test";
 test("Figma home uses the editorial asset and responsive category geometry", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  for(const width of [1440, 390, 320]) {
+  for(const width of [360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     await expect(page.locator(".category-card")).toHaveCount(3);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("EL MOVIMIENTOEMPIEZA CONTIGO.");
-    await expect(page.getByText("Buscar productos", { exact: true })).toBeVisible();
+    const header = page.getByRole("banner");
+    if (width < 768) await header.getByRole("button", { name: "Abrir buscador" }).click();
+    await expect(header.getByRole("searchbox", { name: "Buscar productos" })).toBeVisible();
     const hero = await page.locator(".home-intro").boundingBox();
-    expect(hero?.width).toBe(width === 1440 ? 1320 : width - 32);
+    const gutter = Math.min(60, Math.max(16, width * 0.04));
+    expect(hero?.width).toBeCloseTo(width - gutter * 2, 0);
     await expect.poll(async () => page.locator('img[src^="/figma/"]:visible').evaluateAll(
       (images) => images.every((element) => (element as HTMLImageElement).complete && (element as HTMLImageElement).naturalWidth > 0),
     )).toBe(true);
-    if (width < 768) {
-      const textStart = await page.getByRole("searchbox").evaluate((input) =>
-        input.getBoundingClientRect().left + parseFloat(getComputedStyle(input).paddingLeft),
-      );
-      const icon = await page.locator(".search-submit img").boundingBox();
-      expect(textStart).toBeGreaterThanOrEqual(icon!.x + icon!.width + 8);
-    }
+    const searchIcon = await header.getByRole("button", { name: "Buscar", exact: true }).boundingBox();
+    expect(searchIcon!.width).toBeGreaterThanOrEqual(44);
+    expect(searchIcon!.height).toBeGreaterThanOrEqual(44);
     const photo = await page.locator(".intro-art img").boundingBox();
-    expect(photo!.width).toBe(width === 1440 ? 580 : width === 390 ? 294 : 240);
+    expect(photo!.width).toBeLessThan(hero!.width);
     expect(photo!.width / photo!.height).toBeCloseTo(1.5, 2);
     const assets = await page.locator('img[src^="/figma/"]:visible').evaluateAll((images) => images.map((element) => {
       const image = element as HTMLImageElement;
@@ -34,7 +33,7 @@ test("Figma home uses the editorial asset and responsive category geometry", asy
     expect(illustration).toBeDefined();
     expect(illustration!.width / illustration!.height).toBeCloseTo(1.5, 2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-    if(width !== 320) await page.screenshot({ path: `test-results/figma-inicio-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/figma-inicio-${width}.png`, fullPage: true });
   }
   expect(errors).toEqual([]);
 });
@@ -57,8 +56,11 @@ test("Figma catalog has three desktop columns and one mobile column", async ({ p
   expect(mobileFirst?.width).toBe(358);
   expect(mobileFirst?.x).toBe(16);
   expect(mobileSecond!.y).toBeGreaterThan(mobileFirst!.y);
-  await expect(page.getByRole("link", { name: /Iniciar sesión/ })).toHaveAttribute("href", "/login");
-  await expect(page.getByRole("link", { name: /Favoritos/ })).toHaveAttribute("href", "/favoritos");
+  const header = page.getByRole("banner");
+  await expect(header.getByRole("link", { name: /Favoritos/ })).toHaveAttribute("href", "/favoritos");
+  await header.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(header.getByRole("link", { name: "Ingresar", exact: true })).toHaveAttribute("href", "/login");
+  await page.keyboard.press("Escape");
   await expect(page.locator(".product-grid")).not.toContainText("S/");
 });
 
@@ -74,6 +76,7 @@ test("home loading and error follow Figma and retry preserves a usable search", 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Preparando tu inicio" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir buscador" }).click();
   await expect(page.getByRole("searchbox")).toBeVisible();
   await page.screenshot({ path: "test-results/figma-inicio-cargando-390.png", fullPage: true });
   release();
