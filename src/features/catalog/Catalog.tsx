@@ -12,7 +12,6 @@ import { ProductCard } from "./ProductCard";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
-import "./catalog-listing.css";
 
 export function Catalog() {
   const params = useSearchParams();
@@ -25,7 +24,7 @@ export function Catalog() {
   const invalidCriteria = criteriaError(query);
   // Invalid URL input never requests products.
   return invalidQuery || invalidCriteria ? (
-    <div className="container catalog-page catalog-listing empty-state">
+    <div className="container catalog-page empty-state">
       <Link className="breadcrumb" href="/">
         Inicio /
       </Link>
@@ -62,7 +61,6 @@ function CatalogResults({
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
   const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
-  const brands = filters.state.status === "ready" ? filters.state.data.brands : [];
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -88,7 +86,7 @@ function CatalogResults({
     navigate(url);
   }
   return (
-    <div className="container catalog-page catalog-listing">
+    <div className="container catalog-page">
       <nav aria-label="Migas de navegación" className="breadcrumbs">
         <Link href="/">Inicio</Link>
         <span aria-hidden="true">/</span>
@@ -151,7 +149,6 @@ function CatalogResults({
                       key={product.productId}
                       product={product}
                       returnPath={returnPath}
-                      listing={{ brand: brands.find((brand) => brand.brandId === product.brandId)?.name }}
                     />
                   ))}
                 </div>

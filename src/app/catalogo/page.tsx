@@ -7,7 +7,7 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div className="container catalog-page catalog-listing">
+        <div className="container catalog-page">
           <ProductSkeletons />
         </div>
       }
