@@ -23,6 +23,7 @@ describe("CheckoutFlow local fixtures", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Registrar consentimiento" }));
     await screen.findByRole("heading", { name: "Confirma y crea tu pedido" });
+    expect((await screen.findByRole("status")).textContent).toMatch(/Disponibilidad revalidada \(MOCK\)/);
     expect(screen.getByRole("option", { name: "DNI" })).toBeDefined();
     expect(screen.getByRole("option", { name: "RUC" })).toBeDefined();
     expect(screen.getByRole("option", { name: "CE" })).toBeDefined();

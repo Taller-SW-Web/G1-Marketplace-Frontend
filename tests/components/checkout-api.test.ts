@@ -73,18 +73,36 @@ describe("checkout Backend MOCK adapter", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
       quoteId: "quote-1", expiresAt: "2026-10-15T10:05:00.000Z",
       subtotal: { amount: 340, currency: "PEN" }, discount: { amount: 20, currency: "PEN" },
-      shipping: { amount: 15, currency: "PEN", estimatedDays: 2 }, total: { amount: 335, currency: "PEN" },
-      addressId: "address-1", cartVersion: 3, lines: [{ sku: "SKU-1", quantity: 2 }],
-      selectedBenefit: { type: "COUPON", id: "SAVE20", discount: { amount: 20, currency: "PEN" } },
+       shipping: { amount: 15, currency: "PEN", estimatedDays: 2 }, total: { amount: 335, currency: "PEN" },
+       addressId: "address-1", cartVersion: 3,
+       sources: { pricing: "G6_REAL", shipping: "G5_FIXTURE", benefits: "MOCK", inventoryRevalidation: "G6_REAL" },
+       lines: [{ sku: "SKU-1", quantity: 2, productId: "PROD-1", unitPrice: { amount: 170, currency: "PEN" } }],
+       selectedBenefit: { type: "COUPON", id: "SAVE20", discount: { amount: 20, currency: "PEN" } },
     } }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const quote = await checkoutApi.createQuote("address-1", 3);
 
-    expect(quote).toMatchObject({ quoteId: "quote-1", subtotal: 340, discount: 20, shipping: 15, estimatedDays: 2, total: 335, addressId: "address-1", cartVersion: 3, lines: [{ sku: "SKU-1", quantity: 2 }], selectedBenefit: { type: "COUPON", id: "SAVE20", discount: 20 } });
+    expect(quote).toMatchObject({ quoteId: "quote-1", subtotal: 340, discount: 20, shipping: 15, estimatedDays: 2, total: 335, addressId: "address-1", cartVersion: 3,
+      lines: [{ sku: "SKU-1", quantity: 2, productId: "PROD-1", unitPrice: 170 }],
+      sources: { pricing: "G6_REAL", shipping: "G5_FIXTURE", benefits: "MOCK", inventoryRevalidation: "G6_REAL" },
+      selectedBenefit: { type: "COUPON", id: "SAVE20", discount: 20 } });
     expect(quote.expiresAt).toBe(Date.parse("2026-10-15T10:05:00.000Z"));
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/checkout/quotes");
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ addressId: "address-1", cartVersion: 3 });
+  });
+
+  it("rejects a null quote line as an invalid backend response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {
+      quoteId: "quote-null-line", expiresAt: "2026-10-15T10:05:00.000Z",
+      subtotal: { amount: 170, currency: "PEN" }, discount: { amount: 0, currency: "PEN" },
+      shipping: { amount: 15, currency: "PEN", estimatedDays: 2 }, total: { amount: 185, currency: "PEN" },
+      addressId: "address-1", cartVersion: 3, lines: [null],
+    } }), { status: 200 })));
+
+    await expect(checkoutApi.createQuote("address-1", 3)).rejects.toMatchObject({
+      status: 502, code: "INVALID_BACKEND_RESPONSE",
+    });
   });
 
   it("preserves public API errors instead of converting them to a successful fixture", async () => {

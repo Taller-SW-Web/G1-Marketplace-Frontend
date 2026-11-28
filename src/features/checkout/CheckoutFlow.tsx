@@ -438,7 +438,10 @@ export function CheckoutFlow() {
     const attempt = ++preparationAttempt.current;
     const preparation = backendMockEnabled
       ? checkoutApi.prepare(quote.quoteId, quote.cartVersion, key)
-      : new Promise<CheckoutOperation>((resolve) => window.setTimeout(() => resolve({ checkoutOperationId: crypto.randomUUID(), state: "PREPARED" }), 200));
+      : new Promise<CheckoutOperation>((resolve) => window.setTimeout(() => resolve({
+        checkoutOperationId: crypto.randomUUID(), state: "PREPARED", revalidatedAt: new Date().toISOString(),
+        revalidationSource: "MOCK",
+      }), 200));
     preparation.then((operation) => {
       if (attempt !== preparationAttempt.current) return;
       if (operation.state !== "PREPARED") throw new Error("PREPARATION_NOT_CONFIRMED");
@@ -447,7 +450,12 @@ export function CheckoutFlow() {
       setOperationId(operation.checkoutOperationId);
       orderKey.current = null;
       setOrderSubmission("READY");
-      setNotice("");
+      const revalidationSource = operation.revalidationSource === "G6_REAL" ? "G6 (REAL)"
+        : operation.revalidationSource === "G5_FIXTURE" ? "fixture G5"
+          : operation.revalidationSource === "MOCK" ? "MOCK" : "no informada";
+      setNotice(operation.revalidatedAt
+        ? `Disponibilidad revalidada (${revalidationSource}) a las ${new Date(operation.revalidatedAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}.`
+        : `Preparación completada; el backend no informó la fuente ni la hora de revalidación (${revalidationSource}).`);
       setContactFieldErrors({});
       setContactErrorFocusRequest(0);
       setStep("order");

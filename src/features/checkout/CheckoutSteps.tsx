@@ -215,17 +215,39 @@ type CheckoutOrderSummaryProps = {
 };
 
 export function CheckoutOrderSummary({ quote, address }: CheckoutOrderSummaryProps) {
+  const sources = quote.sources ?? {
+    pricing: "UNKNOWN" as const,
+    shipping: "UNKNOWN" as const,
+    benefits: "UNKNOWN" as const,
+    inventoryRevalidation: "UNKNOWN" as const,
+  };
+  const sourceLabel = (source: string) => ({
+    G6_REAL: "G6 (REAL)",
+    G5_FIXTURE: "fixture G5",
+    MOCK: "MOCK",
+    UNKNOWN: "no informado",
+  }[source] ?? "no informado");
+  const componentSources = [sources.pricing, sources.shipping, sources.benefits];
+  const uniqueSources = new Set(componentSources);
+  const totalSourceLabel = uniqueSources.size > 1 ? " · fuentes mixtas"
+    : componentSources[0] === "G6_REAL" ? " · G6 (REAL)"
+      : ` · ${sourceLabel(componentSources[0])}`;
   return <>
     <p>{address?.label ? `${address.label}: ` : ""}{address?.street}, {address?.district}</p>
     <h3>Productos ({quote.lines.length})</h3>
-    <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span></li>)}</ul>
+    <ul className="checkout-lines">{quote.lines.map((line) => <li key={line.sku}><span>{line.sku} × {line.quantity}</span>
+      {line.unitPrice !== undefined && <span>{formatCheckoutMoney(line.unitPrice)} c/u</span>}</li>)}</ul>
     <dl className="checkout-totals">
-      <div><dt>Subtotal</dt><dd>{formatCheckoutMoney(quote.subtotal)}</dd></div>
-      <div><dt>Descuento</dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
-      <div><dt>Envío</dt><dd>{formatCheckoutMoney(quote.shipping)}</dd></div>
+      <div><dt>Subtotal <small>({sourceLabel(sources.pricing)})</small></dt><dd>{formatCheckoutMoney(quote.subtotal)}</dd></div>
+      <div><dt>Descuento <small>({sourceLabel(sources.benefits)})</small></dt><dd>−{formatCheckoutMoney(quote.discount)}</dd></div>
+      <div><dt>Envío <small>({sourceLabel(sources.shipping)})</small></dt><dd>{formatCheckoutMoney(quote.shipping)}</dd></div>
       <div><dt>Plazo estimado de entrega</dt><dd>{quote.estimatedDays} días</dd></div>
-      <div className="checkout-total"><dt>Total estimado</dt><dd>{formatCheckoutMoney(quote.total)}</dd></div>
+      <div className="checkout-total"><dt>Total estimado{totalSourceLabel}</dt><dd>{formatCheckoutMoney(quote.total)}</dd></div>
     </dl>
+    <p className="checkout-muted" role="note">
+      La disponibilidad se verificará al preparar la compra; fuente configurada: {sourceLabel(sources.inventoryRevalidation)}.
+      El envío, los beneficios y el total no se consideran REAL salvo que su fuente lo confirme.
+    </p>
   </>;
 }
 

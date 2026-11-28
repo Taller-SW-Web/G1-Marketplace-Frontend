@@ -32,7 +32,13 @@ export type CheckoutQuote = {
   total: number;
   addressId: string;
   cartVersion: number;
-  lines: Array<{ sku: string; quantity: number }>;
+  lines: Array<{ sku: string; quantity: number; productId?: string; unitPrice?: number }>;
+  sources?: {
+    pricing: "G6_REAL" | "G5_FIXTURE" | "MOCK" | "UNKNOWN";
+    shipping: "G5_FIXTURE" | "MOCK" | "UNKNOWN";
+    benefits: "G5_FIXTURE" | "MOCK" | "UNKNOWN";
+    inventoryRevalidation: "G6_REAL" | "G5_FIXTURE" | "MOCK" | "UNKNOWN";
+  };
   selectedBenefit?: { type: string; id: string; discount: number };
 };
 
