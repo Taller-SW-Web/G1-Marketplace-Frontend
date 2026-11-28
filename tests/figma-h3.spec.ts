@@ -36,29 +36,30 @@ test("Figma home uses the editorial asset and responsive category geometry", asy
   expect(errors).toEqual([]);
 });
 
-test("Figma catalog has three desktop columns and one mobile column", async ({ page }) => {
+test("Figma catalog has four desktop columns and two mobile columns", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/catalogo?q=running");
   await expect(page.locator(".product-card")).toHaveCount(16);
   const cards = page.locator(".product-card");
   const first = await cards.nth(0).boundingBox();
-  const third = await cards.nth(2).boundingBox();
   const fourth = await cards.nth(3).boundingBox();
-  expect(first?.y).toBe(third?.y);
-  expect(fourth!.y).toBeGreaterThan(first!.y);
-  expect(first?.width).toBe(320);
+  const fifth = await cards.nth(4).boundingBox();
+  expect(first?.y).toBe(fourth?.y);
+  expect(fifth!.y).toBeGreaterThan(first!.y);
   await page.screenshot({ path: "test-results/figma-catalogo-1440.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileFirst = await cards.nth(0).boundingBox();
   const mobileSecond = await cards.nth(1).boundingBox();
-  expect(mobileFirst?.width).toBe(358);
+  const mobileThird = await cards.nth(2).boundingBox();
+  expect(mobileFirst?.width).toBe(175);
   expect(mobileFirst?.x).toBe(16);
-  expect(mobileSecond!.y).toBeGreaterThan(mobileFirst!.y);
+  expect(mobileSecond?.y).toBe(mobileFirst?.y);
+  expect(mobileThird!.y).toBeGreaterThan(mobileFirst!.y);
   await expect(page.getByRole("banner").getByRole("link", { name: /^Favoritos/ })).toHaveAttribute("href", "/favoritos");
   await page.getByRole("button", { name: "Abrir menú" }).click();
   const menu = page.getByRole("dialog", { name: "Menú" });
   await expect(menu.getByRole("link", { name: "Ingresar", exact: true })).toHaveAttribute("href", "/login");
-  await expect(page.locator(".product-grid")).not.toContainText("S/");
+  await expect(cards.first().locator(".listing-card-price")).toContainText("S/");
 });
 
 test("home loading and error follow Figma and retry preserves a usable search", async ({ page }) => {

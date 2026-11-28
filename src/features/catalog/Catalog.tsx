@@ -3,15 +3,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { isCatalogPage, isCatalogFilters, isHome } from "./api";
-import { CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
+import { CatalogFilterPanel, CatalogFilters, ActiveFilterChips } from "./CatalogFilters";
 import { CatalogSortSelect } from "./CatalogSortSelect";
 import { CatalogPagination } from "./CatalogPagination";
 import { catalogHref, criteriaError, recoverCatalogHref } from "./criteria";
 import { useCatalog } from "./useCatalog";
 import { ProductCard } from "./ProductCard";
-import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
+import { MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
+import "./catalog-h5.css";
 
 export function Catalog() {
   const params = useSearchParams();
@@ -24,7 +25,7 @@ export function Catalog() {
   const invalidCriteria = criteriaError(query);
   // Invalid URL input never requests products.
   return invalidQuery || invalidCriteria ? (
-    <div className="container catalog-page empty-state">
+    <div className="container catalog-page h5-catalog empty-state">
       <Link className="breadcrumb" href="/">
         Inicio /
       </Link>
@@ -61,6 +62,9 @@ function CatalogResults({
   const params = new URLSearchParams(query);
   const filters = useCatalog("filters", isCatalogFilters);
   const categories = useCatalog(filters.state.status === "error" ? "home" : null, isHome);
+  const activeCategories = filters.state.status === "ready" ? filters.state.data.categories
+    : categories.state.status === "ready" ? categories.state.data.categories : [];
+  const categoryNames = new Map(activeCategories.map(({ categoryId, name }) => [categoryId, name]));
   const returnPath = `/catalogo${query ? `?${query}` : ""}`;
   useEffect(() => {
     if(state.status !== "loading" && focusAfterPage.current) {
@@ -85,8 +89,10 @@ function CatalogResults({
     focusAfterPage.current = true;
     navigate(url);
   }
+  const filterProps = { query, options: filters.state, fallbackCategories: categories.state,
+    retryCategories: categories.retry, retry: filters.retry, onApply: applyCriteria };
   return (
-    <div className="container catalog-page">
+    <div className="container catalog-page h5-catalog">
       <nav aria-label="Migas de navegación" className="breadcrumbs">
         <Link href="/">Inicio</Link>
         <span aria-hidden="true">/</span>
@@ -100,27 +106,13 @@ function CatalogResults({
                 Resultados para <span>“{q}”</span>
               </>
             ) : (
-              "Catálogo"
+              state.status === "ready" && state.data.data.length > 0 ? "Catálogo deportivo" : "Catálogo"
             )}
           </h1>
-          <p className="catalog-description">
-            {q ? "Explora los productos que coinciden con tu búsqueda." : "Todo para moverte a tu ritmo."}
-          </p>
         </div>
       </div>
-      {q && (
-        <div className="active-criteria" aria-label="Criterios aplicados">
-          {q && (
-            <button onClick={clearSearch} aria-label={`Quitar búsqueda ${q}`}>
-              Búsqueda: {q} <span aria-hidden="true">×</span>
-            </button>
-          )}
-
-        </div>
-      )}
-      <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
       <div className="catalog-layout">
-        <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
+        <CatalogFilterPanel {...filterProps} />
         <section className="catalog-results" aria-label="Productos del catálogo">
           <div className="catalog-result-toolbar">
           <p className="result-count" role="status" aria-live="polite">
@@ -130,14 +122,31 @@ function CatalogResults({
                   params.get("sort") === "NAME_DESC" ? " · Nombre: Z a A" : ""
                 }`
               : state.status === "loading"
-                ? "Buscando productos…"
+                ? "Cargando productos…"
                 : ""}
           </p>
+          <CatalogFilters {...filterProps} />
           <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
+          <div className="catalog-criteria">
+            {q && <div className="active-criteria" aria-label="Criterios aplicados">
+              <button type="button" onClick={clearSearch} aria-label={`Quitar búsqueda ${q}`}>
+                Búsqueda: {q} <img src="/figma/h5-catalog/close.svg" alt="" width="22" height="22" />
+              </button>
+            </div>}
+            <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
+          </div>
           </div>
           {state.status === "loading" && <ProductSkeletons />}
           {state.status === "error" && (
-            <ErrorState message={state.message} onRetry={retry} />
+            <div className="catalog-error">
+              <div className="catalog-error-detail">
+                <h2>{state.code === "CATALOG_TIMEOUT" ? "El catálogo tardó demasiado" : "El catálogo no está disponible"}</h2>
+                <p role="alert">{state.message}</p>
+                <p>Conservamos tus criterios de búsqueda.</p>
+              </div>
+              <Button onClick={() => { focusAfterPage.current = true; retry(); }}>Reintentar</Button>
+              <Link className="text-link" href="/catalogo">Volver al catálogo</Link>
+            </div>
           )}
           {state.status === "ready" && (
             <>
@@ -149,17 +158,18 @@ function CatalogResults({
                       key={product.productId}
                       product={product}
                       returnPath={returnPath}
+                      categoryName={categoryNames.get(product.categoryId)}
                     />
                   ))}
                 </div>
               ) : (
                 <EmptyState
-                  icon={<img src="/figma/search-32.svg" alt="" width="32" height="32" />}
+                  className="catalog-empty"
                   title={
                     state.data.page.number >= state.data.page.totalPages &&
                       state.data.page.number > 0
                       ? "Esta página ya no tiene productos"
-                      : "No encontramos productos con estos criterios"
+                      : "Sin resultados"
                   }
                   description={
                     q

@@ -1,9 +1,9 @@
 import { expect, it, vi } from 'vitest';
 import { fireEvent, render, within } from '@testing-library/react';
-import { CatalogFilters } from '../../src/features/catalog/CatalogFilters';
+import { CatalogFilterPanel } from '../../src/features/catalog/CatalogFilters';
 it('clears applied filters immediately, keeping search, order and size and resetting page', () => {
   const apply = vi.fn();
-  const { container } = render(<CatalogFilters query="q=polo&sort=NAME_DESC&pageSize=4&page=2&minPrice=10" options={{ status: 'loading' }} retry={vi.fn()} onApply={apply} />);
+  const { container } = render(<CatalogFilterPanel query="q=polo&sort=NAME_DESC&pageSize=4&page=2&minPrice=10" options={{ status: 'loading' }} retry={vi.fn()} onApply={apply} />);
   const form = container.querySelector('.catalog-filters-desktop form')!;
   // Emptying the draft has not yet removed the applied minPrice from the URL.
   fireEvent.change(form.querySelector('input')!, { target: { value: '' } });

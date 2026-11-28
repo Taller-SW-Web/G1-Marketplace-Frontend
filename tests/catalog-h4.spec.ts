@@ -4,13 +4,13 @@ test('H4 reviewer contract exposes delegated sort and keeps one category and one
   const initial = page.waitForResponse(response => response.url().includes('/api/catalog/products?') && response.url().includes('sort=NAME_ASC'));
   await page.goto('/catalogo?sort=NAME_ASC&pageSize=4');
   expect((await (await initial).json()).sort).toBe('NAME_ASC');
-  const form = page.locator('.catalog-filters-desktop form');
+  const form = page.getByRole('complementary', { name: 'Filtros del catálogo' }).locator('form');
   await expect(form.getByLabel('Categoría', { exact: true })).toBeEnabled();
   await expect(form.getByLabel('Marca', { exact: true })).toBeEnabled();
   expect(await form.getByLabel('Categoría', { exact: true }).evaluate((element: HTMLSelectElement) => element.multiple)).toBe(false);
   expect(await form.getByLabel('Marca', { exact: true }).evaluate((element: HTMLSelectElement) => element.multiple)).toBe(false);
   const changed = page.waitForResponse(response => response.url().includes('/api/catalog/products?') && response.url().includes('sort=NAME_DESC'));
-  await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
+  await page.getByRole('combobox', { name: 'Ordenar por' }).selectOption('NAME_DESC');
   expect((await (await changed).json()).sort).toBe('NAME_DESC');
 });
 
@@ -35,7 +35,7 @@ test('H4 unavailable brands do not block category and price, then retry restores
   page.on('request', request => { if (request.url().includes('/api/catalog/home')) homeRequests++; });
   await page.route('**/api/catalog/filters', route => failed ? route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }) : route.continue());
   await page.goto('/catalogo?q=running&sort=NAME_ASC&pageSize=4&page=1');
-  const form = page.locator('.catalog-filters-desktop form');
+  const form = page.getByRole('complementary', { name: 'Filtros del catálogo' }).locator('form');
   await expect(form.getByLabel('Marca', { exact: true })).toBeDisabled();
   await expect(form.getByLabel('Categoría', { exact: true })).toBeEnabled();
   await expect(form.getByLabel('Precio mínimo', { exact: true })).toBeEnabled();
@@ -50,7 +50,7 @@ test('H4 unavailable brands do not block category and price, then retry restores
   await form.getByRole('button', { name: 'Aplicar filtros' }).click();
   await expect(page).toHaveURL(url => url.searchParams.get('categoryIds') === 'running' && !url.searchParams.has('page'));
   await expect(page.locator('.product-card')).toHaveCount(2);
-  await expect(page.locator('.product-card h2')).toHaveText(['Short de running 04', 'Zapatillas de running 01']);
+  await expect(page.locator('.product-card').getByRole('heading', { level: 2 })).toHaveText(['Short de running 04', 'Zapatillas de running 01']);
   await expect(page.getByRole('button', { name: 'Quitar categoría Running' })).toBeVisible();
   await form.getByLabel('Precio mínimo', { exact: true }).fill('15');
   failed = false;
@@ -65,7 +65,7 @@ test('H4 mobile can apply price without either master and restores applied draft
   await page.route('**/api/catalog/filters', route => route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }));
   await page.route('**/api/catalog/home', route => route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }));
   await page.goto('/catalogo?q=running&pageSize=4');
-  const trigger = page.locator('.catalog-filters-trigger');
+  const trigger = page.getByRole('button', { name: /^Filtros(?: \(\d+\))?$/ });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Filtros', exact: true });
   await expect(dialog.getByLabel('Marca', { exact: true })).toBeDisabled();
@@ -85,7 +85,7 @@ test('H4 mobile can apply price without either master and restores applied draft
 
 test('H4 filters apply combined criteria through Next and BFF, preserve URL and clear only filters', async ({ page }) => {
   await page.goto('/catalogo?q=running&sort=NAME_DESC&page=2&pageSize=4');
-  const form = page.locator('.catalog-filters-desktop form');
+  const form = page.getByRole('complementary', { name: 'Filtros del catálogo' }).locator('form');
   await expect(form.getByLabel('Marca', { exact: true })).toBeEnabled();
   await form.getByLabel('Marca', { exact: true }).selectOption('mock-brand');
   await form.getByLabel('Precio mínimo', { exact: true }).fill('10');
@@ -109,13 +109,14 @@ test('H4 ordering is global across pages and page recovery keeps criteria', asyn
   await page.getByRole('button', { name: 'Volver a la primera página' }).click();
   await expect(page.locator('.product-card')).toHaveCount(4);
   expect(new URL(page.url()).searchParams.get('q')).toBe('running');
-  await page.getByLabel('Ordenar por').selectOption('NAME_ASC');
-  const first = await page.locator('.product-card h2').allTextContents();
+  await page.getByRole('combobox', { name: 'Ordenar por' }).selectOption('NAME_ASC');
+  const productNames = page.locator('.product-card').getByRole('heading', { level: 2 });
+  const first = await productNames.allTextContents();
   await page.getByRole('button', { name: 'Siguiente →' }).click();
   await expect(page).toHaveURL(/page=1/);
-  const second = await page.locator('.product-card h2').allTextContents();
+  const second = await productNames.allTextContents();
   expect([...first, ...second]).toEqual([...first, ...second].sort((a, b) => a.localeCompare(b, 'es')));
-  await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
+  await page.getByRole('combobox', { name: 'Ordenar por' }).selectOption('NAME_DESC');
   await expect(page).toHaveURL(url => url.searchParams.get('sort') === 'NAME_DESC' && !url.searchParams.has('page'));
 });
 
@@ -130,7 +131,10 @@ test('H4 mobile modal traps focus, cancels its draft and applies only explicitly
   await expect(dialog.getByRole('button', { name: 'Aplicar filtros' })).toBeEnabled();
   await dialog.getByRole('button', { name: 'Aplicar filtros' }).focus();
   await page.keyboard.press('Tab');
-  await expect(dialog.getByRole('button', { name: 'Cerrar', exact: true })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Cancelar', exact: true })).toBeFocused();
+  await expect(dialog.getByLabel('Categoría', { exact: true })).toBeEnabled();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByLabel('Categoría', { exact: true })).toBeFocused();
   await page.screenshot({ path: 'test-results/h4-filtros-mobile.png' });
   await dialog.getByLabel('Precio mínimo', { exact: true }).fill('99');
   await page.keyboard.press('Escape');
@@ -158,11 +162,12 @@ test('H4 invalid ranges never call products, while failed masters allow sorting 
   let failed = true;
   await page.route('**/api/catalog/filters', route => failed ? route.fulfill({ status: 503, json: { code: 'CATALOG_UNAVAILABLE' } }) : route.continue());
   await page.goto('/catalogo');
-  await expect(page.locator('.catalog-filters-desktop p[role="alert"]')).toContainText('filtros');
+  const panel = page.getByRole('complementary', { name: 'Filtros del catálogo' });
+  await expect(panel.getByRole('alert').filter({ hasText: 'marcas' })).toContainText('filtros');
   await expect(page.locator('.product-card')).toHaveCount(24);
-  await page.getByLabel('Ordenar por').selectOption('NAME_DESC');
+  await page.getByRole('combobox', { name: 'Ordenar por' }).selectOption('NAME_DESC');
   await expect(page).toHaveURL(/sort=NAME_DESC/);
   failed = false;
   await page.getByRole('button', { name: 'Reintentar filtros' }).click();
-  await expect(page.locator('.catalog-filters-desktop').getByLabel('Marca', { exact: true })).toBeEnabled();
+  await expect(panel.getByLabel('Marca', { exact: true })).toBeEnabled();
 });
