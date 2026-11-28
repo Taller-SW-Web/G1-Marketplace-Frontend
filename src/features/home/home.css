@@ -542,4 +542,5 @@
 .home-rail, .home-categories { max-width: 100%; }
 @media (max-width: 760px) { .home-rail, .home-categories { max-width: none; width: calc(100% + 32px); } }
 .home-landing { min-width: 0; width: 100%; }
-.home-rail, .home-categories { contain: inline-size; }
+/* Las tarjetas tienen elementos absolutos: el carril debe ser su bloque contenedor para no ensanchar la página. */
+.home-rail, .home-categories { position: relative; }
