@@ -123,9 +123,11 @@ export function ProductDetailContainer({ slug, returnTo, showAddToCart }: Props)
   }
 
   const product = state.data;
-  // F-016 sólo se habilita con fuente MOCK: mientras I-01 no cierre, la ficha
-  // REAL no tiene precio/stock autoritativos y no debe permitir comprar.
-  const canAddToCart = showCart && state.source === "MOCK";
+  // F-016 se habilita también con fuente REAL: el BFF ya sirve precio y
+  // disponibilidad autoritativos de G6 (BE #438). El botón solo se activa con el
+  // precio listo y el producto disponible (ver AddToCartAction); si el BFF no
+  // devuelve precio (503) la compra permanece desactivada con su motivo.
+  const canAddToCart = showCart;
 
   return (
     <div className="container product-page product-showcase">
