@@ -94,7 +94,7 @@ describe("Checkout payment and confirmation acceptance", () => {
     fireEvent.click(screen.getByRole("button", { name: "Crear pedido" }));
     expect(await screen.findByRole("button", { name: "Verificar operación original" })).toBeDefined();
     expect(screen.queryByRole("heading", { name: "¡Pedido confirmado!" })).toBeNull();
-    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByRole("note").textContent).toContain("se verificará al preparar la compra");
   });
 
   it("keeps contact transient in browser storage while creating the order", async () => {

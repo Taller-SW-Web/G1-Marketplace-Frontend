@@ -12,6 +12,8 @@ export type CheckoutOperation = {
   failureCode?: string;
   /** Segundos que el BFF pide esperar antes de volver a consultar (cabecera Retry-After). */
   retryAfterSeconds?: number;
+  revalidatedAt?: string;
+  revalidationSource?: "G6_REAL" | "G5_FIXTURE" | "MOCK" | "UNKNOWN";
 };
 export type Contact = {
   fullName: string;
@@ -54,7 +56,9 @@ function parseAddress(value: unknown): CheckoutAddress {
 function parseOperation(value: unknown, operationId?: string): CheckoutOperation {
   if (!isRecord(value) ||
       (typeof value.checkoutOperationId !== "string" && !operationId) ||
-      !["PREPARED", "SUBMITTED", "SUCCEEDED", "FAILED"].includes(String(value.state))) {
+      !["PREPARED", "SUBMITTED", "SUCCEEDED", "FAILED"].includes(String(value.state)) ||
+      (value.revalidatedAt !== undefined && (typeof value.revalidatedAt !== "string" || !Number.isFinite(Date.parse(value.revalidatedAt)))) ||
+      (value.revalidationSource !== undefined && !["G6_REAL", "G5_FIXTURE", "MOCK"].includes(String(value.revalidationSource)))) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   }
 
@@ -64,6 +68,10 @@ function parseOperation(value: unknown, operationId?: string): CheckoutOperation
     ...(typeof value.recoveryRequired === "boolean" ? { recoveryRequired: value.recoveryRequired } : {}),
     ...(typeof value.failureCode === "string" ? { failureCode: value.failureCode } : {}),
     ...(typeof value.retryAfterSeconds === "number" ? { retryAfterSeconds: value.retryAfterSeconds } : {}),
+    ...(typeof value.revalidatedAt === "string" && Number.isFinite(Date.parse(value.revalidatedAt)) ? { revalidatedAt: value.revalidatedAt } : {}),
+    ...(value.revalidationSource === "G6_REAL" || value.revalidationSource === "G5_FIXTURE" || value.revalidationSource === "MOCK"
+      ? { revalidationSource: value.revalidationSource }
+      : {}),
   };
 
   if (value.order !== undefined) {
@@ -233,7 +241,13 @@ type BackendQuote = {
   total: { amount: number };
   addressId: string;
   cartVersion: number;
-  lines: Array<{ sku: string; quantity: number }>;
+  lines: Array<{ sku: string; quantity: number; productId?: string; unitPrice?: { amount: number; currency: string } }>;
+  sources?: {
+    pricing: "G6_REAL" | "G5_FIXTURE" | "MOCK";
+    shipping: "G5_FIXTURE" | "MOCK";
+    benefits: "G5_FIXTURE" | "MOCK";
+    inventoryRevalidation: "G6_REAL" | "G5_FIXTURE" | "MOCK";
+  };
   selectedBenefit?: { type: string; id: string; discount: { amount: number } };
 };
 
@@ -249,11 +263,20 @@ function normalizeQuote(payload: unknown): CheckoutQuote {
   const quote = payload as unknown as BackendQuote;
   const validMoney = (money: unknown): money is { amount: number } => isRecord(money) && typeof money.amount === "number" && Number.isFinite(money.amount);
   const validLines = Array.isArray(quote.lines) && quote.lines.every((line) => isRecord(line) && typeof line.sku === "string" && typeof line.quantity === "number" && Number.isInteger(line.quantity) && line.quantity > 0);
+  const validSources = quote.sources === undefined || (isRecord(quote.sources) &&
+    ["G6_REAL", "G5_FIXTURE", "MOCK"].includes(String(quote.sources.pricing)) &&
+    ["G5_FIXTURE", "MOCK"].includes(String(quote.sources.shipping)) &&
+    ["G5_FIXTURE", "MOCK"].includes(String(quote.sources.benefits)) &&
+    ["G6_REAL", "G5_FIXTURE", "MOCK"].includes(String(quote.sources.inventoryRevalidation)));
+  const validLineMetadata = Array.isArray(quote.lines) && quote.lines.every((line) =>
+    (line.productId === undefined || typeof line.productId === "string") &&
+    (line.unitPrice === undefined || (isRecord(line.unitPrice) && typeof line.unitPrice.amount === "number" &&
+      Number.isFinite(line.unitPrice.amount) && line.unitPrice.amount >= 0 && line.unitPrice.currency === "PEN")));
   if (typeof quote.quoteId !== "string" || typeof quote.expiresAt !== "string" ||
       !validMoney(quote.subtotal) || !validMoney(quote.discount) || !validMoney(quote.shipping) ||
       typeof quote.shipping.estimatedDays !== "number" || !Number.isFinite(quote.shipping.estimatedDays) ||
       !validMoney(quote.total) || typeof quote.addressId !== "string" || !validLines ||
-      typeof quote.cartVersion !== "number" || !Number.isInteger(quote.cartVersion) ||
+      typeof quote.cartVersion !== "number" || !Number.isInteger(quote.cartVersion) || !validSources || !validLineMetadata ||
       (quote.selectedBenefit !== undefined && (!isRecord(quote.selectedBenefit) || typeof quote.selectedBenefit.type !== "string" || typeof quote.selectedBenefit.id !== "string" || !validMoney(quote.selectedBenefit.discount)))) {
     throw new CheckoutApiError(502, "INVALID_BACKEND_RESPONSE");
   }
@@ -269,7 +292,15 @@ function normalizeQuote(payload: unknown): CheckoutQuote {
     total: quote.total.amount,
     addressId: quote.addressId,
     cartVersion: quote.cartVersion,
-    lines: quote.lines,
+    lines: quote.lines.map((line) => ({
+      sku: line.sku,
+      quantity: line.quantity,
+      ...(typeof line.productId === "string" ? { productId: line.productId } : {}),
+      ...(line.unitPrice ? { unitPrice: line.unitPrice.amount } : {}),
+    })),
+    sources: quote.sources ? { ...quote.sources } : {
+      pricing: "UNKNOWN", shipping: "UNKNOWN", benefits: "UNKNOWN", inventoryRevalidation: "UNKNOWN",
+    },
     ...(quote.selectedBenefit ? { selectedBenefit: { type: quote.selectedBenefit.type, id: quote.selectedBenefit.id, discount: quote.selectedBenefit.discount.amount } } : {}),
   };
 }
