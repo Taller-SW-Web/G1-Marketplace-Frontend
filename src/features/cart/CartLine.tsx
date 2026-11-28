@@ -98,7 +98,7 @@ export function CartLine({
             <span className={"cart-line-unit-price" + (line.unitPrice ? "" : " is-pending")}>{priceFormatted}</span>
             {line.unitPrice && <span className="cart-line-unit-label">c/u</span>}
             {line.quantity > 1 && (
-              <span className="cart-line-total">Total línea: {lineTotal}</span>
+              <span key={line.quantity} className="cart-line-total cart-value-pop">Total línea: {lineTotal}</span>
             )}
           </div>
 

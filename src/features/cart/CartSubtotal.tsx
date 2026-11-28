@@ -51,7 +51,7 @@ export function CartSubtotal({
             Calculando importe…
           </span>
         ) : (
-          <span className="cart-subtotal-amount">
+          <span key={subtotal.amount} className="cart-subtotal-amount cart-value-pop">
             S/ {subtotal.amount.toFixed(2)} {subtotal.currency}
           </span>
         )}
