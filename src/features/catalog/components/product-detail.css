@@ -1,0 +1,82 @@
+@import "../commerce-badges.css";
+
+.product-showcase { padding-block: clamp(16px, 3vw, 36px) 48px; }
+.product-showcase .breadcrumbs { flex-wrap: wrap; overflow-wrap: anywhere; margin-bottom: 16px; }
+.product-showcase .detail-layout {
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 3vw, 36px);
+}
+.product-showcase .detail-summary,
+.product-showcase .detail-info,
+.product-showcase .detail-message {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(16px, 3vw, 26px);
+}
+.product-showcase .detail-summary h1 { margin-bottom: 12px; overflow-wrap: anywhere; }
+.product-showcase .detail-info { margin-top: 24px; }
+.product-showcase .product-description { max-width: 70ch; }
+.product-showcase .gallery-main { aspect-ratio: 4 / 3; background: var(--surface-subtle); }
+.product-showcase .gallery-main img { object-fit: contain; }
+.product-showcase .gallery-thumb { min-width: 48px; min-height: 48px; }
+.product-showcase .gallery-toolbar button { min-height: 44px; }
+.product-showcase .gallery-thumbs { margin-bottom: 0; }
+.product-showcase .product-commerce { margin-block: 12px 0; }
+.product-showcase .price-region {
+  background: var(--surface-cloud);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.product-showcase .price-current { font-size: clamp(1.875rem, 4vw, 2.625rem); letter-spacing: -.04em; }
+.product-showcase .price-unavailable { justify-content: space-between; }
+.product-showcase .availability-status.commerce-badge { display: inline-flex; }
+.product-showcase .availability-available.commerce-badge { color: var(--success-strong); }
+.product-showcase .availability-low.commerce-badge { color: var(--warning-strong); background: var(--warning-background); }
+.product-showcase .availability-out.commerce-badge { color: var(--error-strong); background: var(--error-background); }
+.product-showcase .availability-icon { width: 16px; height: 16px; font-size: .6875rem; }
+.product-showcase :is(.price-region, .availability-region) button { min-height: 44px; }
+.product-showcase .availability-region > button { align-self: flex-start; }
+.product-showcase .price-unavailable .commerce-badge { font-size: .875rem; }
+.product-showcase .detail-cart-action-wrapper .add-to-cart-btn:not(:disabled) {
+  background: var(--surface-ink);
+  color: var(--text-inverse);
+}
+.product-showcase .detail-cart-action-wrapper button:disabled {
+  opacity: 1;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+.product-showcase .detail-cart-unavailable p { margin-top: 6px; color: var(--text-secondary); font-size: .8125rem; }
+.product-showcase .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; }
+.product-showcase .related-media img { object-fit: contain; }
+.product-showcase .related-name { overflow-wrap: anywhere; }
+.product-showcase :is(a, button):focus-visible { outline: 3px solid var(--accent-signal); }
+
+@media (max-width: 767px) {
+  .product-showcase:has(.detail-cart-action-wrapper) { padding-bottom: calc(200px + env(safe-area-inset-bottom)); }
+  html:has(.product-showcase .detail-cart-action-wrapper) { scroll-padding-bottom: 190px; }
+  .product-showcase .detail-cart-action-wrapper {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 20;
+    margin: 0;
+    padding: 10px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    max-height: 42dvh;
+    overflow-y: auto;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -5px 24px rgb(27 24 18 / .12);
+  }
+}
+@media (min-width: 768px) {
+  .product-showcase .detail-layout { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .product-showcase .related-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .product-showcase .detail-summary { position: sticky; top: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-showcase .skeleton { animation: none; }
+}

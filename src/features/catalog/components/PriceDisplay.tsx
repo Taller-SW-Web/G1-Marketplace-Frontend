@@ -27,7 +27,7 @@ export function PriceDisplay({ price, retrievedAt }: Props) {
 
       {hasOffer && (
         <p className="price-offer">
-          <span className="price-badge">
+          <span className="price-badge commerce-badge commerce-badge--offer">
             Oferta
             {price.discountPercent !== null && (
               <span className="price-discount">

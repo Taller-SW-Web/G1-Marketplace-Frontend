@@ -62,10 +62,12 @@ function RelatedCard({ card }: { card: RecommendationCardDTO }) {
       </div>
       <div className="related-copy">
         <p className="related-name">{card.name}</p>
-        {card.price !== null && (
+        {card.price !== null ? (
           <p className="related-price">
             {formatMoney(card.price.amount, card.price.currency)}
           </p>
+        ) : (
+          <p className="commerce-badge commerce-badge--pending">Precio por confirmar</p>
         )}
       </div>
     </Link>

@@ -1,0 +1,42 @@
+@import "../catalog/commerce-badges.css";
+
+.favorites-collection .favorites-card {
+  background: #fff;
+  gap: 10px 18px;
+}
+.favorites-collection .favorites-card-image { background: var(--surface-subtle); }
+.favorites-collection .favorites-card-image img { object-fit: contain; }
+.favorites-collection .favorites-card-info h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.favorites-collection .favorites-card-price { min-width: 0; }
+.favorites-collection .favorites-card-price.commerce-badge { align-self: end; justify-self: end; }
+.favorites-collection .favorites-stock-block .favorites-stock.commerce-badge {
+  background: var(--surface-subtle);
+  color: var(--success-strong);
+}
+.favorites-collection .favorites-card--unavailable .favorites-stock-block .favorites-stock {
+  background: var(--error-background);
+  color: var(--error-strong);
+}
+.favorites-collection .favorites-stock-block .favorites-stock--pending.commerce-badge {
+  background: var(--warning-background);
+  color: var(--warning-strong);
+}
+.favorites-collection .favorites-remove.button { min-width: 44px; min-height: 44px; }
+.favorites-collection .favorites-card .button--primary:not(:disabled),
+.favorites-collection .favorites-empty .button { background: var(--surface-ink); color: var(--text-inverse); }
+.favorites-collection button:focus-visible { outline: 3px solid var(--accent-signal); }
+
+@media (max-width: 700px) {
+  .favorites-collection .favorites-card { grid-template-columns: minmax(58px, 25%) minmax(0, 1fr) 46px; }
+  .favorites-collection .favorites-card-image { width: 100%; }
+  .favorites-collection .favorites-card .button--primary { grid-row: 4; grid-column: 1 / 3; align-self: center; }
+  .favorites-collection .favorites-card-price.commerce-badge { justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .favorites-collection .favorites-card { transition: none; }
+}
