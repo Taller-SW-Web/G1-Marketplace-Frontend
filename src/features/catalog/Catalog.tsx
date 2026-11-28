@@ -91,124 +91,100 @@ function CatalogResults({
   }
   return (
     <div className="container catalog-page catalog-listing">
-      <header className="catalog-heading catalog-hero">
-        <nav aria-label="Migas de navegación" className="breadcrumbs">
-          <Link href="/">Inicio</Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">Catálogo</span>
-        </nav>
-        <div className="catalog-hero-copy">
-          <div>
-            <h1 ref={heading} tabIndex={-1}>
-              {q ? <>Resultados para <span>“{q}”</span></> : "Todo el catálogo"}
-            </h1>
-            <p className="catalog-description">
-              {q ? "Explora los productos que coinciden con tu búsqueda." : "Encuentra el equipo para tu próximo entrenamiento."}
-            </p>
-          </div>
-          {state.status === "ready" && (
-            <p className="catalog-hero-count">
-              <strong>{state.data.page.totalElements}</strong>
-              {state.data.page.totalElements === 1 ? "producto" : "productos"}
-            </p>
-          )}
-        </div>
-        {categoryLinks.length > 0 && (
+      {categoryLinks.length > 0 && (
+        <div className="catalog-hero">
           <nav className="catalog-hero-categories" aria-label="Atajos a categorías">
-            {categoryLinks.slice(0, 6).map((category) => (
-              <Link key={category.categoryId} href={catalogHref(query, { categoryIds: category.categoryId })}
-                aria-current={params.get("categoryIds") === category.categoryId ? "true" : undefined}
-                onClick={(event) => {
-                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  event.preventDefault();
-                  applyCriteria(catalogHref(query, { categoryIds: category.categoryId }));
-                }}>
-                {category.name}
-              </Link>
-            ))}
+            {categoryLinks.map((category) => {
+              const href = catalogHref(query, { categoryIds: category.categoryId });
+              return (
+                <Link key={category.categoryId} href={href}
+                  aria-current={params.get("categoryIds") === category.categoryId ? "true" : undefined}
+                  onClick={(event) => {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    applyCriteria(href);
+                  }}>
+                  {category.name}
+                </Link>
+              );
+            })}
           </nav>
-        )}
-      </header>
-      {q && (
-        <div className="active-criteria" aria-label="Criterios aplicados">
-          {q && (
+        </div>
+      )}
+      <section className="catalog-results" aria-label="Productos del catálogo">
+        <div className="catalog-result-toolbar">
+          <h1 className="sr-only" ref={heading} tabIndex={-1}>Catálogo</h1>
+          <p className="result-count" role="status" aria-live="polite">
+            {q && <span className="catalog-search-summary">Mostrando resultados para “{q}”</span>}
+            {state.status === "ready"
+              ? `${state.data.page.totalElements} ${state.data.page.totalElements === 1 ? "producto" : "productos"}`
+              : state.status === "loading" ? "Buscando productos…" : null}
+          </p>
+          <div className="catalog-toolbar-controls">
+            <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
+            <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
+          </div>
+        </div>
+        {q && (
+          <div className="active-criteria" aria-label="Criterios aplicados">
             <button onClick={clearSearch} aria-label={`Quitar búsqueda ${q}`}>
               Búsqueda: {q} <span aria-hidden="true">×</span>
             </button>
-          )}
-
-        </div>
-      )}
-      <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
-      <div className="catalog-layout">
-        <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
-        <section className="catalog-results" aria-label="Productos del catálogo">
-          <div className="catalog-result-toolbar">
-          <p className="result-count" role="status" aria-live="polite">
-            {state.status === "ready"
-              ? `${state.data.page.totalElements} productos${
-                  params.get("sort") === "NAME_ASC" ? " · Nombre: A a Z" :
-                  params.get("sort") === "NAME_DESC" ? " · Nombre: Z a A" : ""
-                }`
-              : state.status === "loading"
-                ? "Buscando productos…"
-                : ""}
-          </p>
-          <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
           </div>
-          {state.status === "loading" && <ProductSkeletons />}
-          {state.status === "error" && (
-            <ErrorState message={state.message} onRetry={retry} />
-          )}
-          {state.status === "ready" && (
-            <>
-              {state.source === "MOCK" && <MockNotice />}
-              {state.data.data.length ? (
-                <div className="product-grid">
-                  {state.data.data.map((product) => (
-                    <ProductCard
-                      key={product.productId}
-                      product={product}
-                      returnPath={returnPath}
-                      listing={{ brand: brands.find((brand) => brand.brandId === product.brandId)?.name }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<img src="/figma/search-32.svg" alt="" width="32" height="32" />}
-                  title={
-                    state.data.page.number >= state.data.page.totalPages &&
-                      state.data.page.number > 0
-                      ? "Esta página ya no tiene productos"
-                      : "No encontramos productos con estos criterios"
-                  }
-                  description={
-                    q
-                      ? "Prueba con otras palabras o elimina un criterio para seguir explorando."
-                      : "Vuelve al catálogo para explorar otras opciones."
-                  }
-                  actions={
-                    <>
-                      {state.data.page.number > 0 && <Button onClick={() => changePage(0)}>Volver a la primera página</Button>}
-                      {q && <Button onClick={clearSearch}>Limpiar búsqueda</Button>}
-                      <Link className="text-link" href="/catalogo">
-                        Ver catálogo completo
-                      </Link>
-                    </>
-                  }
-                />
-              )}
-              {state.data.data.length > 0 && (
-                <p className="result-range">
-                  Mostrando {state.data.page.number * state.data.page.size + 1}–{state.data.page.number * state.data.page.size + state.data.data.length} de {state.data.page.totalElements} productos
-                </p>
-              )}
-              <CatalogPagination page={state.data.page} onChange={changePage} />
-            </>
-          )}
-        </section>
-      </div>
+        )}
+        <ActiveFilterChips query={query} options={filters.state} fallbackCategories={categories.state} onChange={applyCriteria} />
+        {state.status === "loading" && <ProductSkeletons />}
+        {state.status === "error" && (
+          <ErrorState message={state.message} onRetry={retry} />
+        )}
+        {state.status === "ready" && (
+          <>
+            {state.source === "MOCK" && <MockNotice />}
+            {state.data.data.length ? (
+              <div className="product-grid">
+                {state.data.data.map((product) => (
+                  <ProductCard
+                    key={product.productId}
+                    product={product}
+                    returnPath={returnPath}
+                    listing={{ brand: brands.find((brand) => brand.brandId === product.brandId)?.name }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<img src="/figma/search-32.svg" alt="" width="32" height="32" />}
+                title={
+                  state.data.page.number >= state.data.page.totalPages &&
+                    state.data.page.number > 0
+                    ? "Esta página ya no tiene productos"
+                    : "No encontramos productos con estos criterios"
+                }
+                description={
+                  q
+                    ? "Prueba con otras palabras o elimina un criterio para seguir explorando."
+                    : "Vuelve al catálogo para explorar otras opciones."
+                }
+                actions={
+                  <>
+                    {state.data.page.number > 0 && <Button onClick={() => changePage(0)}>Volver a la primera página</Button>}
+                    {q && <Button onClick={clearSearch}>Limpiar búsqueda</Button>}
+                    <Link className="text-link" href="/catalogo">
+                      Ver catálogo completo
+                    </Link>
+                  </>
+                }
+              />
+            )}
+            {state.data.data.length > 0 && (
+              <p className="result-range">
+                Mostrando {state.data.page.number * state.data.page.size + 1}–{state.data.page.number * state.data.page.size + state.data.data.length} de {state.data.page.totalElements} productos
+              </p>
+            )}
+            <CatalogPagination page={state.data.page} onChange={changePage} />
+          </>
+        )}
+      </section>
     </div>
   );
 }

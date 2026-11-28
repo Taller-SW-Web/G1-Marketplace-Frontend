@@ -18,7 +18,13 @@ export function FavoriteControl({ productId, announce = true, compact = false }:
     if (authOpen) dialog.current?.showModal();
     else dialog.current?.close();
   }, [authOpen]);
-  if (!session.enabled) return null;
+  if (!session.enabled) return compact ? (
+    <div className="favorite-control">
+      <Button variant="secondary" className="favorite-toggle" disabled aria-label="Guardar en favoritos" title="Favoritos no disponibles">
+        <span aria-hidden="true">♡</span>
+      </Button>
+    </div>
+  ) : null;
   return <div className="favorite-control">
     <FavoriteToggle productId={productId} confirmed={state.confirmed} uncertain={state.uncertain} iconOnly={compact}
       busy={sessionBusy || !!state.pending} authenticated={!!session.identity}
