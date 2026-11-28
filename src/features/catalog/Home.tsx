@@ -22,33 +22,22 @@ export function Home() {
   );
   if(state.status === "error") return (
     <div className="container home-content home-error">
-      <h1 className="sr-only">Inicio</h1>
+      <HomeIntro />
       <ErrorState message={state.message} onRetry={retry} home />
     </div>
   );
   const empty = state.data.categories.length === 0 && state.data.featuredProducts.length === 0;
   return (
     <div className={`container home-content${empty ? " home-state" : ""}`}>
+      <HomeIntro />
       {empty ? (
         <>
-          <h1 className="sr-only">Inicio</h1>
           <EmptyState className="home-empty" title="Encuentra tu próximo favorito"
             description="Por ahora no hay categorías ni productos destacados para mostrar. Puedes seguir explorando el catálogo."
             actions={<Link className="button" href="/catalogo">Explorar catálogo</Link>} />
         </>
       ) : (
         <>
-          <section className="home-intro" aria-labelledby="inicio-title">
-            <div className="intro-copy">
-              <p className="eyebrow">ENCUENTRA TU PRÓXIMA META</p>
-              <h1 id="inicio-title">EL MOVIMIENTO<br />EMPIEZA CONTIGO.</h1>
-              <p className="intro-description">Ropa, calzado y accesorios para acompañarte en cada entrenamiento.</p>
-              <Link className="button" href="/catalogo">Explorar catálogo</Link>
-            </div>
-            <div className="intro-art">
-              <img src="/figma/hero-shoe.png" alt="Zapatilla deportiva negra y blanca" width="580" height="387" fetchPriority="high" />
-            </div>
-          </section>
           {state.data.categories.length > 0 && (
             <section className="categories-section" aria-labelledby="categorias-title">
               <h2 id="categorias-title">Encuentra lo tuyo</h2>
@@ -80,5 +69,24 @@ export function Home() {
       )}
       {state.source === "MOCK" && <MockNotice />}
     </div>
+  );
+}
+
+function HomeIntro() {
+  return (
+    <section className="home-intro" aria-labelledby="inicio-title">
+      <div className="intro-copy">
+        <h1 id="inicio-title">EL MOVIMIENTO<br />EMPIEZA CONTIGO.</h1>
+        <p className="intro-description">Ropa, calzado y accesorios para acompañarte en cada entrenamiento.</p>
+        <Link className="button" href="/catalogo">Explorar catálogo</Link>
+      </div>
+      <div className="intro-art">
+        <picture>
+          <source type="image/webp" srcSet="/figma/hero-shoe-768.webp 768w, /figma/hero-shoe-1160.webp 1160w"
+            sizes="(min-width: 1440px) 624px, (min-width: 768px) 46vw, 90vw" />
+          <img src="/figma/hero-shoe.png" alt="Zapatilla deportiva negra y blanca" width="580" height="387" fetchPriority="high" />
+        </picture>
+      </div>
+    </section>
   );
 }
