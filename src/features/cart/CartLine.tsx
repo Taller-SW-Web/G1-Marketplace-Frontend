@@ -34,12 +34,15 @@ export function CartLine({
     setDraftQuantity(String(line.quantity));
   }
 
+  const money = (amount: number, currency = 'PEN') =>
+    (currency === 'PEN' ? 'S/ ' : currency + ' ') + amount.toFixed(2);
+
   const priceFormatted = line.unitPrice
-    ? "S/ " + line.unitPrice.amount.toFixed(2) + " " + line.unitPrice.currency
+    ? money(line.unitPrice.amount, line.unitPrice.currency)
     : 'Precio pendiente';
 
   const lineTotal = line.unitPrice
-    ? "S/ " + (line.unitPrice.amount * line.quantity).toFixed(2)
+    ? money(line.unitPrice.amount * line.quantity, line.unitPrice.currency)
     : 'Pendiente';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,23 +81,30 @@ export function CartLine({
     <article className="cart-line-item" aria-label={"Producto " + (line.name || line.sku)}>
       <div className="cart-line-main">
         <div className="cart-line-thumb" aria-hidden="true">
-          <span>{badgeInitial}</span>
+          {line.imageUrl
+            ? <img src={line.imageUrl} alt="" loading="lazy" />
+            : <span>{badgeInitial}</span>}
         </div>
         <div className="cart-line-details">
           <div className="cart-line-header">
             <h3 className="cart-line-title">{line.name || line.sku}</h3>
-            <span className="cart-line-sku">SKU: {line.sku}</span>
+            <span className="cart-line-meta">
+              {line.variantName && <span className="cart-line-variant">Talla/variante: {line.variantName}</span>}
+              <span className="cart-line-sku">SKU: {line.sku}</span>
+            </span>
           </div>
 
           <div className="cart-line-pricing">
-            <span className="cart-line-unit-price">{priceFormatted}</span>
+            <span className={"cart-line-unit-price" + (line.unitPrice ? "" : " is-pending")}>{priceFormatted}</span>
+            {line.unitPrice && <span className="cart-line-unit-label">c/u</span>}
             {line.quantity > 1 && (
-              <span className="cart-line-total">Total línea: {lineTotal}</span>
+              <span key={line.quantity} className="cart-line-total cart-value-pop">Total línea: {lineTotal}</span>
             )}
           </div>
 
           {line.attention && (
             <div className="cart-line-attention" role="status">
+              <span className="cart-line-attention-icon" aria-hidden="true">i</span>
               <span>{line.attention === 'PRECIO_PENDIENTE' ? 'Precio pendiente de confirmación' : line.attention}</span>
             </div>
           )}
@@ -110,8 +120,9 @@ export function CartLine({
             disabled={busy || line.quantity <= 1}
             onClick={() => onQuantityChange?.(line.sku, line.quantity - 1)}
             aria-label="Disminuir cantidad"
+            className="cart-quantity-btn"
           >
-            -
+            <span aria-hidden="true">−</span>
           </Button>
           <input
             type="number"
@@ -132,8 +143,9 @@ export function CartLine({
             disabled={busy || line.quantity >= 99}
             onClick={() => onQuantityChange?.(line.sku, line.quantity + 1)}
             aria-label="Aumentar cantidad"
+            className="cart-quantity-btn"
           >
-            +
+            <span aria-hidden="true">+</span>
           </Button>
         </div>
 

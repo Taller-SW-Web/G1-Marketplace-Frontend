@@ -98,6 +98,7 @@ type OrderConfirmationSummaryProps = {
 
 export function OrderConfirmationSummary({ orderId, operationId, operation, quote, backendMockEnabled, bff = false, copyMessage, onCopy }: OrderConfirmationSummaryProps) {
   return <section className="checkout-card checkout-success" aria-labelledby="confirmed-title">
+    <span className="checkout-success-icon" aria-hidden="true">✓</span>
     <p className="checkout-success-tag">{bff ? "Estado verificado con Ventas · PAGADO" : backendMockEnabled ? "Estado verificado · SUCCEEDED/PAGADO" : "Resultado de fixture · SUCCEEDED/PAGADO"}</p>
     <h2 id="confirmed-title">¡Pedido confirmado!</h2>
     <p>{bff ? "Ventas confirmó el estado PAGADO. El pago lo simula Ventas: no hubo cobro real." : backendMockEnabled ? "El Backend MOCK confirmó el estado PAGADO. No hubo cobro real." : "Este escenario local simula una respuesta verificada de Ventas. No se llamó al Backend y no hubo cobro real."}</p>
