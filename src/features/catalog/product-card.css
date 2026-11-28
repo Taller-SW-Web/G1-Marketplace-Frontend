@@ -173,17 +173,21 @@
 .product-card--listing .listing-image-detail {
   position: absolute;
   inset: auto 8px 8px auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--action-hover);
   border-radius: var(--radius-full);
-  background: rgb(255 255 255 / .88);
-  backdrop-filter: blur(4px);
-  color: var(--text-primary);
+  background: var(--action-soft);
+  color: var(--action-strong);
   font-size: .75rem;
   font-weight: 650;
   opacity: 0;
   pointer-events: none;
 }
+
+.product-card--listing .product-card-link:focus-visible .listing-image-detail { opacity: 1; }
 
 @media (hover: hover) {
   .product-card--listing .product-image:hover .listing-image-detail { opacity: 1; }
