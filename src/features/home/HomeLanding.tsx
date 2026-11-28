@@ -6,7 +6,8 @@ import { isCatalogPage, isHome } from "@/features/catalog/api";
 import { useCatalog } from "@/features/catalog/useCatalog";
 import { ErrorState, MockNotice } from "@/shared/ui/Feedback";
 import { HeroCarousel } from "./HeroCarousel";
-import { buildHeroSlides } from "./selection";
+import { BenefitsStrip, CategoryStrip, FeaturedRail, PromoBlocks } from "./HomeSections";
+import { buildCategoryTiles, buildFeatured, buildHeroSlides, buildPromos } from "./selection";
 import "./home.css";
 
 /** Una sola página de productos reales alimenta hero, categorías y destacados. */
@@ -22,6 +23,10 @@ export function HomeLanding() {
     products: catalogState.status === "ready" ? catalogState.data.data : [],
   }), [homeState, catalogState]);
   const slides = useMemo(() => buildHeroSlides(categories, products), [categories, products]);
+  const tiles = useMemo(() => buildCategoryTiles(categories, products), [categories, products]);
+  const promos = useMemo(() => buildPromos(categories, products), [categories, products]);
+  const featured = useMemo(() => buildFeatured(homeState.status === "ready" ? homeState.data.featuredProducts : [], products),
+    [homeState, products]);
   const loading = home.state.status === "loading" || catalog.state.status === "loading";
   const failed = home.state.status === "error" && catalog.state.status === "error";
 
@@ -43,12 +48,21 @@ export function HomeLanding() {
                 <p className="hero-slide__subtitle">Calzado, ropa y accesorios para cada entrenamiento.</p>
                 <Link className="hero-slide__cta" href="/catalogo">Ver todo el catálogo<span aria-hidden="true">→</span></Link>
               </div>
+              <div className="hero-slide__art" aria-hidden="true">
+                <span className="hero-tile hero-tile--1 hero-tile--solo"><img src="/figma/hero-shoe.png" alt="" width="580" height="387" /></span>
+              </div>
             </div>
           </div>
         </section>
       )}
       <div className="container home-landing__body">
         {failed && <ErrorState message={home.state.status === "error" ? home.state.message : ""} onRetry={() => { home.retry(); catalog.retry(); }} home />}
+        {!loading && <>
+          <CategoryStrip tiles={tiles} />
+          <PromoBlocks blocks={promos} />
+          <FeaturedRail products={featured} />
+          <BenefitsStrip />
+        </>}
         {home.state.status === "ready" && home.state.source === "MOCK" && <MockNotice />}
       </div>
     </div>

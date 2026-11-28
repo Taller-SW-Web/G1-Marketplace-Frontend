@@ -96,3 +96,22 @@ export function buildFeatured(featured: ProductCardDTO[], products: ProductCardD
   }
   return result;
 }
+
+type PromoTemplate = { id: string; pattern: RegExp; eyebrow: string; title: string; text: string; cta: string; theme: "ink" | "ember" | "volt" };
+const promoTemplates: PromoTemplate[] = [
+  { id: "promo-futbol", pattern: /futbol/, eyebrow: "COLECCIÓN FÚTBOL", title: "Hecho para la cancha", text: "Botines de Adidas, Nike y Puma para cada tipo de terreno.", cta: "Explorar fútbol", theme: "ember" },
+  { id: "promo-running", pattern: /running/, eyebrow: "COLECCIÓN RUNNING", title: "Tu próximo kilómetro", text: "Zapatillas para entrenar a diario y competir.", cta: "Explorar running", theme: "volt" },
+];
+
+/** Banners de colección: solo si la categoría existe y tiene una foto distinta de la portada. */
+export function buildPromos(categories: Category[], products: ProductCardDTO[]) {
+  const grouped = productsByCategory(products);
+  return promoTemplates.flatMap((template) => {
+    const category = categories.filter(isShowcaseCategory).find((item) => template.pattern.test(normalize(item.name)));
+    const list = category ? grouped.get(category.categoryId) ?? [] : [];
+    if (!category || list.length === 0) return [];
+    const { pattern: _pattern, ...copy } = template;
+    void _pattern;
+    return [{ ...copy, href: categoryHref(category.categoryId), image: list[list.length - 1].image }];
+  });
+}
