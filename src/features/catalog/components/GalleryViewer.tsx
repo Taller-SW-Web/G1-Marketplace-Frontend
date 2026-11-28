@@ -1,5 +1,5 @@
 "use client";
-import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ProductMediaDTO } from "../types/product-detail.types";
 import { GalleryThumbnails } from "./ProductGallery";
 
@@ -69,7 +69,6 @@ export function GalleryViewer({
   const [zoomState, setZoomState] = useState({ index, level: 0 });
   const level = zoomState.index === index ? zoomState.level : 0;
   const zoom = ZOOM_LEVELS[level];
-  const frameGrowth = level / (ZOOM_LEVELS.length - 1);
   const total = media.length;
   const current = media[Math.min(Math.max(index, 0), Math.max(total - 1, 0))];
 
@@ -213,7 +212,6 @@ export function GalleryViewer({
         aria-modal="true"
         aria-label={label}
         ref={dialogRef}
-        style={{ "--viewer-frame-growth": frameGrowth } as CSSProperties}
       >
         <div className="viewer-header">
           <p className="viewer-position" aria-live="polite">
