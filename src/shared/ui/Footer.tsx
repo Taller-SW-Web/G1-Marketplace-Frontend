@@ -6,7 +6,9 @@ export function Footer() {
       <div className="marketplace-container">
         <div className="marketplace-footer-main">
           <div>
-            <Link className="footer-brand" href="/">Inka Athletics</Link>
+            <Link className="footer-brand" href="/">
+              <img src="/brand/logo-blanco.png" width="156" height="56" alt="Inka Athletics" />
+            </Link>
             <p>Deporte a tu ritmo.</p>
           </div>
           <nav aria-label="Explora Marketplace">

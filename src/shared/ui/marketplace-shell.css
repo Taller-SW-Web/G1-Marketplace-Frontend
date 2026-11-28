@@ -413,6 +413,13 @@ body:has(.marketplace-drawer[open]) {
   min-width: 44px;
 }
 
+.marketplace-footer-main .footer-brand img {
+  display: block;
+  width: min(156px, 100%);
+  height: auto;
+  margin-block: 2px 8px;
+}
+
 .marketplace-footer-main nav a,
 .marketplace-footer-main p {
   font-size: 14px;

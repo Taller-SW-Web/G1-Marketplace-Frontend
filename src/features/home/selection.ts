@@ -13,7 +13,7 @@ export const normalize = (value: string) =>
 export type HeroSlide = {
   id: string;
   theme: "ink" | "volt" | "ember" | "sky" | "night";
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   subtitle: string;
   cta: string;
@@ -25,7 +25,7 @@ type SlideTemplate = Omit<HeroSlide, "href" | "products"> & { category?: RegExp 
 
 /** Plantillas de texto; cada una solo se muestra si la categoría existe y tiene fotos reales. */
 const templates: SlideTemplate[] = [
-  { id: "todo", theme: "ink", eyebrow: "INKA ATHLETICS", title: "El movimiento empieza contigo", subtitle: "Calzado, ropa y accesorios para cada entrenamiento.", cta: "Ver todo el catálogo" },
+  { id: "todo", theme: "ink", title: "El movimiento empieza contigo", subtitle: "Calzado, ropa y accesorios para cada entrenamiento.", cta: "Ver todo el catálogo" },
   { id: "futbol", theme: "ember", category: /futbol/, eyebrow: "FÚTBOL", title: "Domina la cancha", subtitle: "Botines para pisar fuerte en cada jugada.", cta: "Ver fútbol" },
   { id: "running", theme: "volt", category: /running/, eyebrow: "RUNNING", title: "Corre más lejos", subtitle: "Zapatillas para sumar kilómetros a tu ritmo.", cta: "Ver running" },
   { id: "balones", theme: "sky", category: /balon/, eyebrow: "BALONES", title: "Cada pase cuenta", subtitle: "Balones para entrenar y jugar el partido.", cta: "Ver balones" },

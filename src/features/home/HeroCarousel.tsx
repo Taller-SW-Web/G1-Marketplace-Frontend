@@ -71,7 +71,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               <span className="hero-slide__glow hero-slide__glow--b" aria-hidden="true" />
               <div className="hero-slide__inner">
                 <div className="hero-slide__copy">
-                  <p className="hero-slide__eyebrow">{slide.eyebrow}</p>
+                  {slide.eyebrow && <p className="hero-slide__eyebrow">{slide.eyebrow}</p>}
                   {slideIndex === 0 ? <h1 className="hero-slide__title">{slide.title}</h1> : <h2 className="hero-slide__title">{slide.title}</h2>}
                   <p className="hero-slide__subtitle">{slide.subtitle}</p>
                   <Link className="hero-slide__cta" href={slide.href}>{slide.cta}<span aria-hidden="true">→</span></Link>

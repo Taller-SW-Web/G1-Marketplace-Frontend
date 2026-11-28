@@ -43,7 +43,6 @@ export function HomeLanding() {
           <div className="hero-slide hero-slide--ink is-active">
             <div className="hero-slide__inner">
               <div className="hero-slide__copy">
-                <p className="hero-slide__eyebrow">INKA ATHLETICS</p>
                 <h1 id="inicio-title" className="hero-slide__title">El movimiento empieza contigo</h1>
                 <p className="hero-slide__subtitle">Calzado, ropa y accesorios para cada entrenamiento.</p>
                 <Link className="hero-slide__cta" href="/catalogo">Ver todo el catálogo<span aria-hidden="true">→</span></Link>

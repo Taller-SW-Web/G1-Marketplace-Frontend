@@ -100,10 +100,10 @@ export function FeaturedRail({ products }: { products: ProductCardDTO[] }) {
 }
 
 const benefits = [
-  { title: "Sigue tu pedido", text: "Consulta el estado y la línea de tiempo del despacho en Mis pedidos.", href: "/mis-pedidos", icon: "M3 7h11v8H3zM14 10h4l3 3v2h-7zM7 18a2 2 0 1 0 0-.01M17 18a2 2 0 1 0 0-.01" },
-  { title: "Compra con tu cuenta", text: "Accede con verificación por código para proteger tu sesión.", href: "/login", icon: "M6 10V8a6 6 0 0 1 12 0v2M5 10h14v10H5zM12 14v2" },
-  { title: "Guarda tus favoritos", text: "Marca lo que te gusta y retómalo cuando quieras.", href: "/favoritos", icon: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" },
-  { title: "Catálogo con marcas reales", text: "Adidas, Nike, Puma y más, con fotos de cada producto.", href: "/catalogo", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
+  { title: "Sigue tu pedido", text: "Consulta el estado y la línea de tiempo del despacho en Mis pedidos.", href: "/mis-pedidos", image: "/home/beneficio-seguimiento.webp", icon: "M3 7h11v8H3zM14 10h4l3 3v2h-7zM7 18a2 2 0 1 0 0-.01M17 18a2 2 0 1 0 0-.01" },
+  { title: "Compra con tu cuenta", text: "Accede con verificación por código para proteger tu sesión.", href: "/login", image: "/home/beneficio-cuenta.webp", icon: "M6 10V8a6 6 0 0 1 12 0v2M5 10h14v10H5zM12 14v2" },
+  { title: "Guarda tus favoritos", text: "Marca lo que te gusta y retómalo cuando quieras.", href: "/favoritos", image: "/home/beneficio-favoritos.webp", icon: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" },
+  { title: "Catálogo con marcas reales", text: "Adidas, Nike, Puma y más, con fotos de cada producto.", href: "/catalogo", image: "/home/beneficio-catalogo.webp", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
 ];
 
 /** Franja de beneficios: solo funciones que existen en el producto. */
@@ -121,6 +121,7 @@ export function BenefitsStrip() {
               </span>
               <span className="home-benefit__title">{benefit.title}</span>
               <span className="home-benefit__text">{benefit.text}</span>
+              <span className="home-benefit__media" aria-hidden="true"><TileImage src={benefit.image} /></span>
             </Link>
           </li>
         ))}
