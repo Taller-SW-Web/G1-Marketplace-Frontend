@@ -93,6 +93,19 @@ function CatalogResults({
     <div className="container catalog-page catalog-listing">
       {categoryLinks.length > 0 && (
         <div className="catalog-hero">
+          <div className="catalog-hero-top">
+            <nav aria-label="Migas de navegación" className="catalog-hero-crumbs">
+              <Link href="/">Inicio</Link>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Catálogo</span>
+            </nav>
+            {state.status === "ready" && (
+              <p className="catalog-hero-count">
+                <strong>{state.data.page.totalElements}</strong>
+                {state.data.page.totalElements === 1 ? "producto" : "productos"}
+              </p>
+            )}
+          </div>
           <nav className="catalog-hero-categories" aria-label="Atajos a categorías">
             {categoryLinks.map((category) => {
               const href = catalogHref(query, { categoryIds: category.categoryId });
@@ -111,6 +124,8 @@ function CatalogResults({
           </nav>
         </div>
       )}
+      <div className="catalog-body">
+      <CatalogFilters variant="panel" query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
       <section className="catalog-results" aria-label="Productos del catálogo">
         <div className="catalog-result-toolbar">
           <h1 className="sr-only" ref={heading} tabIndex={-1}>Catálogo</h1>
@@ -121,7 +136,7 @@ function CatalogResults({
               : state.status === "loading" ? "Buscando productos…" : null}
           </p>
           <div className="catalog-toolbar-controls">
-            <CatalogFilters query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
+            <CatalogFilters variant="trigger" query={query} options={filters.state} fallbackCategories={categories.state} retryCategories={categories.retry} retry={filters.retry} onApply={applyCriteria} />
             <CatalogSortSelect value={params.get("sort") ?? ""} onChange={sort => applyCriteria(catalogHref(query, { sort }))} />
           </div>
         </div>
@@ -185,6 +200,7 @@ function CatalogResults({
           </>
         )}
       </section>
+      </div>
     </div>
   );
 }

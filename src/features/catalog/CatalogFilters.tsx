@@ -59,7 +59,20 @@ function FilterForm({ query, options, fallbackCategories, retryCategories, onApp
   </form>;
 }
 
-export function CatalogFilters(props: Props) {
+/**
+ * `panel`: panel lateral de escritorio (siempre visible). `trigger`: botón + ventana
+ * para móvil y tablet. `all` (por defecto) conserva el comportamiento original.
+ */
+export function CatalogFilters({ variant = 'all', ...props }: Props & { variant?: 'all' | 'panel' | 'trigger' }) {
+  if (variant === 'panel') {
+    return <aside className="catalog-filters catalog-filters--panel" aria-label="Filtros del catálogo">
+      <div className="catalog-filters-desktop"><h2>Filtros</h2><FilterForm key={props.query} {...props} /></div>
+    </aside>;
+  }
+  return <CatalogFiltersTrigger {...props} showDesktop={variant === 'all'} />;
+}
+
+function CatalogFiltersTrigger({ showDesktop, ...props }: Props & { showDesktop: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
@@ -69,7 +82,7 @@ export function CatalogFilters(props: Props) {
   const summaryId = useId();
   const appliedCount = Object.values(filterDraft(props.query)).filter(Boolean).length;
   return <aside className="catalog-filters" aria-label="Filtros del catálogo">
-    <div className="catalog-filters-desktop"><h2>Filtros</h2><FilterForm key={props.query} {...props} /></div>
+    {showDesktop && <div className="catalog-filters-desktop"><h2>Filtros</h2><FilterForm key={props.query} {...props} /></div>}
     <Button className="catalog-filters-trigger" ref={trigger} variant="secondary" aria-haspopup="dialog" aria-label={appliedCount ? `Filtros (${appliedCount})` : 'Filtros'} endIcon={<img src="/figma/catalog-filter-arrow-20.svg" alt="" width="20" height="20" />} onClick={() => {
       closingAfterApply.current = false;
       setVersion(previous => previous + 1);

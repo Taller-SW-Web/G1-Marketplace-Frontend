@@ -30,7 +30,7 @@ export function FavoriteControl({ productId, announce = true, compact = false }:
       busy={sessionBusy || !!state.pending} authenticated={!!session.identity}
       onSave={id => { void mutate(id, "save"); }} onRemove={id => { void mutate(id, "remove"); }}
       onRequireAuth={() => { invoker.current = document.activeElement as HTMLElement; setAuthOpen(true); }} />
-    {state.confirmed === "unknown" && !state.message && <p className="wishlist-hint">{compact ? "Guardado por confirmar." : "Estado aún no consultable; guardar es una acción idempotente."}</p>}
+    {state.confirmed === "unknown" && !state.message && <p className="wishlist-hint sr-only">{compact ? "Guardado por confirmar." : "Estado aún no consultable; guardar es una acción idempotente."}</p>}
     {state.message && <p {...(announce ? { role: state.error ? "alert" : "status" } : {})} className="wishlist-message">{state.message}</p>}
     {state.retry && <Button variant="tertiary" disabled={sessionBusy || !!state.pending}
       onClick={() => { void mutate(productId, state.retry!); }}>Reintentar {state.retry === "save" ? "guardado" : "eliminación"}</Button>}
