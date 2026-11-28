@@ -33,6 +33,9 @@ test("checkout logout is cancelable with correct focus", async ({ page }) => {
   await page.goto("/login?returnTo=%2Fcheckout");
   await page.getByLabel("Correo electrónico", { exact: true }).fill("a@fixture.test"); await page.getByLabel("Contraseña", { exact: true }).fill("Fixture-only!123");
   await page.getByRole("button", { name: "Iniciar sesión", exact: true }).click(); await expect(page).toHaveURL(/\/checkout$/);
+  const mobileMenu = page.getByRole("button", { name: "Abrir menú" });
+  if (await mobileMenu.isVisible()) await mobileMenu.click();
+  await page.getByRole("banner").locator(".marketplace-account-trigger:visible").click();
   const logout = page.getByRole("button", { name: "Cerrar sesión", exact: true }); await expect(logout).toBeVisible(); await logout.click();
   const dialog = page.getByRole("dialog", { name: "¿Cerrar sesión?" }); await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Continuar checkout" })).toBeFocused();
