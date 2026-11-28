@@ -61,6 +61,7 @@ export function ProductGallery({ media, onOpenViewer }: Props) {
           </div>
         ) : (
           <img
+            key={item.mediaId}
             src={item.url}
             alt={item.alt}
             width="600"
