@@ -11,4 +11,5 @@ npm-debug.log*
 
 # Local sanitized security reports and downloaded tools
 .local-security/
+.lighthouseci/
 __pycache__/

@@ -46,7 +46,15 @@ export function Home() {
               <Link className="button" href="/catalogo">Explorar catálogo</Link>
             </div>
             <div className="intro-art">
-              <img src="/figma/hero-shoe.png" alt="Zapatilla deportiva negra y blanca" width="580" height="387" fetchPriority="high" />
+              <img
+                src="/figma/hero-shoe-1160.webp"
+                srcSet="/figma/hero-shoe-768.webp 768w, /figma/hero-shoe-1160.webp 1160w"
+                sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1200px) 45vw, 580px"
+                alt="Zapatilla deportiva negra y blanca"
+                width="580"
+                height="387"
+                fetchPriority="high"
+              />
             </div>
           </section>
           {state.data.categories.length > 0 && (
