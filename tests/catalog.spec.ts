@@ -5,12 +5,12 @@ test("home loads mock categories through Next → BFF and keeps featured omitted
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "EL MOVIMIENTO",
+    /Equípate para\s*moverte/i,
   );
   await expect(page.locator(".category-card").filter({ hasText: "Running" })).toBeVisible();
   await expect(page.getByRole("note")).toContainText("demostración");
   await expect(
-    page.getByRole("heading", { name: "Destacados para ti", exact: true }),
+    page.getByRole("heading", { name: "Destacados", exact: true }),
   ).toHaveCount(0);
   await page.screenshot({
     path: "test-results/inicio-desktop.png",
@@ -221,10 +221,10 @@ test("empty home omits category/featured headings and preserves navigation", asy
     page.getByRole("heading", { name: "Encuentra tu próximo favorito" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Encuentra lo tuyo" }),
+    page.getByRole("heading", { name: "Compra por categoría" }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Destacados para ti", exact: true }),
+    page.getByRole("heading", { name: "Destacados", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByRole("searchbox")).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });

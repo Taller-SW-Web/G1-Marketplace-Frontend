@@ -2,16 +2,17 @@
 import Link from "next/link";
 import { isHome } from "./api";
 import { useCatalog } from "./useCatalog";
-import { ProductCard } from "./ProductCard";
 import { CategoryArtwork } from "./CategoryArtwork";
+import { FeaturedRail } from "./FeaturedRail";
 import { ErrorState, MockNotice, ProductSkeletons } from "@/shared/ui/Feedback";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { LoadingState, Skeleton } from "@/shared/ui/Skeleton";
+import "./home-h5.css";
 
 export function Home() {
   const { state, retry } = useCatalog("home", isHome);
   if(state.status === "loading") return (
-    <div className="container home-content home-state">
+    <div className="container home-content h5-home home-state">
       <h1>Preparando tu inicio</h1>
       <p>Estamos cargando categorías y productos. Puedes seguir usando la búsqueda.</p>
       <LoadingState label="Cargando categorías" className="category-grid">
@@ -21,14 +22,14 @@ export function Home() {
     </div>
   );
   if(state.status === "error") return (
-    <div className="container home-content home-error">
+    <div className="container home-content h5-home home-error">
       <h1 className="sr-only">Inicio</h1>
       <ErrorState message={state.message} onRetry={retry} home />
     </div>
   );
   const empty = state.data.categories.length === 0 && state.data.featuredProducts.length === 0;
   return (
-    <div className={`container home-content${empty ? " home-state" : ""}`}>
+    <div className={`container home-content h5-home${empty ? " home-state" : ""}`}>
       {empty ? (
         <>
           <h1 className="sr-only">Inicio</h1>
@@ -40,44 +41,44 @@ export function Home() {
         <>
           <section className="home-intro" aria-labelledby="inicio-title">
             <div className="intro-copy">
-              <p className="eyebrow">ENCUENTRA TU PRÓXIMA META</p>
-              <h1 id="inicio-title">EL MOVIMIENTO<br />EMPIEZA CONTIGO.</h1>
-              <p className="intro-description">Ropa, calzado y accesorios para acompañarte en cada entrenamiento.</p>
+              <p className="eyebrow">Calzado, ropa y equipamiento</p>
+              <h1 id="inicio-title">Equípate para<br />moverte</h1>
+              <p className="intro-description">Encuentra lo que necesitas para entrenar, correr o salir al aire libre.</p>
               <Link className="button" href="/catalogo">Explorar catálogo</Link>
             </div>
             <div className="intro-art">
-              <img src="/figma/hero-shoe.png" alt="Zapatilla deportiva negra y blanca" width="580" height="387" fetchPriority="high" />
+              <picture>
+                <source type="image/webp" srcSet="/figma/hero-shoe-768.webp 768w, /figma/hero-shoe-1160.webp 1160w"
+                  sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1440px) 48vw, 645px" />
+                <img src="/figma/hero-shoe.png" alt="Zapatilla deportiva negra y blanca" width="580" height="387" fetchPriority="high" />
+              </picture>
             </div>
           </section>
           {state.data.categories.length > 0 && (
             <section className="categories-section" aria-labelledby="categorias-title">
-              <h2 id="categorias-title">Encuentra lo tuyo</h2>
+              <h2 id="categorias-title">Compra por categoría</h2>
               <div className="category-grid">
                 {state.data.categories.map((category) => (
                   <Link className="category-card" key={category.categoryId}
                     href={`/catalogo?categoryIds=${encodeURIComponent(category.categoryId)}`}>
                     <CategoryArtwork category={category} />
-                    <h3>{category.name}</h3>
+                    <div className="h5-home-category-label">
+                      <h3>{category.name}</h3>
+                      <img src="/figma/h5-shell/arrow.svg" alt="" width="22" height="22" />
+                    </div>
                   </Link>
                 ))}
               </div>
             </section>
           )}
-          {state.data.featuredProducts.length > 0 && (
-            <section className="featured-section" aria-labelledby="destacados-title">
-              <div className="section-heading">
-                <h2 id="destacados-title">Destacados para ti</h2>
-                <Link className="text-link" href="/catalogo">Ver todo el catálogo</Link>
-              </div>
-              <div className="product-grid">
-                {state.data.featuredProducts.map((product) => (
-                  <ProductCard key={product.productId} product={product} returnPath="/" />
-                ))}
-              </div>
-            </section>
-          )}
+          {state.data.featuredProducts.length > 0 &&
+            <FeaturedRail products={state.data.featuredProducts} categories={state.data.categories} />}
         </>
       )}
+      <section className="home-ranking" aria-labelledby="home-ranking-title">
+        <h2 id="home-ranking-title">Más vendidos</h2>
+        <p>Pronto podrás consultar el ranking.</p>
+      </section>
       {state.source === "MOCK" && <MockNotice />}
     </div>
   );
