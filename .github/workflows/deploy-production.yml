@@ -22,12 +22,28 @@ permissions:
 jobs:
   deploy-production:
     name: Despliegue a producción (requiere aprobación)
+    # Solo desde main, también en ejecuciones manuales (workflow_dispatch).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: production
       url: https://g1-marketplace-frontend.vercel.app
     steps:
+      - name: Comprobar que el commit aprobado sigue siendo el último de main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # El hook de Vercel despliega el último commit de main. Si main avanzó mientras se esperaba la
+          # aprobación, se aborta: debe aprobarse la ejecución del commit más reciente.
+          head=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main" --jq .commit.sha)
+          echo "SHA de esta ejecución: ${GITHUB_SHA}"
+          echo "SHA actual de main:    ${head}"
+          if [ "$head" != "${GITHUB_SHA}" ]; then
+            echo "::error::main avanzó (${head}). Aprueba la ejecución del commit más reciente."
+            exit 1
+          fi
+
       - name: Solicitar el despliegue de main en Vercel
         env:
           VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
@@ -36,8 +52,10 @@ jobs:
             echo "::error::Falta el secreto VERCEL_DEPLOY_HOOK_URL"
             exit 1
           fi
-          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL" -o /dev/null
+          response=$(curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL")
           echo "Despliegue solicitado para ${GITHUB_SHA} (aprobado en el environment production)"
+          echo "Respuesta de Vercel: ${response}"
+          { echo "### Despliegue a producción (Frontend)"; echo "- Commit: \`${GITHUB_SHA}\`"; echo "- Respuesta de Vercel: \`${response}\`"; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verificar que el sitio responde
         run: |
