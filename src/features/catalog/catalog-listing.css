@@ -120,12 +120,18 @@
 .catalog-listing .listing-card-primary:hover:not(:disabled) { background: var(--border-inverse); }
 .catalog-listing .listing-card-actions .favorite-control { display: contents; }
 .catalog-listing .listing-card-actions .favorite-toggle {
+  align-self: stretch;
   width: 44px;
-  height: 44px;
+  min-height: 44px;
   padding: 0;
-  font-size: 1.15rem;
-  line-height: 1;
+  border-color: var(--border);
   background: #fff;
+  color: var(--text-primary);
+}
+.catalog-listing .listing-card-actions .favorite-toggle svg { display: block; }
+.catalog-listing .listing-card-actions .favorite-toggle:hover:not(:disabled) {
+  border-color: var(--action-hover);
+  color: var(--action-strong);
 }
 .catalog-listing .listing-card-actions .favorite-toggle[aria-pressed="true"] {
   background: var(--action-soft);
@@ -588,3 +594,47 @@
   background: var(--border);
 }
 .catalog-listing .catalog-filters--panel .catalog-price-range legend { margin: 0 0 4px; }
+
+@supports selector(::picker(select)) {
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) select,
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) select::picker(select) {
+    appearance: base-select;
+  }
+
+  .catalog-listing :is(.catalog-filters--panel, .catalog-sort-control) select::picker-icon {
+    display: none;
+  }
+
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) select::picker(select) {
+    min-inline-size: anchor-size(width);
+    max-inline-size: min(360px, calc(100vw - 24px));
+    max-block-size: min(340px, 50dvh);
+    margin-block: 5px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    color: var(--text-primary);
+    box-shadow: 0 12px 30px rgb(27 24 18 / .14);
+    font-size: .875rem;
+  }
+
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) option {
+    min-block-size: 40px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) option:checked {
+    background: var(--action-soft);
+    color: var(--action-strong);
+    font-weight: 650;
+  }
+
+  .catalog-listing :is(.catalog-filter-form, .catalog-sort-control) option:not(:checked):is(:hover, :focus-visible) {
+    background: var(--surface-cloud);
+    color: var(--text-primary);
+  }
+}

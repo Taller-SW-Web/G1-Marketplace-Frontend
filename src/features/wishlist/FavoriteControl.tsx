@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/shared/ui/Button";
-import { FavoriteToggle } from "./FavoriteToggle";
+import { FavoriteHeart, FavoriteToggle } from "./FavoriteToggle";
 import { useWishlist } from "./WishlistProvider";
 import { getItemState } from "./types";
 
@@ -21,7 +21,7 @@ export function FavoriteControl({ productId, announce = true, compact = false }:
   if (!session.enabled) return compact ? (
     <div className="favorite-control">
       <Button variant="secondary" className="favorite-toggle" disabled aria-label="Guardar en favoritos" title="Favoritos no disponibles">
-        <span aria-hidden="true">♡</span>
+        <FavoriteHeart />
       </Button>
     </div>
   ) : null;
