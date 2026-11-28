@@ -23,6 +23,19 @@
   background: var(--surface-cloud);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 8px 24px rgb(27 24 18 / 6%);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+/* Oculto al bajar por los productos; reaparece al subir (ver Header.tsx). */
+.site-header.marketplace-header[data-hidden="true"] {
+  transform: translateY(-100%);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header.marketplace-header {
+    transition: none;
+  }
 }
 
 .marketplace-header-row {

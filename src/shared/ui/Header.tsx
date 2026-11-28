@@ -7,7 +7,6 @@ import { AccountMenu } from "@/features/auth/AccountMenu";
 import { SearchBox } from "@/features/catalog/SearchBox";
 import { CategoryNavigation } from "@/features/catalog/CategoryNavigation";
 import { ShellCounters } from "./ShellCounters";
-import { PromotionBar } from "./PromotionBar";
 import "./marketplace-shell.css";
 
 export function Header() {
@@ -22,8 +21,39 @@ function MarketplaceHeader({ reduced }: { reduced: boolean }) {
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const searchTrigger = useRef<HTMLButtonElement>(null);
   const searchRegion = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const searchOpenRef = useRef(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    searchOpenRef.current = searchOpen;
+  }, [searchOpen]);
+
+  // El encabezado se oculta al bajar por los productos y reaparece al subir.
+  // Nunca se oculta con el menú o el buscador abiertos, ni con el foco dentro.
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let pending = false;
+    const update = () => {
+      pending = false;
+      const y = window.scrollY;
+      const delta = y - lastY;
+      lastY = y;
+      const locked = Boolean(drawer.current?.open) || searchOpenRef.current ||
+        Boolean(headerRef.current?.contains(document.activeElement));
+      if (y <= 80 || delta < -6) setHidden(false);
+      else if (delta > 6 && !locked) setHidden(true);
+    };
+    const onScroll = () => {
+      if (pending) return;
+      pending = true;
+      window.requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const tablet = window.matchMedia("(min-width: 768px)");
@@ -54,8 +84,8 @@ function MarketplaceHeader({ reduced }: { reduced: boolean }) {
   return (
     <>
       <a className="skip-link marketplace-skip" href="#contenido">Saltar al contenido</a>
-      <header className="site-header marketplace-header" data-reduced={reduced}>
-        {!reduced && <PromotionBar message="Descubre las ofertas del catálogo" />}
+      <header ref={headerRef} className="site-header marketplace-header" data-reduced={reduced} data-hidden={hidden}
+        onFocusCapture={() => setHidden(false)}>
         <div className="marketplace-container marketplace-header-row">
           <button ref={menuTrigger} className="marketplace-icon-button marketplace-mobile-only" type="button"
             aria-label="Abrir menú" aria-haspopup="dialog" aria-controls="marketplace-drawer" aria-expanded={drawerOpen}
@@ -86,9 +116,6 @@ function MarketplaceHeader({ reduced }: { reduced: boolean }) {
             </>}
           </div>
         </div>
-        {!reduced && <div className="marketplace-desktop-nav">
-          <div className="marketplace-container"><CategoryNavigation /></div>
-        </div>}
         <dialog ref={drawer} id="marketplace-drawer" className="marketplace-drawer" aria-labelledby="marketplace-drawer-title"
           onClose={() => {
             setDrawerOpen(false);

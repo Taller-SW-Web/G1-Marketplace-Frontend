@@ -28,18 +28,28 @@ async function mockCatalog(page: Page, { suggestionsDown = false } = {}) {
   });
 }
 
-test("desktop categories support keyboard navigation and keep the selected category URL", async ({ page }) => {
+test("desktop header keeps only the essentials: no category row under the logo", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await mockCatalog(page);
   await page.goto("/");
-  const nav = page.getByRole("navigation", { name: "Navegación principal" });
-  const calzado = nav.getByRole("link", { name: "Calzado" });
-  const ropa = nav.getByRole("link", { name: "Ropa" });
-  await calzado.focus();
-  await page.keyboard.press("Tab");
-  await expect(ropa).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/catalogo\?categoryIds=ropa$/);
+  const header = page.getByRole("banner");
+  await expect(header.getByRole("link", { name: "Inka Athletics, inicio" })).toBeVisible();
+  await expect(header.getByRole("searchbox", { name: "Buscar productos" })).toBeVisible();
+  // Las categorías viven dentro de la cabecera del catálogo y en el menú móvil, no bajo el logo.
+  await expect(header.getByRole("navigation", { name: "Navegación principal" })).toHaveCount(0);
+});
+
+test("header hides while scrolling down through products and returns when scrolling up", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await mockCatalog(page);
+  await page.goto("/catalogo");
+  await page.evaluate(() => { document.body.style.minHeight = "4000px"; });
+  const header = page.getByRole("banner");
+  await expect(header).toHaveAttribute("data-hidden", "false");
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect(header).toHaveAttribute("data-hidden", "true");
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await expect(header).toHaveAttribute("data-hidden", "false");
 });
 
 test("suggestions use real catalog links and Escape leaves normal submit available", async ({ page }) => {
@@ -92,14 +102,11 @@ test("mobile drawer is modal and accessible while suggestions are down", async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test("promotion is dismissible, footer has approved routes, and checkout uses a reduced header", async ({ page }) => {
+test("footer has approved routes and checkout uses a reduced header", async ({ page }) => {
   await mockCatalog(page);
   await page.goto("/");
   const header = page.getByRole("banner");
-  await expect(header.getByText("Descubre las ofertas del catálogo")).toBeVisible();
-  await header.getByRole("button", { name: "Cerrar promociones" }).click();
   await expect(header.getByText("Descubre las ofertas del catálogo")).toHaveCount(0);
-  await expect(header.getByRole("link", { name: "Inka Athletics, inicio" })).toBeFocused();
   const footer = page.getByRole("contentinfo");
   await expect(footer.getByRole("link", { name: "Términos" })).toHaveAttribute("href", "/terminos");
   await expect(footer.getByRole("link", { name: "Privacidad" })).toHaveAttribute("href", "/privacidad");
