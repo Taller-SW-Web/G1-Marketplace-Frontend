@@ -40,17 +40,17 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
   return (
     <>
       <article className="product-card">
-        <CardLink product={product} href={href} brand={brand}>
+        <CardLink product={product} href={href} brand={brand} showImageOverlay>
           <ListingPrice priceRef={ref} state={state} />
         </CardLink>
         <div className="listing-card-actions">
           {sku ? (
             <Button className="listing-card-primary" loading={isBusy} loadingLabel="Agregando al carrito…"
               onClick={() => void addItem({ productId: product.productId, sku, quantity: 1 })}>
-              Comprar
+              Agregar al carrito
             </Button>
           ) : (
-            <Link href={href} className="button button--primary listing-card-primary">Ver opciones</Link>
+            <Link href={href} className="button button--primary listing-card-primary">Elegir opciones</Link>
           )}
           <FavoriteControl productId={product.productId} compact />
           {!isBusy && lastResult && !lastResult.success && (
@@ -64,11 +64,12 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
   );
 }
 
-function CardLink({ product, href, brand, children }: {
+function CardLink({ product, href, brand, children, showImageOverlay }: {
   product: ProductCardDTO;
   href: string;
   brand?: string;
   children: ReactNode;
+  showImageOverlay?: boolean;
 }) {
   return (
     <Link href={href} className="product-card-link">
@@ -80,6 +81,7 @@ function CardLink({ product, href, brand, children }: {
           width="280"
           height="187"
         />
+        {showImageOverlay && <span className="listing-image-overlay" aria-hidden="true"><span>Ver detalle</span></span>}
       </div>
       <div className="product-info">
         {brand && <p className="product-category">{brand}</p>}
