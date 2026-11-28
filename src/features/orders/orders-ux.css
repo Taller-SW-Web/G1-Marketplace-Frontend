@@ -252,3 +252,43 @@
 @media (prefers-reduced-motion: reduce) {
   .orders-page .orders-table tbody tr { transition: none; }
 }
+
+/* ===== Ronda 3 · chips con transición, entrada escalonada y estados vacíos ilustrados ===== */
+@keyframes orders-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes orders-dot { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes orders-pulse { 0%, 100% { box-shadow: 0 0 0 4px #e3f6e6; } 50% { box-shadow: 0 0 0 8px #e3f6e600; } }
+@keyframes orders-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+:is(.orders-page, .order-detail-page) .order-status {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.orders-page .orders-table tbody tr:hover .order-status,
+.orders-page .order-card:hover .order-status { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(27, 24, 18, .08); }
+.orders-page .orders-table tbody tr,
+.orders-page .order-card { animation: orders-in 260ms ease both; }
+.orders-page .orders-table tbody tr:nth-child(2), .orders-page .order-card:nth-child(2) { animation-delay: 50ms; }
+.orders-page .orders-table tbody tr:nth-child(3), .orders-page .order-card:nth-child(3) { animation-delay: 100ms; }
+.orders-page .orders-table tbody tr:nth-child(4), .orders-page .order-card:nth-child(4) { animation-delay: 150ms; }
+.orders-page .orders-table tbody tr:nth-child(n + 5), .orders-page .order-card:nth-child(n + 5) { animation-delay: 200ms; }
+.order-detail-page .order-detail-section { animation: orders-in 300ms ease both; }
+.order-detail-page .order-detail-timeline li { animation: orders-in 320ms ease both; }
+.order-detail-page .order-detail-timeline li:nth-child(2) { animation-delay: 120ms; }
+.order-detail-page .order-detail-timeline li:nth-child(3) { animation-delay: 240ms; }
+.order-detail-page .order-detail-timeline li:nth-child(n + 4) { animation-delay: 360ms; }
+.order-detail-page .order-detail-timeline li.is-latest .order-detail-timeline__dot { animation: orders-pulse 2.4s 600ms ease-in-out infinite; }
+.order-progress li::before { transition: background-color 300ms ease; }
+.order-progress__marker { transition: background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease; }
+.order-progress li { animation: orders-in 280ms ease both; }
+.order-progress li:nth-child(2) { animation-delay: 80ms; }
+.order-progress li:nth-child(3) { animation-delay: 160ms; }
+.order-progress li:nth-child(4) { animation-delay: 240ms; }
+:is(.orders-page, .order-detail-page) .empty-state .empty-symbol { width: auto; height: auto; background: transparent; border-radius: 0; }
+:is(.orders-page, .order-detail-page) .illustration__spark { animation: orders-float 2.4s ease-in-out infinite; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.orders-page, .order-detail-page) .order-status,
+  .order-progress li::before, .order-progress__marker { transition: none; }
+  .orders-page .orders-table tbody tr, .orders-page .order-card, .order-detail-page .order-detail-section,
+  .order-detail-page .order-detail-timeline li,
+  .order-detail-page .order-detail-timeline li.is-latest .order-detail-timeline__dot,
+  .order-progress li, :is(.orders-page, .order-detail-page) .illustration__spark { animation: none; }
+  .orders-page .orders-table tbody tr:hover .order-status, .orders-page .order-card:hover .order-status { transform: none; }
+}

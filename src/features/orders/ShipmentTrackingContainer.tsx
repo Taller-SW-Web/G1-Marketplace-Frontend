@@ -8,6 +8,7 @@ import { OrdersRequestError, readOrderTracking } from "./api";
 import { ShipmentTimeline } from "./ShipmentTimeline";
 import type { OrderTracking } from "./types";
 import "./orders-ux.css";
+import { TrackingIllustration } from "@/shared/ui/Illustrations";
 
 export function ShipmentTrackingContainer({ orderId }: { orderId: string }) {
   type Result = { key: string } & ({ data: OrderTracking | null } | { error: string; denied: boolean });
@@ -35,7 +36,7 @@ export function ShipmentTrackingContainer({ orderId }: { orderId: string }) {
     <header className="orders-heading"><h1>Seguimiento del pedido</h1>{!error && data !== undefined && <p>{orderId}</p>}</header>
     {data === undefined && !error && <p role="status" aria-live="polite">Consultando seguimiento…</p>}
     {error && <EmptyState className="orders-error" title={denied ? "Pedido no disponible" : "No pudimos consultar el seguimiento"} description={error} actions={denied ? undefined : <Button variant="primary" onClick={() => setRetry((value) => value + 1)}>Reintentar</Button>} />}
-    {data === null && <EmptyState title="El pedido aún no está en despacho" description="Puedes volver a consultar cuando cambie el estado." actions={<Button variant="secondary" onClick={() => setRetry((value) => value + 1)}>Actualizar seguimiento</Button>} />}
+    {data === null && <EmptyState className="tracking-pending" icon={<TrackingIllustration />} title="El pedido aún no está en despacho" description="Puedes volver a consultar cuando cambie el estado." actions={<Button variant="secondary" onClick={() => setRetry((value) => value + 1)}>Actualizar seguimiento</Button>} />}
     {data && <ShipmentTimeline state={data.state} milestones={data.milestones} estimatedDelivery={data.estimatedDelivery} />}
   </main>;
 }
