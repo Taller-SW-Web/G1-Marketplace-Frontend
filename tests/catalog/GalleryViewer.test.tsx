@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { GalleryViewer } from "../../src/features/catalog/components/GalleryViewer";
 import { MOCK_MEDIA } from "../../src/features/catalog/fixtures/product-detail.fixture";
@@ -203,6 +203,23 @@ describe("GalleryViewer · O-002 (F-011)", () => {
 
     fireEvent.keyDown(document, { key: "ArrowLeft" });
     expect(onIndexChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it("amplía con la rueda sobre la foto y reinicia el zoom al elegir una miniatura", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Ampliar imagen" }));
+    const dialog = within(screen.getByRole("dialog"));
+    const photo = dialog.getByRole("region", { name: "Foto ampliada" });
+
+    fireEvent.wheel(dialog.getByRole("button", { name: "Cerrar visor" }), { deltaY: -120 });
+    expect(dialog.getByText("100 % de zoom")).toBeTruthy();
+    fireEvent.wheel(photo, { deltaY: -120 });
+    expect(dialog.getByText("150 % de zoom")).toBeTruthy();
+
+    const thumb = dialog.getByRole("button", { name: "Imagen 2 de 2" });
+    fireEvent.click(thumb);
+    expect(thumb.getAttribute("aria-pressed")).toBe("true");
+    expect(dialog.getByText("100 % de zoom")).toBeTruthy();
   });
 
   it("V-007: cambiar de imagen reinicia el zoom aplicado", () => {

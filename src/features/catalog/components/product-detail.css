@@ -152,3 +152,84 @@
   .product-showcase .variant-option { transition: none; }
   .product-showcase :is(.added-to-cart-feedback-banner, .feedback-badge--success, .gallery-main img) { animation: none; }
 }
+
+/* Galería de ficha y visor: la foto abre el diálogo y las miniaturas siempre son botones. */
+.product-showcase .gallery-main {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  cursor: zoom-in;
+}
+.product-showcase .gallery-main:focus-visible { outline-offset: -4px; }
+.product-showcase .gallery-expand-icon {
+  position: absolute;
+  inset: auto 12px 12px auto;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: #fff;
+  color: var(--text-primary);
+}
+
+.product-showcase .viewer-dialog {
+  width: min(1240px, 100%);
+  max-height: calc(100dvh - 32px);
+  gap: 12px;
+}
+.product-showcase .viewer-gallery { display: grid; min-width: 0; gap: 8px; }
+.product-showcase .viewer-media {
+  display: block;
+  min-height: 0;
+  height: clamp(185px, 62dvh, 760px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.product-showcase .viewer-media img {
+  max-height: none;
+  max-width: none;
+}
+.product-showcase .viewer-media[data-zoom="1"] { overflow: hidden; }
+.product-showcase .viewer-media .gallery-fallback { min-height: 100%; }
+.product-showcase .viewer-controls { gap: 6px; }
+.product-showcase .viewer-controls button { padding-inline: 10px; }
+.product-showcase .viewer-zoom { min-width: auto; padding-inline: 4px; }
+
+@media (max-width: 767px) {
+  .product-showcase .viewer-dialog { max-height: calc(100dvh - 16px); }
+  .product-showcase .viewer-media { height: clamp(185px, 53dvh, 550px); }
+}
+
+@media (min-width: 1024px) {
+  .product-showcase .product-gallery:has(.gallery-thumbs) {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-areas: "thumbs photo" "thumbs tools";
+    align-items: start;
+    gap: 12px;
+  }
+  .product-showcase .gallery-main { grid-area: photo; }
+  .product-showcase .gallery-toolbar { grid-area: tools; }
+  .product-showcase .viewer-gallery:has(.gallery-thumbs) {
+    grid-template-columns: 90px minmax(0, 1fr);
+    grid-template-areas: "thumbs photo";
+    align-items: start;
+  }
+  .product-showcase .viewer-media { grid-area: photo; }
+  .product-showcase :is(.product-gallery, .viewer-gallery) > .gallery-thumbs {
+    grid-area: thumbs;
+    flex-direction: column;
+    max-height: min(62dvh, 500px);
+    overflow: auto;
+  }
+  .product-showcase :is(.product-gallery, .viewer-gallery) > .gallery-thumbs .gallery-thumb {
+    width: 100%;
+    min-width: 0;
+  }
+  .product-showcase :is(.product-gallery, .viewer-gallery) > .gallery-thumbs img {
+    width: 100%;
+    object-fit: contain;
+  }
+}

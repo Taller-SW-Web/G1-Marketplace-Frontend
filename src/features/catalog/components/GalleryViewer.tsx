@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ProductMediaDTO } from "../types/product-detail.types";
+import { GalleryThumbnails } from "./ProductGallery";
 
 interface Props {
   opened: boolean;
@@ -36,21 +37,51 @@ export function GalleryViewer({
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  // El fallo se registra por índice: cambiar de imagen no arrastra el anterior.
-  const [failedAt, setFailedAt] = useState<number | null>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
   // El nivel de zoom guardado sólo vale para su índice (sin efectos de reset).
   const [zoomState, setZoomState] = useState({ index, level: 0 });
   const level = zoomState.index === index ? zoomState.level : 0;
   const zoom = ZOOM_LEVELS[level];
+  const total = media.length;
+  const current = media[Math.min(Math.max(index, 0), Math.max(total - 1, 0))];
 
-  const setLevel = useCallback(
-    (next: number) =>
-      setZoomState({
-        index,
-        level: Math.min(Math.max(next, 0), ZOOM_LEVELS.length - 1),
-      }),
-    [index],
-  );
+  const changeZoom = useCallback((step: number) => {
+    setZoomState((previous) => {
+      const level = previous.index === index ? previous.level : 0;
+      return { index, level: Math.max(0, Math.min(level + step, ZOOM_LEVELS.length - 1)) };
+    });
+  }, [index]);
+
+  const selectPhoto = useCallback((next: number) => {
+    if (next === index) return;
+    setZoomState({ index: next, level: 0 });
+    onIndexChange(next);
+  }, [index, onIndexChange]);
+
+  const close = useCallback(() => {
+    setZoomState({ index, level: 0 });
+    onClose();
+  }, [index, onClose]);
+
+  useEffect(() => {
+    const image = mediaRef.current;
+    if (!opened || !image) return;
+    let lastZoom = -Infinity;
+    function onWheel(event: WheelEvent) {
+      if (!event.deltaY || event.ctrlKey || event.shiftKey) return;
+      event.preventDefault();
+      if (event.timeStamp - lastZoom < 100) return;
+      lastZoom = event.timeStamp;
+      changeZoom(event.deltaY < 0 ? 1 : -1);
+    }
+    image.addEventListener("wheel", onWheel, { passive: false });
+    return () => image.removeEventListener("wheel", onWheel);
+  }, [opened, changeZoom, current?.mediaId]);
+
+  function markFailed(mediaId: string) {
+    setFailed((previous) => previous.has(mediaId) ? previous : new Set(previous).add(mediaId));
+  }
 
   // Al abrir: guardar el foco previo y enfocar Cerrar. Al cerrar: restaurarlo.
   useEffect(() => {
@@ -58,7 +89,7 @@ export function GalleryViewer({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     return () => {
-      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
     };
   }, [opened]);
 
@@ -67,7 +98,7 @@ export function GalleryViewer({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        close();
         return;
       }
       if (event.key !== "Tab") {
@@ -81,27 +112,27 @@ export function GalleryViewer({
         }
         if (event.key === "+" || event.key === "=") {
           event.preventDefault();
-          setLevel(level + 1);
+          changeZoom(1);
           return;
         }
         if (event.key === "-" || event.key === "_") {
           event.preventDefault();
-          setLevel(level - 1);
+          changeZoom(-1);
           return;
         }
         if (event.key === "0") {
           event.preventDefault();
-          setLevel(0);
+          setZoomState({ index, level: 0 });
           return;
         }
         if (event.key === "ArrowLeft" && index > 0) {
           event.preventDefault();
-          onIndexChange(index - 1);
+          selectPhoto(index - 1);
           return;
         }
-        if (event.key === "ArrowRight" && index < media.length - 1) {
+        if (event.key === "ArrowRight" && index < total - 1) {
           event.preventDefault();
-          onIndexChange(index + 1);
+          selectPhoto(index + 1);
           return;
         }
         return;
@@ -129,21 +160,15 @@ export function GalleryViewer({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [opened, onClose, onIndexChange, index, level, media.length, setLevel]);
+  }, [opened, close, selectPhoto, index, total, changeZoom]);
 
-  if (!opened) return null;
-
-  const imageFailed = failedAt === index;
-  const total = media.length;
-  const current = media[Math.min(Math.max(index, 0), Math.max(total - 1, 0))];
-
-  if (!current) return null;
+  if (!opened || !current) return null;
 
   return (
     <div
       className="viewer-backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) close();
       }}
     >
       <div
@@ -162,34 +187,28 @@ export function GalleryViewer({
             className="viewer-close"
             aria-label="Cerrar visor"
             ref={closeRef}
-            onClick={onClose}
+            onClick={close}
           >
             Cerrar
           </button>
         </div>
 
-        <div
-          className="viewer-media"
-          data-zoom={zoom}
-          style={{ overflow: zoom > 1 ? "auto" : undefined }}
-        >
-          {imageFailed ? (
-            <div
-              className="gallery-fallback"
-              role="img"
-              aria-label={`${current.alt} — imagen no disponible`}
-            >
-              <span>Imagen no disponible</span>
-            </div>
-          ) : (
-            <img
-              src={current.url}
-              alt={current.alt}
-              width="960"
-              height="640"
-              style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
-              onError={() => setFailedAt(index)}
-            />
+        <div className="viewer-gallery">
+          <div className="viewer-media" data-zoom={zoom} key={current.mediaId} ref={mediaRef}
+            role="region" aria-label="Foto ampliada" tabIndex={zoom > 1 ? 0 : undefined}>
+            {failed.has(current.mediaId) ? (
+              <div className="gallery-fallback" role="img" aria-label={`${current.alt} — imagen no disponible`}>
+                <span>Imagen no disponible</span>
+              </div>
+            ) : (
+              <img src={current.url} alt={current.alt} width="960" height="640"
+                style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}
+                onError={() => markFailed(current.mediaId)} />
+            )}
+          </div>
+          {total > 1 && (
+            <GalleryThumbnails media={media} selectedIndex={index} failed={failed}
+              onSelect={selectPhoto} onError={markFailed} />
           )}
         </div>
 
@@ -198,7 +217,7 @@ export function GalleryViewer({
             type="button"
             aria-label="Imagen anterior"
             disabled={index <= 0}
-            onClick={() => onIndexChange(Math.max(0, index - 1))}
+            onClick={() => selectPhoto(index - 1)}
           >
             Anterior
           </button>
@@ -206,7 +225,7 @@ export function GalleryViewer({
             type="button"
             aria-label="Imagen siguiente"
             disabled={index >= total - 1}
-            onClick={() => onIndexChange(Math.min(total - 1, index + 1))}
+            onClick={() => selectPhoto(index + 1)}
           >
             Siguiente
           </button>
@@ -214,7 +233,7 @@ export function GalleryViewer({
             type="button"
             aria-label="Alejar imagen"
             disabled={level <= 0}
-            onClick={() => setLevel(level - 1)}
+            onClick={() => changeZoom(-1)}
           >
             −
           </button>
@@ -225,14 +244,13 @@ export function GalleryViewer({
             type="button"
             aria-label="Acercar imagen"
             disabled={level >= ZOOM_LEVELS.length - 1}
-            onClick={() => setLevel(level + 1)}
+            onClick={() => changeZoom(1)}
           >
             +
           </button>
         </div>
         <p className="viewer-hint">
-          Usa +, − y 0 para el zoom, las flechas para cambiar de imagen y Escape
-          para cerrar.
+          Usa la rueda sobre la foto o +, − y 0 para el zoom. Usa las flechas para cambiar de imagen y Escape para cerrar.
         </p>
       </div>
     </div>

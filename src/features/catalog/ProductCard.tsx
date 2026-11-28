@@ -7,8 +7,10 @@ import { useAddCartItem } from "@/features/cart/useAddCartItem";
 import { Button } from "@/shared/ui/Button";
 import { FavoriteControl } from "@/features/wishlist/FavoriteControl";
 import { useListingPrice } from "./hooks/useListingPrice";
+import { ListingCardPhotos } from "./ListingCardPhotos";
 import { ListingPrice } from "./ListingPrice";
 import type { ProductCardDTO } from "./types";
+import "./product-card.css";
 
 export function ProductCard({
   product, returnPath, listing,
@@ -39,8 +41,8 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
 
   return (
     <>
-      <article className="product-card">
-        <CardLink product={product} href={href} brand={brand} showImageOverlay>
+      <article className="product-card product-card--listing">
+        <CardLink product={product} href={href} brand={brand} previewPhotos>
           <ListingPrice priceRef={ref} state={state} />
         </CardLink>
         <div className="listing-card-actions">
@@ -50,7 +52,7 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
               Agregar al carrito
             </Button>
           ) : (
-            <Link href={href} className="button button--primary listing-card-primary">Elegir opciones</Link>
+            <Link href={href} prefetch={false} className="button button--primary listing-card-primary">Elegir opciones</Link>
           )}
           <FavoriteControl productId={product.productId} compact />
           {!isBusy && lastResult && !lastResult.success && (
@@ -64,13 +66,24 @@ function ListingCard({ product, href, brand }: { product: ProductCardDTO; href: 
   );
 }
 
-function CardLink({ product, href, brand, children, showImageOverlay }: {
+function CardLink({ product, href, brand, children, previewPhotos }: {
   product: ProductCardDTO;
   href: string;
   brand?: string;
   children: ReactNode;
-  showImageOverlay?: boolean;
+  previewPhotos?: boolean;
 }) {
+  const info = (
+    <div className="product-info">
+      {brand && <p className="product-category">{brand}</p>}
+      <h2>{product.name}</h2>
+      {children}
+    </div>
+  );
+  if (previewPhotos) {
+    return <ListingCardPhotos key={product.slug} product={product} href={href}>{info}</ListingCardPhotos>;
+  }
+
   return (
     <Link href={href} className="product-card-link">
       <div className="product-image">
@@ -81,13 +94,8 @@ function CardLink({ product, href, brand, children, showImageOverlay }: {
           width="280"
           height="187"
         />
-        {showImageOverlay && <span className="listing-image-overlay" aria-hidden="true"><span>Ver detalle</span></span>}
       </div>
-      <div className="product-info">
-        {brand && <p className="product-category">{brand}</p>}
-        <h2>{product.name}</h2>
-        {children}
-      </div>
+      {info}
     </Link>
   );
 }
